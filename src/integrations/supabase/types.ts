@@ -14,7 +14,377 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ad_accounts: {
+        Row: {
+          account_id: string
+          account_name: string
+          connection_id: string
+          created_at: string
+          currency: string | null
+          id: string
+          timezone: string | null
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          account_name: string
+          connection_id: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          timezone?: string | null
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          account_name?: string
+          connection_id?: string
+          created_at?: string
+          currency?: string | null
+          id?: string
+          timezone?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_accounts_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "meta_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_creatives: {
+        Row: {
+          ad_id: string
+          call_to_action: string | null
+          created_at: string
+          creative_id: string
+          creative_type: string
+          description: string | null
+          destination_url: string | null
+          headline: string | null
+          id: string
+          image_urls: Json | null
+          primary_text: string | null
+          raw_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          call_to_action?: string | null
+          created_at?: string
+          creative_id: string
+          creative_type?: string
+          description?: string | null
+          destination_url?: string | null
+          headline?: string | null
+          id?: string
+          image_urls?: Json | null
+          primary_text?: string | null
+          raw_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          call_to_action?: string | null
+          created_at?: string
+          creative_id?: string
+          creative_type?: string
+          description?: string | null
+          destination_url?: string | null
+          headline?: string | null
+          id?: string
+          image_urls?: Json | null
+          primary_text?: string | null
+          raw_data?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_creatives_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: false
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_insights: {
+        Row: {
+          ad_id: string
+          clicks: number | null
+          conversion_value: number | null
+          conversions: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          date_start: string
+          date_stop: string
+          id: string
+          impressions: number | null
+          roas: number | null
+          spend: number | null
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          clicks?: number | null
+          conversion_value?: number | null
+          conversions?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          date_start: string
+          date_stop: string
+          id?: string
+          impressions?: number | null
+          roas?: number | null
+          spend?: number | null
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          clicks?: number | null
+          conversion_value?: number | null
+          conversions?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          date_start?: string
+          date_stop?: string
+          id?: string
+          impressions?: number | null
+          roas?: number | null
+          spend?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_insights_ad_id_fkey"
+            columns: ["ad_id"]
+            isOneToOne: true
+            referencedRelation: "ads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ad_sets: {
+        Row: {
+          adset_id: string
+          adset_name: string
+          campaign_id: string
+          created_at: string
+          id: string
+          status: string | null
+          targeting: Json | null
+          user_id: string
+        }
+        Insert: {
+          adset_id: string
+          adset_name: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          status?: string | null
+          targeting?: Json | null
+          user_id: string
+        }
+        Update: {
+          adset_id?: string
+          adset_name?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          status?: string | null
+          targeting?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_sets_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ads: {
+        Row: {
+          ad_id: string
+          ad_name: string
+          adset_id: string
+          created_at: string
+          creative_id: string | null
+          id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          ad_id: string
+          ad_name: string
+          adset_id: string
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          ad_id?: string
+          ad_name?: string
+          adset_id?: string
+          created_at?: string
+          creative_id?: string | null
+          id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ads_adset_id_fkey"
+            columns: ["adset_id"]
+            isOneToOne: false
+            referencedRelation: "ad_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          ad_account_id: string
+          campaign_id: string
+          campaign_name: string
+          created_at: string
+          id: string
+          objective: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          campaign_id: string
+          campaign_name: string
+          created_at?: string
+          id?: string
+          objective?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          campaign_id?: string
+          campaign_name?: string
+          created_at?: string
+          id?: string
+          objective?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meta_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          id: string
+          meta_user_id: string | null
+          meta_user_name: string | null
+          token_expires_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          id?: string
+          meta_user_id?: string | null
+          meta_user_name?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          id?: string
+          meta_user_id?: string | null
+          meta_user_name?: string | null
+          token_expires_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      sync_jobs: {
+        Row: {
+          ad_account_id: string
+          created_at: string
+          current_step: string | null
+          date_range_end: string | null
+          date_range_start: string | null
+          error_message: string | null
+          id: string
+          status: string
+          supported_ads: number | null
+          total_ads: number | null
+          unsupported_ads: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          created_at?: string
+          current_step?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          error_message?: string | null
+          id?: string
+          status?: string
+          supported_ads?: number | null
+          total_ads?: number | null
+          unsupported_ads?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          created_at?: string
+          current_step?: string | null
+          date_range_end?: string | null
+          date_range_start?: string | null
+          error_message?: string | null
+          id?: string
+          status?: string
+          supported_ads?: number | null
+          total_ads?: number | null
+          unsupported_ads?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_jobs_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

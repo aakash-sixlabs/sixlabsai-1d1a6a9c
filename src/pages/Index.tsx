@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { WizardProvider, useWizard } from "@/context/WizardContext";
 import { WizardShell } from "@/components/wizard/WizardShell";
 import { LandingStep } from "@/components/wizard/LandingStep";
@@ -9,9 +11,19 @@ import { PdpInputStep } from "@/components/wizard/PdpInputStep";
 import { PdpScrapeStep } from "@/components/wizard/PdpScrapeStep";
 import { StrategyStep } from "@/components/wizard/StrategyStep";
 import { OutputStep } from "@/components/wizard/OutputStep";
+import { supabase } from "@/integrations/supabase/client";
 
 const WizardRouter = () => {
-  const { state } = useWizard();
+  const { state, setStep, updateState } = useWizard();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    // Handle return from Meta OAuth
+    if (searchParams.get("meta") === "connected" && state.step === "landing") {
+      updateState({ metaConnected: true });
+      setStep("account-select");
+    }
+  }, [searchParams]);
 
   const stepComponent = () => {
     switch (state.step) {
@@ -32,10 +44,38 @@ const WizardRouter = () => {
   return <WizardShell currentStep={state.step}>{stepComponent()}</WizardShell>;
 };
 
-const Index = () => (
-  <WizardProvider>
-    <WizardRouter />
-  </WizardProvider>
-);
+const Index = () => {
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session);
+      setAuthChecked(true);
+    });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthed(!!session);
+      setAuthChecked(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (authChecked && !isAuthed) {
+      navigate("/auth");
+    }
+  }, [authChecked, isAuthed, navigate]);
+
+  if (!authChecked || !isAuthed) return null;
+
+  return (
+    <WizardProvider>
+      <WizardRouter />
+    </WizardProvider>
+  );
+};
 
 export default Index;
