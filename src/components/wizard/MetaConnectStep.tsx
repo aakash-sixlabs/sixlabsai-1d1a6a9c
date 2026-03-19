@@ -33,7 +33,7 @@ export const MetaConnectStep = () => {
       if (data?.error) throw new Error(data.error);
 
       // Redirect to Meta OAuth
-      window.location.href = data.authUrl;
+      window.open(data.authUrl, "_blank");
     } catch (err: any) {
       console.error("Meta connect error:", err);
       toast.error(err.message || "Failed to start Meta connection");
