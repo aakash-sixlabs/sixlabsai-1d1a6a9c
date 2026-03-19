@@ -183,6 +183,18 @@ export const DataSyncStep = () => {
             </p>
           </div>
         )}
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-4 text-xs text-muted-foreground"
+          onClick={() => {
+            updateState({ syncComplete: true });
+            setStep("insights");
+          }}
+        >
+          Skip (Dev Mode)
+        </Button>
       </motion.div>
     </div>
   );
