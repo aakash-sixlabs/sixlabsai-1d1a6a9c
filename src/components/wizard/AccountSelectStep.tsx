@@ -137,17 +137,30 @@ export const AccountSelectStep = () => {
           </div>
         </div>
 
-        <Button
-          size="lg"
-          className="gap-2"
-          disabled={!selected}
-          onClick={() => {
-            updateState({ selectedAccount: selected, dateRange: range });
-            setStep("data-sync");
-          }}
-        >
-          Start Analysis <ArrowRight className="w-4 h-4" />
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            size="lg"
+            className="gap-2"
+            disabled={!selected}
+            onClick={() => {
+              updateState({ selectedAccount: selected, dateRange: range });
+              setStep("data-sync");
+            }}
+          >
+            Start Analysis <ArrowRight className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs text-muted-foreground"
+            onClick={() => {
+              updateState({ selectedAccount: "mock-account", dateRange: range });
+              setStep("data-sync");
+            }}
+          >
+            Skip (Dev Mode)
+          </Button>
+        </div>
       </motion.div>
     </div>
   );
