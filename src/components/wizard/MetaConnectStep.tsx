@@ -1,18 +1,58 @@
 import { motion } from "framer-motion";
 import { useWizard } from "@/context/WizardContext";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Shield, CheckCircle2 } from "lucide-react";
+import { ExternalLink, Shield, CheckCircle2, Loader2 } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const MetaConnectStep = () => {
   const { setStep, updateState } = useWizard();
+  const [connecting, setConnecting] = useState(false);
 
-  const handleConnect = () => {
-    // Simulate Meta OAuth
-    setTimeout(() => {
-      updateState({ metaConnected: true });
-      setStep("account-select");
-    }, 1500);
+  const handleConnect = async () => {
+    setConnecting(true);
+    try {
+      // Check if already connected via callback
+      const stored = sessionStorage.getItem("meta_connection");
+      if (stored) {
+        const data = JSON.parse(stored);
+        updateState({ metaConnected: true });
+        setStep("account-select");
+        return;
+      }
+
+      // Get the OAuth URL from edge function
+      const redirectUri = `${window.location.origin}/meta-callback`;
+      const { data, error } = await supabase.functions.invoke(
+        "meta-oauth?action=get-auth-url",
+        { body: { redirectUri } }
+      );
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Redirect to Meta OAuth
+      window.location.href = data.authUrl;
+    } catch (err: any) {
+      console.error("Meta connect error:", err);
+      toast.error(err.message || "Failed to start Meta connection");
+      setConnecting(false);
+    }
   };
+
+  // Check if returning from OAuth
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("meta") === "connected") {
+    const stored = sessionStorage.getItem("meta_connection");
+    if (stored) {
+      // Auto-advance
+      setTimeout(() => {
+        updateState({ metaConnected: true });
+        setStep("account-select");
+      }, 500);
+    }
+  }
 
   return (
     <div className="container max-w-lg py-16">
@@ -34,8 +74,18 @@ export const MetaConnectStep = () => {
           performance. We only request read-only permissions.
         </p>
 
-        <Button size="lg" className="gap-2 w-full max-w-xs" onClick={handleConnect}>
-          <ExternalLink className="w-4 h-4" /> Connect with Meta
+        <Button
+          size="lg"
+          className="gap-2 w-full max-w-xs"
+          onClick={handleConnect}
+          disabled={connecting}
+        >
+          {connecting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <ExternalLink className="w-4 h-4" />
+          )}
+          {connecting ? "Connecting…" : "Connect with Meta"}
         </Button>
 
         <div className="mt-8 space-y-3 text-left max-w-xs mx-auto">

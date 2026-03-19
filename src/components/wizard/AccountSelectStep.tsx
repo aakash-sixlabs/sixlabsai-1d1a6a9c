@@ -1,25 +1,78 @@
 import { motion } from "framer-motion";
 import { useWizard } from "@/context/WizardContext";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Building2 } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, Building2, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
-const MOCK_ACCOUNTS = [
-  { id: "act_123", name: "Brand Store – US", spend: "$42,350", ads: 214 },
-  { id: "act_456", name: "Brand Store – EU", spend: "$18,720", ads: 89 },
-  { id: "act_789", name: "DTC Summer Campaign", spend: "$8,150", ads: 43 },
-];
+interface AdAccount {
+  id: string;
+  account_id: string;
+  account_name: string;
+  currency: string;
+  timezone: string | null;
+}
 
 const DATE_RANGES = [
   { value: "90", label: "Last 90 days" },
   { value: "180", label: "Last 180 days" },
-  { value: "custom", label: "Custom range" },
+  { value: "365", label: "Last year" },
 ];
 
 export const AccountSelectStep = () => {
   const { setStep, updateState } = useWizard();
   const [selected, setSelected] = useState<string | null>(null);
   const [range, setRange] = useState("90");
+  const [accounts, setAccounts] = useState<AdAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        // Try sessionStorage first (from OAuth callback)
+        const stored = sessionStorage.getItem("meta_connection");
+        if (stored) {
+          const data = JSON.parse(stored);
+          if (data.accounts?.length > 0) {
+            setAccounts(
+              data.accounts.map((acc: any) => ({
+                id: acc.id || acc.account_id,
+                account_id: acc.account_id || acc.id,
+                account_name: acc.name || `Account ${acc.account_id}`,
+                currency: acc.currency || "USD",
+                timezone: acc.timezone_name || null,
+              }))
+            );
+            setLoading(false);
+            return;
+          }
+        }
+
+        // Fallback: fetch from database
+        const { data, error } = await supabase
+          .from("ad_accounts")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        setAccounts(data || []);
+      } catch (err) {
+        console.error("Error fetching accounts:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAccounts();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="container max-w-2xl py-16 flex justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-2xl py-16">
@@ -31,31 +84,37 @@ export const AccountSelectStep = () => {
           Choose the account and time window to analyze.
         </p>
 
-        <div className="space-y-3 mb-8">
-          {MOCK_ACCOUNTS.map((acc) => (
-            <button
-              key={acc.id}
-              onClick={() => setSelected(acc.id)}
-              className={`w-full p-4 rounded-lg border text-left transition-all ${
-                selected === acc.id
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border bg-card hover:border-primary/40"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <div className="flex-1">
-                  <div className="font-semibold text-foreground">{acc.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {acc.ads} ads · {acc.spend} spend
+        {accounts.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">No ad accounts found. Make sure your Meta account has active ad accounts.</p>
+          </div>
+        ) : (
+          <div className="space-y-3 mb-8">
+            {accounts.map((acc) => (
+              <button
+                key={acc.id}
+                onClick={() => setSelected(acc.id)}
+                className={`w-full p-4 rounded-lg border text-left transition-all ${
+                  selected === acc.id
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                    <Building2 className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="font-semibold text-foreground">{acc.account_name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {acc.account_id} · {acc.currency}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </button>
-          ))}
-        </div>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="mb-8">
           <label className="block text-sm font-medium text-foreground mb-3">

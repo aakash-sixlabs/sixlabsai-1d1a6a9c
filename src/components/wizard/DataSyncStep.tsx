@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { useWizard } from "@/context/WizardContext";
 import { useEffect, useState } from "react";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, AlertCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 const SYNC_STEPS = [
   "Connecting to Meta",
@@ -13,25 +15,76 @@ const SYNC_STEPS = [
 ];
 
 export const DataSyncStep = () => {
-  const { setStep, updateState } = useWizard();
-  const [currentIdx, setCurrentIdx] = useState(0);
+  const { state, setStep, updateState } = useWizard();
+  const [currentStep, setCurrentStep] = useState("Connecting to Meta");
+  const [error, setError] = useState<string | null>(null);
+  const [syncStarted, setSyncStarted] = useState(false);
+
+  const currentIdx = SYNC_STEPS.indexOf(currentStep);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentIdx((prev) => {
-        if (prev >= SYNC_STEPS.length - 1) {
-          clearInterval(interval);
-          setTimeout(() => {
+    if (syncStarted) return;
+    setSyncStarted(true);
+
+    const startSync = async () => {
+      try {
+        const { data, error: fnError } = await supabase.functions.invoke(
+          "meta-sync",
+          {
+            body: {
+              adAccountId: state.selectedAccount,
+              dateRangeDays: state.dateRange,
+            },
+          }
+        );
+
+        if (fnError) throw fnError;
+        if (data?.error) throw new Error(data.error);
+
+        // Sync complete
+        updateState({ syncComplete: true });
+        setCurrentStep("Preparing insights");
+        setTimeout(() => setStep("insights"), 1000);
+      } catch (err: any) {
+        console.error("Sync error:", err);
+        setError(err.message || "Sync failed");
+      }
+    };
+
+    // Also subscribe to realtime updates for progress
+    const channel = supabase
+      .channel("sync-progress")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "sync_jobs",
+        },
+        (payload) => {
+          const job = payload.new as any;
+          if (job.current_step) {
+            setCurrentStep(job.current_step);
+          }
+          if (job.status === "complete") {
             updateState({ syncComplete: true });
-            setStep("insights");
-          }, 800);
-          return prev;
+            setTimeout(() => setStep("insights"), 1000);
+          }
+          if (job.status === "error") {
+            setError(job.error_message || "Sync failed");
+          }
         }
-        return prev + 1;
-      });
-    }, 1200);
-    return () => clearInterval(interval);
+      )
+      .subscribe();
+
+    startSync();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  const effectiveIdx = currentIdx >= 0 ? currentIdx : 0;
 
   return (
     <div className="container max-w-lg py-16">
@@ -44,13 +97,34 @@ export const DataSyncStep = () => {
           Syncing Historical Data
         </h2>
         <p className="text-muted-foreground mb-10">
-          Analyzing your ad account performance…
+          {error ? "An error occurred during sync." : "Analyzing your ad account performance…"}
         </p>
+
+        {error && (
+          <div className="mb-6 p-4 rounded-lg border border-destructive/30 bg-destructive/5 text-left">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertCircle className="w-4 h-4 text-destructive" />
+              <span className="text-sm font-medium text-destructive">Sync Error</span>
+            </div>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => {
+                setError(null);
+                setSyncStarted(false);
+              }}
+            >
+              Retry
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-4 text-left max-w-sm mx-auto">
           {SYNC_STEPS.map((step, i) => {
-            const done = i < currentIdx;
-            const active = i === currentIdx;
+            const done = i < effectiveIdx || (currentStep === "Complete");
+            const active = i === effectiveIdx && !error && currentStep !== "Complete";
             return (
               <motion.div
                 key={i}
@@ -92,21 +166,23 @@ export const DataSyncStep = () => {
           })}
         </div>
 
-        <div className="mt-10">
-          <div className="h-1.5 bg-muted rounded-full overflow-hidden max-w-sm mx-auto">
-            <motion.div
-              className="h-full bg-primary rounded-full"
-              initial={{ width: "0%" }}
-              animate={{
-                width: `${((currentIdx + 1) / SYNC_STEPS.length) * 100}%`,
-              }}
-              transition={{ duration: 0.5 }}
-            />
+        {!error && (
+          <div className="mt-10">
+            <div className="h-1.5 bg-muted rounded-full overflow-hidden max-w-sm mx-auto">
+              <motion.div
+                className="h-full bg-primary rounded-full"
+                initial={{ width: "0%" }}
+                animate={{
+                  width: `${((effectiveIdx + 1) / SYNC_STEPS.length) * 100}%`,
+                }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              {Math.round(((effectiveIdx + 1) / SYNC_STEPS.length) * 100)}% complete
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {Math.round(((currentIdx + 1) / SYNC_STEPS.length) * 100)}% complete
-          </p>
-        </div>
+        )}
       </motion.div>
     </div>
   );
