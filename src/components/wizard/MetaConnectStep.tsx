@@ -88,6 +88,25 @@ export const MetaConnectStep = () => {
           {connecting ? "Connecting…" : "Connect with Meta"}
         </Button>
 
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2 text-xs text-muted-foreground"
+          onClick={() => {
+            sessionStorage.setItem("meta_connection", JSON.stringify({
+              connectionId: "dev-mock",
+              userName: "Dev User",
+              accounts: [
+                { id: "act_123456", account_id: "123456", name: "Mock Ad Account", currency: "USD" },
+              ],
+            }));
+            updateState({ metaConnected: true });
+            setStep("account-select");
+          }}
+        >
+          Skip (Dev Mode)
+        </Button>
+
         <div className="mt-8 space-y-3 text-left max-w-xs mx-auto">
           {[
             "Read-only access to ad creatives",
