@@ -41,18 +41,7 @@ export const MetaConnectStep = () => {
     }
   };
 
-  // Check if returning from OAuth
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("meta") === "connected") {
-    const stored = sessionStorage.getItem("meta_connection");
-    if (stored) {
-      // Auto-advance
-      setTimeout(() => {
-        updateState({ metaConnected: true });
-        setStep("account-select");
-      }, 500);
-    }
-  }
+  // Note: returning from OAuth is handled by WizardRouter via ?meta=connected
 
   return (
     <div className="container max-w-lg py-16">
