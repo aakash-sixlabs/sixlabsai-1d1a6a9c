@@ -243,15 +243,49 @@ Deno.serve(async (req) => {
 
       const objStory = creative.object_story_spec || {};
       const linkData = objStory.link_data || {};
-      const imageUrls: string[] = [];
+      const fbImageUrls: string[] = [];
 
-      if (linkData.picture) imageUrls.push(linkData.picture);
-      if (linkData.image_url) imageUrls.push(linkData.image_url);
-      if (creative.image_url) imageUrls.push(creative.image_url);
+      if (linkData.picture) fbImageUrls.push(linkData.picture);
+      if (linkData.image_url) fbImageUrls.push(linkData.image_url);
+      if (creative.image_url) fbImageUrls.push(creative.image_url);
       if (linkData.child_attachments) {
         for (const child of linkData.child_attachments) {
-          if (child.picture) imageUrls.push(child.picture);
-          if (child.image_url) imageUrls.push(child.image_url);
+          if (child.picture) fbImageUrls.push(child.picture);
+          if (child.image_url) fbImageUrls.push(child.image_url);
+        }
+      }
+
+      // Deduplicate URLs
+      const uniqueFbUrls = [...new Set(fbImageUrls)];
+
+      // Download images from Facebook CDN and upload to Supabase Storage
+      const storedImageUrls: string[] = [];
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+
+      for (let imgIdx = 0; imgIdx < uniqueFbUrls.length; imgIdx++) {
+        try {
+          const imgRes = await fetch(uniqueFbUrls[imgIdx]);
+          if (!imgRes.ok) continue;
+
+          const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+          const imgBuffer = await imgRes.arrayBuffer();
+          const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
+          const storagePath = `${userId}/${storedAd.id}_${imgIdx}.${ext}`;
+
+          const { error: uploadError } = await admin.storage
+            .from("ad-creatives")
+            .upload(storagePath, imgBuffer, {
+              contentType,
+              upsert: true,
+            });
+
+          if (!uploadError) {
+            const publicUrl = `${supabaseUrl}/storage/v1/object/public/ad-creatives/${storagePath}`;
+            storedImageUrls.push(publicUrl);
+          }
+        } catch (imgErr) {
+          // Skip failed downloads silently
+          console.error(`Failed to download image ${imgIdx} for ad ${ad.id}:`, imgErr);
         }
       }
 
@@ -261,7 +295,7 @@ Deno.serve(async (req) => {
           user_id: userId,
           creative_id: creative.id || ad.id,
           creative_type: creativeType,
-          image_urls: imageUrls,
+          image_urls: storedImageUrls,
           headline: linkData.title || linkData.name || null,
           primary_text: linkData.message || objStory.photo_data?.message || null,
           description: linkData.description || null,
