@@ -29,26 +29,7 @@ export const AccountSelectStep = () => {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        // Try sessionStorage first (from OAuth callback)
-        const stored = sessionStorage.getItem("meta_connection");
-        if (stored) {
-          const data = JSON.parse(stored);
-          if (data.accounts?.length > 0) {
-            setAccounts(
-              data.accounts.map((acc: any) => ({
-                id: acc.id || acc.account_id,
-                account_id: acc.account_id || acc.id,
-                account_name: acc.name || `Account ${acc.account_id}`,
-                currency: acc.currency || "USD",
-                timezone: acc.timezone_name || null,
-              }))
-            );
-            setLoading(false);
-            return;
-          }
-        }
-
-        // Fallback: fetch from database
+        // Always fetch from database to get correct UUIDs
         const { data, error } = await supabase
           .from("ad_accounts")
           .select("*")
