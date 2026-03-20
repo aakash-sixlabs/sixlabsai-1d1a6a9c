@@ -220,6 +220,16 @@ export const DataReviewStep = () => {
                                                             {creative.creative_type}
                                                           </span>
                                                         </div>
+                                                        {/* Image thumbnails */}
+                                                        {Array.isArray(creative.image_urls) && creative.image_urls.length > 0 && (
+                                                          <div className="flex flex-wrap gap-2 mb-2">
+                                                            {creative.image_urls.map((url: string, idx: number) => (
+                                                              <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="block rounded-md overflow-hidden border border-border/50 hover:border-primary/50 transition-colors">
+                                                                <img src={url} alt={`Creative ${idx + 1}`} className="w-24 h-24 object-cover" loading="lazy" />
+                                                              </a>
+                                                            ))}
+                                                          </div>
+                                                        )}
                                                         <div className="grid grid-cols-2 gap-2 text-xs">
                                                           {creative.headline && (
                                                             <div><span className="text-muted-foreground">Headline:</span> <span className="text-foreground">{creative.headline}</span></div>
@@ -233,7 +243,6 @@ export const DataReviewStep = () => {
                                                           {creative.destination_url && (
                                                             <div className="col-span-2 truncate"><span className="text-muted-foreground">URL:</span> <span className="text-foreground">{creative.destination_url}</span></div>
                                                           )}
-                                                          <div><span className="text-muted-foreground">Images:</span> <span className="text-foreground">{Array.isArray(creative.image_urls) ? creative.image_urls.length : 0}</span></div>
                                                         </div>
                                                       </div>
                                                     )}
