@@ -232,8 +232,7 @@ export const InsightsStep = () => {
       const insights = i.data || [];
 
       if (creatives.length === 0) {
-        // Use mock data to showcase
-        setEnriched(generateMockData());
+        setEnriched([]);
         setLoading(false);
         return;
       }
