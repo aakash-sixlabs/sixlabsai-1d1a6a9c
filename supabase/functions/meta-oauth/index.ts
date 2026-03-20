@@ -50,15 +50,14 @@ Deno.serve(async (req) => {
         { global: { headers: { Authorization: authHeader } } }
       );
 
-      const { data: claims, error: claimsError } =
-        await supabase.auth.getClaims(authHeader.replace("Bearer ", ""));
-      if (claimsError || !claims?.claims) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
           status: 401,
           headers: corsHeaders,
         });
       }
-      const userId = claims.claims.sub as string;
+      const userId = userData.user.id;
 
       const { code, redirectUri } = await req.json();
       const META_APP_SECRET = Deno.env.get("META_APP_SECRET")!;
