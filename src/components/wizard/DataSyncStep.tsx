@@ -44,7 +44,7 @@ export const DataSyncStep = () => {
         // Sync complete
         updateState({ syncComplete: true });
         setCurrentStep("Preparing insights");
-        setTimeout(() => setStep("insights"), 1000);
+        setTimeout(() => setStep("data-review"), 1000);
       } catch (err: any) {
         console.error("Sync error:", err);
         setError(err.message || "Sync failed");
