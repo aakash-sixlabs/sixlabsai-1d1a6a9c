@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
     );
 
     // 3. Fetch ads with creatives
-    await updateStep("Pulling ads and creatives");
+    await updateStep("Pulling ads, creatives & downloading images");
     const ads = await fetchAllPages(
       `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,adset_id,creative{id,name,object_story_spec,asset_feed_spec,image_url,image_hash,video_id,thumbnail_url}&limit=500&access_token=${accessToken}`
     );
