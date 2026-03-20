@@ -6,6 +6,7 @@ import { LandingStep } from "@/components/wizard/LandingStep";
 import { MetaConnectStep } from "@/components/wizard/MetaConnectStep";
 import { AccountSelectStep } from "@/components/wizard/AccountSelectStep";
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
+import { DataReviewStep } from "@/components/wizard/DataReviewStep";
 import { InsightsStep } from "@/components/wizard/InsightsStep";
 import { PdpInputStep } from "@/components/wizard/PdpInputStep";
 import { PdpScrapeStep } from "@/components/wizard/PdpScrapeStep";
@@ -31,6 +32,7 @@ const WizardRouter = () => {
       case "meta-connect": return <MetaConnectStep />;
       case "account-select": return <AccountSelectStep />;
       case "data-sync": return <DataSyncStep />;
+      case "data-review": return <DataReviewStep />;
       case "insights": return <InsightsStep />;
       case "pdp-input": return <PdpInputStep />;
       case "pdp-scrape": return <PdpScrapeStep />;

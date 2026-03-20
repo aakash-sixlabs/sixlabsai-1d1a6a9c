@@ -5,6 +5,7 @@ export type WizardStep =
   | "meta-connect"
   | "account-select"
   | "data-sync"
+  | "data-review"
   | "insights"
   | "pdp-input"
   | "pdp-scrape"
