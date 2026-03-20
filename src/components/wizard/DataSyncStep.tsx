@@ -68,7 +68,7 @@ export const DataSyncStep = () => {
           }
           if (job.status === "complete") {
             updateState({ syncComplete: true });
-            setTimeout(() => setStep("insights"), 1000);
+            setTimeout(() => setStep("data-review"), 1000);
           }
           if (job.status === "error") {
             setError(job.error_message || "Sync failed");
