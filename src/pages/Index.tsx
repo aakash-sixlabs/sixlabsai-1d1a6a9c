@@ -45,32 +45,6 @@ const WizardRouter = () => {
 };
 
 const Index = () => {
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isAuthed, setIsAuthed] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthed(!!session);
-      setAuthChecked(true);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthed(!!session);
-      setAuthChecked(true);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (authChecked && !isAuthed) {
-      navigate("/auth");
-    }
-  }, [authChecked, isAuthed, navigate]);
-
-  if (!authChecked || !isAuthed) return null;
-
   return (
     <WizardProvider>
       <WizardRouter />
