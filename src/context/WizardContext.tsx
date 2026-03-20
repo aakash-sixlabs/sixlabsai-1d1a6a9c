@@ -12,15 +12,6 @@ export type WizardStep =
   | "strategy"
   | "output"
   | "regenerate";
-  | "meta-connect"
-  | "account-select"
-  | "data-sync"
-  | "insights"
-  | "pdp-input"
-  | "pdp-scrape"
-  | "strategy"
-  | "output"
-  | "regenerate";
 
 interface WizardState {
   step: WizardStep;
