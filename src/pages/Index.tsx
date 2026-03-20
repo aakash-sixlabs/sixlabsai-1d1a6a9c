@@ -32,6 +32,7 @@ const WizardRouter = () => {
       case "meta-connect": return <MetaConnectStep />;
       case "account-select": return <AccountSelectStep />;
       case "data-sync": return <DataSyncStep />;
+      case "data-review": return <DataReviewStep />;
       case "insights": return <InsightsStep />;
       case "pdp-input": return <PdpInputStep />;
       case "pdp-scrape": return <PdpScrapeStep />;
