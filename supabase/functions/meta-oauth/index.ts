@@ -153,12 +153,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Update profile with meta_user_id
+      // Update profile with meta_user_id and real email if available
       await adminClient
         .from("profiles")
         .upsert({
           id: userId,
-          email: meData.email,
+          email: meData.email || null,
           full_name: meData.name,
           meta_user_id: meData.id,
         }, { onConflict: "id" });
