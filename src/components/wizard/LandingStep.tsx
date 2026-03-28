@@ -1,34 +1,53 @@
 import { motion } from "framer-motion";
 import { useWizard } from "@/context/WizardContext";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  ArrowRight,
-  Sparkles,
-  Link,
-  BarChart3,
-  ShoppingBag,
-  Wand2,
-  TrendingUp,
-  FileText,
-  Rocket,
-  Loader2,
-} from "lucide-react";
+import { Loader2, Zap } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const steps = [
-  { num: 1, label: "Connect Meta", icon: Link, desc: "Link your ad account" },
-  { num: 2, label: "Analyze Performance", icon: BarChart3, desc: "Discover winning patterns" },
-  { num: 3, label: "Add Product", icon: ShoppingBag, desc: "Paste a Shopify URL" },
-  { num: 4, label: "Generate Creatives", icon: Wand2, desc: "Get data-informed ads" },
-];
-
-const valuePills = [
-  { icon: TrendingUp, label: "Data-driven creatives" },
-  { icon: ShoppingBag, label: "Shopify product extraction" },
-  { icon: FileText, label: "Copy + rationale included" },
+/* ── Mock ad creative cards for the showcase ── */
+const mockAds = [
+  {
+    brand: "Glow Skin Co.",
+    category: "Beauty & Skincare",
+    type: "Static ad",
+    color: "from-rose-400 to-orange-300",
+    headline: "Your skin deserves better",
+    img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=500&fit=crop",
+  },
+  {
+    brand: "FitFuel",
+    category: "Health & Nutrition",
+    type: "Carousel ad",
+    color: "from-emerald-400 to-teal-500",
+    headline: "Fuel your morning routine",
+    img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=500&fit=crop",
+  },
+  {
+    brand: "UrbanThreads",
+    category: "Fashion",
+    type: "UGC video",
+    color: "from-violet-400 to-indigo-500",
+    headline: "Street style, elevated",
+    img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=500&fit=crop",
+  },
+  {
+    brand: "PetPals",
+    category: "Pet supplies",
+    type: "Animated ad",
+    color: "from-amber-300 to-yellow-500",
+    headline: "Treats they'll love",
+    img: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&h=360&fit=crop",
+  },
+  {
+    brand: "WanderPack",
+    category: "Travel gear",
+    type: "Static ad",
+    color: "from-sky-400 to-blue-500",
+    headline: "Adventure-ready bags",
+    img: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=360&fit=crop",
+  },
 ];
 
 export const LandingStep = () => {
@@ -38,7 +57,6 @@ export const LandingStep = () => {
   const handleConnectMeta = async () => {
     setConnecting(true);
     try {
-      // Check if already connected via callback
       const stored = sessionStorage.getItem("meta_connection");
       if (stored) {
         updateState({ metaConnected: true });
@@ -46,7 +64,6 @@ export const LandingStep = () => {
         return;
       }
 
-      // Get the OAuth URL from edge function (no auth required)
       const redirectUri = `${window.location.origin}/meta-callback`;
       const { data, error } = await supabase.functions.invoke(
         "meta-oauth?action=get-auth-url",
@@ -56,7 +73,6 @@ export const LandingStep = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Redirect to Meta OAuth
       window.location.href = data.authUrl;
     } catch (err: any) {
       console.error("Meta connect error:", err);
@@ -66,116 +82,189 @@ export const LandingStep = () => {
   };
 
   return (
-    <div className="container max-w-3xl py-16 lg:py-24 flex flex-col items-center text-center">
-      {/* Welcome heading */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-10"
-      >
-        <div className="inline-flex items-center gap-2 text-primary mb-4">
-          <Sparkles className="w-5 h-5" />
-          <span className="text-sm font-semibold tracking-wide uppercase">
-            Welcome to CreativeGen
-          </span>
-        </div>
-        <h1 className="text-3xl lg:text-4xl font-extrabold text-foreground leading-tight mb-3">
-          Generate Meta ad creatives informed by{" "}
-          <span className="text-gradient">your actual performance data</span>
-        </h1>
-        <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-          Connect your Meta Ads account, analyze what worked, add a product, and
-          get creatives grounded in real results.
-        </p>
-      </motion.div>
+    <div className="min-h-screen flex">
+      {/* ── Left panel: Ad creative showcase ── */}
+      <div className="hidden lg:flex lg:w-[55%] bg-secondary/50 p-8 items-center justify-center overflow-hidden relative">
+        {/* Subtle grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: "radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
+        }} />
 
-      {/* Primary CTA card */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="w-full mb-14"
-      >
-        <Card className="border-primary/20 bg-primary/5 shadow-lg">
-          <CardContent className="flex flex-col items-center py-10 px-6">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-              <Rocket className="w-6 h-6 text-primary" />
-            </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">
-              Let's create your first ad
-            </h2>
-            <p className="text-muted-foreground text-sm max-w-md mb-6">
-              Sign in with your Meta account to get started — we'll connect your
-              ad data and guide you through the process.
-            </p>
-            <Button
-              size="lg"
-              onClick={handleConnectMeta}
-              disabled={connecting}
-              className="gap-2"
-            >
-              {connecting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-                  <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" />
-                </svg>
-              )}
-              {connecting ? "Connecting…" : "Connect with Meta"}
-            </Button>
-          </CardContent>
-        </Card>
-      </motion.div>
-
-      {/* How it works stepper */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.2 }}
-        className="w-full mb-12"
-      >
-        <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-6">
-          Here's how it works
-        </h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {steps.map((s, i) => (
-            <div
-              key={i}
-              className="relative flex flex-col items-center rounded-lg border bg-card p-5"
-            >
-              <span className="absolute -top-3 left-4 text-xs font-bold bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center">
-                {s.num}
-              </span>
-              <s.icon className="w-5 h-5 text-primary mb-2" />
-              <span className="font-semibold text-sm text-foreground">
-                {s.label}
-              </span>
-              <span className="text-xs text-muted-foreground mt-1">
-                {s.desc}
-              </span>
-            </div>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Value prop pills */}
-      <motion.div
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.3 }}
-        className="flex flex-wrap justify-center gap-3"
-      >
-        {valuePills.map((v, i) => (
-          <div
-            key={i}
-            className="inline-flex items-center gap-2 rounded-full border bg-card px-4 py-2 text-sm text-muted-foreground"
-          >
-            <v.icon className="w-4 h-4 text-primary" />
-            {v.label}
+        {/* Floating brand mark */}
+        <div className="absolute top-8 left-8 flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+            <Zap className="w-4 h-4 text-primary-foreground" />
           </div>
-        ))}
-      </motion.div>
+          <span className="font-display font-bold text-lg text-foreground">CreativeGen</span>
+        </div>
+
+        {/* Card grid */}
+        <div className="relative w-full max-w-2xl">
+          <div className="grid grid-cols-3 gap-4 px-4">
+            {mockAds.slice(0, 3).map((ad, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 * i }}
+                className="rounded-xl border bg-card shadow-sm overflow-hidden"
+              >
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${ad.color} flex items-center justify-center text-[10px] font-bold text-white`}>
+                      {ad.brand.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">{ad.brand}</p>
+                      <p className="text-[10px] text-muted-foreground">{ad.category}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg overflow-hidden aspect-[3/4] bg-muted">
+                    <img
+                      src={ad.img}
+                      alt={ad.headline}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-muted-foreground">
+                    <span className="text-[10px] font-medium bg-secondary rounded px-1.5 py-0.5">{ad.type}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Second row offset */}
+          <div className="grid grid-cols-3 gap-4 px-4 mt-4">
+            {mockAds.slice(3, 5).map((ad, i) => (
+              <motion.div
+                key={i + 3}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 * (i + 3) }}
+                className="rounded-xl border bg-card shadow-sm overflow-hidden"
+              >
+                <div className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${ad.color} flex items-center justify-center text-[10px] font-bold text-white`}>
+                      {ad.brand.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">{ad.brand}</p>
+                      <p className="text-[10px] text-muted-foreground">{ad.category}</p>
+                    </div>
+                  </div>
+                  <div className="rounded-lg overflow-hidden aspect-square bg-muted">
+                    <img
+                      src={ad.img}
+                      alt={ad.headline}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="mt-2 flex items-center gap-1.5 text-muted-foreground">
+                    <span className="text-[10px] font-medium bg-secondary rounded px-1.5 py-0.5">{ad.type}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+            {/* Ghost card for visual balance */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              transition={{ duration: 0.5, delay: 0.8 }}
+              className="rounded-xl border border-dashed bg-card/50 flex items-center justify-center p-6"
+            >
+              <p className="text-xs text-muted-foreground text-center">Your ad<br />could be here</p>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Right panel: Login ── */}
+      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center px-6 sm:px-12 lg:px-16 bg-background">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-sm"
+        >
+          {/* Mobile-only brand mark */}
+          <div className="flex items-center gap-2 justify-center mb-8 lg:hidden">
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
+              <Zap className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <span className="font-display font-bold text-lg text-foreground">CreativeGen</span>
+          </div>
+
+          <h1 className="text-2xl font-display font-bold text-foreground text-center mb-2">
+            Welcome to CreativeGen
+          </h1>
+          <p className="text-sm text-muted-foreground text-center mb-10">
+            Generate data-driven ad creatives in minutes.
+          </p>
+
+          {/* Meta login button */}
+          <Button
+            size="lg"
+            variant="outline"
+            onClick={handleConnectMeta}
+            disabled={connecting}
+            className="w-full gap-3 h-12 text-sm font-medium border-border hover:bg-secondary/80 rounded-full"
+          >
+            {connecting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#1877F2]" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" />
+              </svg>
+            )}
+            {connecting ? "Connecting…" : "Continue with Meta"}
+          </Button>
+
+          {/* Divider */}
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground">or</span>
+            <div className="flex-1 h-px bg-border" />
+          </div>
+
+          {/* Email placeholder (disabled/coming soon feel) */}
+          <div className="relative">
+            <svg
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            <input
+              type="email"
+              placeholder="Email"
+              disabled
+              className="w-full h-12 pl-11 pr-4 rounded-full border bg-secondary/40 text-sm text-muted-foreground placeholder:text-muted-foreground/60 cursor-not-allowed"
+            />
+          </div>
+
+          <Button
+            variant="secondary"
+            disabled
+            className="w-full mt-3 h-12 rounded-full text-sm font-medium text-muted-foreground"
+          >
+            Continue with email
+          </Button>
+
+          <p className="text-[11px] text-muted-foreground text-center mt-8">
+            <a href="#" className="hover:underline text-primary">Privacy Policy</a>
+            {" · "}
+            <a href="#" className="hover:underline text-primary">Terms of Service</a>
+          </p>
+        </motion.div>
+      </div>
     </div>
   );
 };
