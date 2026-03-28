@@ -1,0 +1,1 @@
+UPDATE ad_accounts SET user_id = '0617a3e8-99d4-42a4-bb0d-93b85cd7db7a' WHERE user_id = 'ca9a7768-e40e-4ffd-ab34-a59a71b74f48';

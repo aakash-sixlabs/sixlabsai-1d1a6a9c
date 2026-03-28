@@ -179,9 +179,10 @@ Deno.serve(async (req) => {
       }));
 
       if (accounts.length > 0) {
+        // Delete old accounts for this user first, then insert fresh
+        await adminClient.from("ad_accounts").delete().eq("user_id", userId);
         await adminClient.from("ad_accounts").upsert(accounts, {
           onConflict: "account_id",
-          ignoreDuplicates: true,
         });
       }
 
