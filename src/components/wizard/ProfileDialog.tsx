@@ -32,14 +32,12 @@ export const ProfileDialog = ({ open, onComplete }: ProfileDialogProps) => {
       setAccounts(data.accounts || []);
     }
 
-    // Also try from Supabase session
+    // Also try name from Supabase session metadata (but NOT email,
+    // since the auth record uses a placeholder email)
     supabase.auth.getUser().then(({ data }) => {
       if (data?.user) {
         if (!fullName && data.user.user_metadata?.full_name) {
           setFullName(data.user.user_metadata.full_name);
-        }
-        if (!email && data.user.email) {
-          setEmail(data.user.email);
         }
       }
     });
