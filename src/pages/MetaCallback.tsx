@@ -38,13 +38,17 @@ const MetaCallback = () => {
         if (data?.error) throw new Error(data.error);
 
         // Establish session via magic link OTP verification
-        if (data.tokenHash && data.email) {
-          const { error: otpError } = await supabase.auth.verifyOtp({
-            token_hash: data.tokenHash,
-            type: "magiclink",
-          });
-          if (otpError) throw otpError;
+        // token_hash is enough here (Meta email may be unavailable)
+        if (!data?.tokenHash) {
+          throw new Error("Failed to establish authenticated session.");
         }
+
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: data.tokenHash,
+          type: "magiclink",
+        });
+
+        if (otpError) throw otpError;
 
         // Store connection info in sessionStorage for the wizard
         sessionStorage.setItem("meta_connection", JSON.stringify({
