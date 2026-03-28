@@ -66,12 +66,11 @@ const WizardRouter = () => {
   };
 
   // Determine if we're in onboarding (show overlays on dashboard bg)
-  const isOnboarding = !isAuthed || state.step === "landing" || state.step === "meta-connect" || state.step === "account-select";
+  const isOnboarding = !isAuthed || state.step === "landing" || state.step === "meta-connect" || state.step === "account-select" || state.step === "data-sync";
 
   // For post-onboarding steps, render them normally in the wizard shell
   const renderMainContent = () => {
     switch (state.step) {
-      case "data-sync": return <DataSyncStep />;
       case "data-review": return <DataReviewStep />;
       case "insights": return <InsightsStep />;
       case "pdp-input": return <PdpInputStep />;
@@ -97,6 +96,9 @@ const WizardRouter = () => {
 
         {/* Account select overlay — shown after profile is complete */}
         <AccountSelectOverlay open={isAuthed && state.step === "account-select" && !showProfileDialog} />
+
+        {/* Data sync overlay — shown during sync */}
+        {isAuthed && state.step === "data-sync" && <DataSyncStep asOverlay />}
       </>
     );
   }
