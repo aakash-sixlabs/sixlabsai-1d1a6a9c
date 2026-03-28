@@ -151,7 +151,7 @@ export const AdAccountProfileDialog = ({
             </Label>
             <div className="flex items-center gap-2">
               <Input value={metaAccountId} readOnly className="bg-muted" />
-              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+              <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
             </div>
           </div>
 
