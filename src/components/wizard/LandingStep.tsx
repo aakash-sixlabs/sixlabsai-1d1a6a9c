@@ -116,88 +116,17 @@ export const LandingStep = () => {
           <span className="font-display font-bold text-lg text-foreground">CreativeGen</span>
         </div>
 
-        {/* Card grid */}
-        <div className="relative w-full max-w-2xl">
-          <div className="grid grid-cols-3 gap-4 px-4">
-            {mockAds.slice(0, 3).map((ad, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 * i }}
-                className="rounded-xl border bg-card shadow-sm overflow-hidden"
-              >
-                <div className="p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${ad.color} flex items-center justify-center text-[10px] font-bold text-white`}>
-                      {ad.brand.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">{ad.brand}</p>
-                      <p className="text-[10px] text-muted-foreground">{ad.category}</p>
-                    </div>
-                  </div>
-                  <div className="rounded-lg overflow-hidden aspect-[3/4] bg-muted">
-                    <img
-                      src={ad.img}
-                      alt={ad.headline}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="mt-2 flex items-center gap-1.5 text-muted-foreground">
-                    <span className="text-[10px] font-medium bg-secondary rounded px-1.5 py-0.5">{ad.type}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Second row offset */}
-          <div className="grid grid-cols-3 gap-4 px-4 mt-4">
-            {mockAds.slice(3, 5).map((ad, i) => (
-              <motion.div
-                key={i + 3}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 * (i + 3) }}
-                className="rounded-xl border bg-card shadow-sm overflow-hidden"
-              >
-                <div className="p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${ad.color} flex items-center justify-center text-[10px] font-bold text-white`}>
-                      {ad.brand.charAt(0)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground truncate">{ad.brand}</p>
-                      <p className="text-[10px] text-muted-foreground">{ad.category}</p>
-                    </div>
-                  </div>
-                  <div className="rounded-lg overflow-hidden aspect-square bg-muted">
-                    <img
-                      src={ad.img}
-                      alt={ad.headline}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="mt-2 flex items-center gap-1.5 text-muted-foreground">
-                    <span className="text-[10px] font-medium bg-secondary rounded px-1.5 py-0.5">{ad.type}</span>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-            {/* Ghost card for visual balance */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
-              transition={{ duration: 0.5, delay: 0.8 }}
-              className="rounded-xl border border-dashed bg-card/50 flex items-center justify-center p-6"
-            >
-              <p className="text-xs text-muted-foreground text-center">Your ad<br />could be here</p>
-            </motion.div>
-          </div>
-        </div>
+        {/* Scrolling columns */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          className="relative w-full max-w-2xl h-[calc(100vh-4rem)] grid grid-cols-3 gap-4 px-4"
+        >
+          <ScrollColumn ads={col1} direction="up" duration={40} />
+          <ScrollColumn ads={col2} direction="down" duration={35} />
+          <ScrollColumn ads={col3} direction="up" duration={45} />
+        </motion.div>
       </div>
 
       {/* ── Right panel: Login ── */}
