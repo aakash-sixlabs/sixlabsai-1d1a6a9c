@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      ad_account_profiles: {
+        Row: {
+          ad_account_id: string
+          confirmed: boolean
+          created_at: string
+          facebook_page_id: string | null
+          facebook_page_name: string | null
+          id: string
+          industry: string | null
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          confirmed?: boolean
+          created_at?: string
+          facebook_page_id?: string | null
+          facebook_page_name?: string | null
+          id?: string
+          industry?: string | null
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          confirmed?: boolean
+          created_at?: string
+          facebook_page_id?: string | null
+          facebook_page_name?: string | null
+          id?: string
+          industry?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ad_account_profiles_ad_account_id_fkey"
+            columns: ["ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ad_accounts: {
         Row: {
           account_id: string
@@ -326,6 +367,33 @@ export type Database = {
           token_expires_at?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          meta_user_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          meta_user_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          meta_user_id?: string | null
         }
         Relationships: []
       }
