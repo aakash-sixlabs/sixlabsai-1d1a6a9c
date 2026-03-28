@@ -1,90 +1,38 @@
 
 
-## Plan: Add Profile Creation + Ad Account Profile Flow
+## Fix: Remove Email Requirement from Meta OAuth User Creation
 
-### New Flow
+### Problem
+The `email` scope is rejected by Meta (app likely doesn't have Facebook Login product enabled). The current code hard-fails when email is missing and uses email as the primary identifier for user creation and lookup.
 
-```text
-1. Landing page (public) → "Connect with Meta" button
-2. Meta OAuth → callback → session established
-3. Profile Creation Dialog (overlay on grayed-out dashboard)
-   - Pre-filled with Meta data: name, email, business accounts
-   - User confirms/edits → saved to `profiles` table
-4. Ad Account Selection
-   - Show all ad accounts from Meta
-   - User picks one to start with
-5. Ad Account Profile Dialog (first-time only)
-   - Pre-filled: industry (from FB page category), Facebook page ID, account ID
-   - User validates/corrects the info → saved to `ad_account_profiles` table
-6. Data Sync begins → pulls historical data
-```
+### Solution
+Remove `email` from OAuth scopes. Use the Meta User ID as the primary identifier for creating/finding users. If Meta returns an email, store it in the profile — but never require it.
 
-### Database Changes
+### Changes
 
-**New table: `profiles`**
-- `id` (uuid, PK, references auth.users)
-- `email` (text)
-- `full_name` (text)
-- `meta_user_id` (text)
-- `avatar_url` (text, nullable)
-- `created_at` (timestamptz)
-- RLS: users can read/update own row
+**`supabase/functions/meta-oauth/index.ts`**
 
-**New table: `ad_account_profiles`**
-- `id` (uuid, PK)
-- `ad_account_id` (uuid) — references ad_accounts.id
-- `user_id` (uuid)
-- `industry` (text, nullable)
-- `facebook_page_id` (text, nullable)
-- `facebook_page_name` (text, nullable)
-- `confirmed` (boolean, default false)
-- `created_at` (timestamptz)
-- RLS: users can manage own rows
+1. **Line 29** — Remove `email` from scope: change to `ads_read,business_management`
 
-**Trigger**: auto-create profile row on auth.users insert (via database function)
+2. **Lines 82-87** — Remove the hard error when `meData.email` is missing
 
-### File Changes
+3. **Lines 89-113** — Rework user creation/lookup to use Meta User ID instead of email:
+   - Use a deterministic identifier like `meta_{meData.id}` to find existing users via `user_metadata`
+   - Create user without requiring email: pass `email: undefined` or use a phone-based approach
+   - Since Supabase `createUser` requires email or phone, we'll use a stable placeholder email `meta_{meData.id}@users.noreply` purely as a Supabase auth identifier (not shown to user)
+   - If Meta provides a real email, we store it only in the `profiles` table
 
-**1. `supabase/functions/meta-oauth/index.ts`**
-- Add `email` to OAuth scope
-- Fetch `/me?fields=id,name,email` 
-- After creating the Supabase auth user, also fetch the user's Facebook pages via `/me/accounts?fields=id,name,category` and return them alongside the accounts data
-- Return `pages` array in the response so the frontend can use it for ad account profiling
+4. **Lines 100-110** — Change user lookup from email-based to metadata-based: search by `user_metadata.meta_user_id` instead of email
 
-**2. `src/pages/MetaCallback.tsx`**
-- Store the pages data in sessionStorage alongside accounts
+5. **Lines 115-119** — Generate magic link using the placeholder email (internal auth only)
 
-**3. New: `src/components/wizard/ProfileDialog.tsx`**
-- Modal dialog overlaid on a grayed-out dashboard background
-- Pre-filled fields: full name, email (from Meta)
-- Shows connected business accounts as read-only chips
-- "Continue" button saves to `profiles` table and closes dialog
+6. **Lines 156-164** — Profile upsert: use `meData.email` if available, otherwise `null`
 
-**4. `src/components/wizard/AccountSelectStep.tsx`**
-- After user selects an account, check if `ad_account_profiles` exists for that account
-- If not (first time), open the Ad Account Profile dialog before proceeding to sync
+7. **Response** — Return `userEmail: meData.email || null`
 
-**5. New: `src/components/wizard/AdAccountProfileDialog.tsx`**
-- Modal dialog showing pre-fetched data: industry (from FB page category), Facebook page ID/name, account ID
-- User can edit/correct these fields
-- "Confirm & Start Sync" saves to `ad_account_profiles` and proceeds to data sync
-
-**6. `src/context/WizardContext.tsx`**
-- Add `profileComplete` boolean to state
-- The wizard flow checks this before proceeding past account selection
-
-**7. `src/pages/Index.tsx`**
-- After auth is confirmed, check if profile exists in DB
-- If not, show `ProfileDialog` as an overlay on the dashboard (dashboard rendered but grayed out behind it)
-
-### UI Behavior
-
-- Profile dialog: uses `Dialog` component with `modal` mode, no close button (must complete). Background shows the dashboard layout but with `opacity-30 pointer-events-none`.
-- Ad Account Profile dialog: same overlay pattern, shown only on first selection of an account.
-- Both dialogs use motion animations for a polished feel.
-
-### Meta API Data Used
-
-- **Profile creation**: `name`, `email` from `/me` endpoint (already fetched during OAuth)
-- **Ad account profiling**: Facebook pages from `/me/accounts?fields=id,name,category` — the `category` field provides the industry signal, and `id`/`name` give the page identity
+### Key Behavior
+- Meta User ID is the single source of identity
+- Real email (if returned by Meta) goes into `profiles.email` for display/contact
+- Supabase auth uses a stable placeholder email derived from Meta ID — never shown to the user
+- No user-facing error if email permission is denied
 
