@@ -1,34 +1,90 @@
 
 
-## Problem Analysis
+## Plan: Add Profile Creation + Ad Account Profile Flow
 
-The "Edge Function returned a non-2xx status code" error on the data sync step is caused by **two bugs**:
+### New Flow
 
-### Bug 1: Wrong account ID passed to meta-sync
-The `AccountSelectStep` stores accounts from `sessionStorage` using Meta's raw account data (e.g. `acc.id` = `"act_887707724755084"`), but the `meta-sync` edge function queries `ad_accounts` by the database UUID column `id`. The selected value doesn't match.
+```text
+1. Landing page (public) → "Connect with Meta" button
+2. Meta OAuth → callback → session established
+3. Profile Creation Dialog (overlay on grayed-out dashboard)
+   - Pre-filled with Meta data: name, email, business accounts
+   - User confirms/edits → saved to `profiles` table
+4. Ad Account Selection
+   - Show all ad accounts from Meta
+   - User picks one to start with
+5. Ad Account Profile Dialog (first-time only)
+   - Pre-filled: industry (from FB page category), Facebook page ID, account ID
+   - User validates/corrects the info → saved to `ad_account_profiles` table
+6. Data Sync begins → pulls historical data
+```
 
-- In `AccountSelectStep.tsx` line 39: `id: acc.id || acc.account_id` — this gets the Meta account ID, not the database UUID
-- In `meta-sync/index.ts` line 91: `.eq("id", adAccountId)` — expects a UUID, gets a Meta ID
-- Result: query returns null → 404 response
+### Database Changes
 
-### Bug 2: `getClaims()` may not exist in supabase-js v2
-The `meta-sync` function uses `supabase.auth.getClaims()` which is not a standard method in supabase-js v2. It should use `supabase.auth.getUser()` instead. (Note: meta-oauth has the same issue but apparently worked — possibly a newer supabase-js version added it.)
+**New table: `profiles`**
+- `id` (uuid, PK, references auth.users)
+- `email` (text)
+- `full_name` (text)
+- `meta_user_id` (text)
+- `avatar_url` (text, nullable)
+- `created_at` (timestamptz)
+- RLS: users can read/update own row
 
----
+**New table: `ad_account_profiles`**
+- `id` (uuid, PK)
+- `ad_account_id` (uuid) — references ad_accounts.id
+- `user_id` (uuid)
+- `industry` (text, nullable)
+- `facebook_page_id` (text, nullable)
+- `facebook_page_name` (text, nullable)
+- `confirmed` (boolean, default false)
+- `created_at` (timestamptz)
+- RLS: users can manage own rows
 
-## Plan
+**Trigger**: auto-create profile row on auth.users insert (via database function)
 
-### 1. Fix AccountSelectStep to use database UUIDs
-When loading from sessionStorage, fetch the actual database records instead of using raw Meta API data. The accounts are already saved to the database by the meta-oauth function, so query `ad_accounts` as the fallback path already does. Simplify: always fetch from the database (remove sessionStorage path or use it only as a signal that accounts exist).
+### File Changes
 
-### 2. Fix meta-sync auth to use getUser() instead of getClaims()
-Replace `getClaims()` with `getUser()` and extract `userId` from `data.user.id`. Apply the same fix to meta-oauth for consistency.
+**1. `supabase/functions/meta-oauth/index.ts`**
+- Add `email` to OAuth scope
+- Fetch `/me?fields=id,name,email` 
+- After creating the Supabase auth user, also fetch the user's Facebook pages via `/me/accounts?fields=id,name,category` and return them alongside the accounts data
+- Return `pages` array in the response so the frontend can use it for ad account profiling
 
-### 3. Fix meta-sync join query
-The edge function does `.select("*, meta_connections(*)")` — while there IS a FK from `ad_accounts.connection_id` to `meta_connections.id`, this should work. But to be safe, verify the join works and add error logging.
+**2. `src/pages/MetaCallback.tsx`**
+- Store the pages data in sessionStorage alongside accounts
 
-### Files to change
-- `src/components/wizard/AccountSelectStep.tsx` — always use database query for account selection, remove fragile sessionStorage-based account mapping
-- `supabase/functions/meta-sync/index.ts` — replace `getClaims()` with `getUser()`
-- `supabase/functions/meta-oauth/index.ts` — replace `getClaims()` with `getUser()` for consistency
+**3. New: `src/components/wizard/ProfileDialog.tsx`**
+- Modal dialog overlaid on a grayed-out dashboard background
+- Pre-filled fields: full name, email (from Meta)
+- Shows connected business accounts as read-only chips
+- "Continue" button saves to `profiles` table and closes dialog
+
+**4. `src/components/wizard/AccountSelectStep.tsx`**
+- After user selects an account, check if `ad_account_profiles` exists for that account
+- If not (first time), open the Ad Account Profile dialog before proceeding to sync
+
+**5. New: `src/components/wizard/AdAccountProfileDialog.tsx`**
+- Modal dialog showing pre-fetched data: industry (from FB page category), Facebook page ID/name, account ID
+- User can edit/correct these fields
+- "Confirm & Start Sync" saves to `ad_account_profiles` and proceeds to data sync
+
+**6. `src/context/WizardContext.tsx`**
+- Add `profileComplete` boolean to state
+- The wizard flow checks this before proceeding past account selection
+
+**7. `src/pages/Index.tsx`**
+- After auth is confirmed, check if profile exists in DB
+- If not, show `ProfileDialog` as an overlay on the dashboard (dashboard rendered but grayed out behind it)
+
+### UI Behavior
+
+- Profile dialog: uses `Dialog` component with `modal` mode, no close button (must complete). Background shows the dashboard layout but with `opacity-30 pointer-events-none`.
+- Ad Account Profile dialog: same overlay pattern, shown only on first selection of an account.
+- Both dialogs use motion animations for a polished feel.
+
+### Meta API Data Used
+
+- **Profile creation**: `name`, `email` from `/me` endpoint (already fetched during OAuth)
+- **Ad account profiling**: Facebook pages from `/me/accounts?fields=id,name,category` — the `category` field provides the industry signal, and `id`/`name` give the page identity
 
