@@ -18,7 +18,6 @@ const MetaCallback = () => {
         setTimeout(() => navigate("/"), 3000);
         return;
       }
-
       if (!code) {
         setError("No authorization code received.");
         setTimeout(() => navigate("/"), 3000);
@@ -27,30 +26,14 @@ const MetaCallback = () => {
 
       try {
         const redirectUri = `${window.location.origin}/meta-callback`;
-        const { data, error: fnError } = await supabase.functions.invoke(
-          "meta-oauth?action=exchange-token",
-          {
-            body: { code, redirectUri },
-          }
-        );
-
+        const { data, error: fnError } = await supabase.functions.invoke("meta-oauth?action=exchange-token", { body: { code, redirectUri } });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
 
-        // Establish session via magic link OTP verification
-        // token_hash is enough here (Meta email may be unavailable)
-        if (!data?.tokenHash) {
-          throw new Error("Failed to establish authenticated session.");
-        }
-
-        const { error: otpError } = await supabase.auth.verifyOtp({
-          token_hash: data.tokenHash,
-          type: "magiclink",
-        });
-
+        if (!data?.tokenHash) throw new Error("Failed to establish authenticated session.");
+        const { error: otpError } = await supabase.auth.verifyOtp({ token_hash: data.tokenHash, type: "magiclink" });
         if (otpError) throw otpError;
 
-        // Store connection info in sessionStorage for the wizard
         sessionStorage.setItem("meta_connection", JSON.stringify({
           connectionId: data.connectionId,
           userName: data.userName,
@@ -60,14 +43,13 @@ const MetaCallback = () => {
           pages: data.pages || [],
         }));
 
-        navigate("/?meta=connected");
+        navigate("/onboarding?meta=connected");
       } catch (err: any) {
         console.error("Token exchange error:", err);
         setError(err.message || "Failed to connect Meta account.");
         setTimeout(() => navigate("/"), 5000);
       }
     };
-
     exchangeToken();
   }, [searchParams, navigate]);
 
