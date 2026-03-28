@@ -19,23 +19,29 @@ const WizardRouter = () => {
   const [searchParams] = useSearchParams();
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
+  const [metaHandled, setMetaHandled] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsAuthed(!!session);
+      setAuthReady(true);
     });
     supabase.auth.getSession().then(({ data: { session } }) => {
       setIsAuthed(!!session);
+      setAuthReady(true);
     });
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
+    if (!authReady || metaHandled) return;
     if (searchParams.get("meta") === "connected" && isAuthed) {
+      setMetaHandled(true);
       updateState({ metaConnected: true });
       checkProfileComplete();
     }
-  }, [searchParams, isAuthed]);
+  }, [searchParams, isAuthed, authReady, metaHandled]);
 
   const checkProfileComplete = async () => {
     try {
