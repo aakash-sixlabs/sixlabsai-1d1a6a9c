@@ -8,47 +8,64 @@ import { toast } from "sonner";
 
 /* ── Mock ad creative cards for the showcase ── */
 const mockAds = [
-  {
-    brand: "Glow Skin Co.",
-    category: "Beauty & Skincare",
-    type: "Static ad",
-    color: "from-rose-400 to-orange-300",
-    headline: "Your skin deserves better",
-    img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=500&fit=crop",
-  },
-  {
-    brand: "FitFuel",
-    category: "Health & Nutrition",
-    type: "Carousel ad",
-    color: "from-emerald-400 to-teal-500",
-    headline: "Fuel your morning routine",
-    img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=500&fit=crop",
-  },
-  {
-    brand: "UrbanThreads",
-    category: "Fashion",
-    type: "UGC video",
-    color: "from-violet-400 to-indigo-500",
-    headline: "Street style, elevated",
-    img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=500&fit=crop",
-  },
-  {
-    brand: "PetPals",
-    category: "Pet supplies",
-    type: "Animated ad",
-    color: "from-amber-300 to-yellow-500",
-    headline: "Treats they'll love",
-    img: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&h=360&fit=crop",
-  },
-  {
-    brand: "WanderPack",
-    category: "Travel gear",
-    type: "Static ad",
-    color: "from-sky-400 to-blue-500",
-    headline: "Adventure-ready bags",
-    img: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=360&fit=crop",
-  },
+  { brand: "Glow Skin Co.", category: "Beauty & Skincare", type: "Static ad", color: "from-rose-400 to-orange-300", img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=500&fit=crop" },
+  { brand: "FitFuel", category: "Health & Nutrition", type: "Carousel ad", color: "from-emerald-400 to-teal-500", img: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=400&h=500&fit=crop" },
+  { brand: "UrbanThreads", category: "Fashion", type: "UGC video", color: "from-violet-400 to-indigo-500", img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&h=500&fit=crop" },
+  { brand: "PetPals", category: "Pet supplies", type: "Animated ad", color: "from-amber-300 to-yellow-500", img: "https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=400&h=500&fit=crop" },
+  { brand: "WanderPack", category: "Travel gear", type: "Static ad", color: "from-sky-400 to-blue-500", img: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=500&fit=crop" },
+  { brand: "BrightHome", category: "Home decor", type: "Static ad", color: "from-pink-400 to-fuchsia-500", img: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=500&fit=crop" },
+  { brand: "BrewCraft", category: "Food & Beverage", type: "Carousel ad", color: "from-orange-400 to-red-500", img: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=400&h=500&fit=crop" },
+  { brand: "ZenMat", category: "Wellness", type: "UGC video", color: "from-teal-300 to-cyan-500", img: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&h=500&fit=crop" },
 ];
+
+const col1 = [mockAds[0], mockAds[1], mockAds[2], mockAds[3]];
+const col2 = [mockAds[4], mockAds[5], mockAds[6], mockAds[7]];
+const col3 = [mockAds[2], mockAds[5], mockAds[0], mockAds[7]];
+
+const AdCard = ({ ad }: { ad: typeof mockAds[0] }) => (
+  <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex-shrink-0 w-full">
+    <div className="p-3">
+      <div className="flex items-center gap-2 mb-2">
+        <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${ad.color} flex items-center justify-center text-[10px] font-bold text-white`}>
+          {ad.brand.charAt(0)}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs font-semibold text-foreground truncate">{ad.brand}</p>
+          <p className="text-[10px] text-muted-foreground">{ad.category}</p>
+        </div>
+      </div>
+      <div className="rounded-lg overflow-hidden aspect-[3/4] bg-muted">
+        <img src={ad.img} alt={ad.brand} className="w-full h-full object-cover" loading="lazy" />
+      </div>
+      <div className="mt-2">
+        <span className="text-[10px] font-medium bg-secondary text-muted-foreground rounded px-1.5 py-0.5">{ad.type}</span>
+      </div>
+    </div>
+  </div>
+);
+
+/* Infinite vertical scroll column */
+const ScrollColumn = ({ ads, direction = "up", duration = 35 }: { ads: typeof mockAds; direction?: "up" | "down"; duration?: number }) => {
+  const doubled = [...ads, ...ads]; // duplicate for seamless loop
+  const animName = direction === "up" ? "scrollUp" : "scrollDown";
+  return (
+    <div className="overflow-hidden h-full relative">
+      {/* Top/bottom fade masks */}
+      <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-secondary/50 to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-secondary/50 to-transparent z-10 pointer-events-none" />
+      <div
+        className="flex flex-col gap-4"
+        style={{
+          animation: `${animName} ${duration}s linear infinite`,
+        }}
+      >
+        {doubled.map((ad, i) => (
+          <AdCard key={`${ad.brand}-${i}`} ad={ad} />
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const LandingStep = () => {
   const { setStep, updateState } = useWizard();
