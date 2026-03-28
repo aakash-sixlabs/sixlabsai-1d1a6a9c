@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
           email: meData.email,
           connectionId: connection.id,
           userName: meData.name,
-          userEmail: meData.email,
+          userEmail: meData.email || null,
           metaUserId: meData.id,
           accounts: accountsData.data || [],
           pages: pagesData.data || [],
