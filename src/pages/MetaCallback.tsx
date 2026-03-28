@@ -37,11 +37,23 @@ const MetaCallback = () => {
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
 
+        // Establish session via magic link OTP verification
+        if (data.tokenHash && data.email) {
+          const { error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: data.tokenHash,
+            type: "magiclink",
+          });
+          if (otpError) throw otpError;
+        }
+
         // Store connection info in sessionStorage for the wizard
         sessionStorage.setItem("meta_connection", JSON.stringify({
           connectionId: data.connectionId,
           userName: data.userName,
+          userEmail: data.userEmail,
+          metaUserId: data.metaUserId,
           accounts: data.accounts,
+          pages: data.pages || [],
         }));
 
         navigate("/?meta=connected");

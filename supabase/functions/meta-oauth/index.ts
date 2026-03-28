@@ -17,7 +17,7 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get("action");
 
-    // Step 1: Generate OAuth URL
+    // Step 1: Generate OAuth URL (public — no auth needed)
     if (action === "get-auth-url") {
       const { redirectUri } = await req.json();
       const state = crypto.randomUUID();
@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
         `client_id=${META_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&state=${state}` +
-        `&scope=ads_read,business_management` +
+        `&scope=ads_read,business_management,email` +
         `&response_type=code`;
 
       return new Response(JSON.stringify({ authUrl, state }), {
@@ -34,33 +34,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 2: Exchange code for token
+    // Step 2: Exchange code for token + create/find user + return session token
     if (action === "exchange-token") {
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader?.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: corsHeaders,
-        });
-      }
-
-      const supabase = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_ANON_KEY")!,
-        { global: { headers: { Authorization: authHeader } } }
-      );
-
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: corsHeaders,
-        });
-      }
-      const userId = userData.user.id;
-
       const { code, redirectUri } = await req.json();
       const META_APP_SECRET = Deno.env.get("META_APP_SECRET")!;
+
+      const adminClient = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
 
       // Exchange code for short-lived token
       const tokenRes = await fetch(
@@ -91,18 +73,62 @@ Deno.serve(async (req) => {
       const accessToken = longTokenData.access_token || tokenData.access_token;
       const expiresIn = longTokenData.expires_in || 3600;
 
-      // Get user info
+      // Get user info including email
       const meRes = await fetch(
-        `https://graph.facebook.com/v21.0/me?access_token=${accessToken}`
+        `https://graph.facebook.com/v21.0/me?fields=id,name,email&access_token=${accessToken}`
       );
       const meData = await meRes.json();
 
-      // Store connection using service role
-      const adminClient = createClient(
-        Deno.env.get("SUPABASE_URL")!,
-        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-      );
+      if (!meData.email) {
+        return new Response(
+          JSON.stringify({ error: "Email permission is required. Please allow email access." }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
 
+      // Create or find Supabase auth user
+      let userId: string;
+      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
+        email: meData.email,
+        email_confirm: true,
+        user_metadata: {
+          full_name: meData.name,
+          meta_user_id: meData.id,
+        },
+      });
+
+      if (createError) {
+        // User likely exists — look them up
+        const { data: listData } = await adminClient.auth.admin.listUsers();
+        const existingUser = listData?.users?.find((u: any) => u.email === meData.email);
+        if (!existingUser) {
+          return new Response(
+            JSON.stringify({ error: "Failed to create or find user account." }),
+            { status: 500, headers: corsHeaders }
+          );
+        }
+        userId = existingUser.id;
+      } else {
+        userId = createData.user.id;
+      }
+
+      // Generate magic link token for session
+      const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+        type: "magiclink",
+        email: meData.email,
+      });
+
+      if (linkError || !linkData) {
+        return new Response(
+          JSON.stringify({ error: "Failed to generate session link." }),
+          { status: 500, headers: corsHeaders }
+        );
+      }
+
+      // Extract token_hash from the link properties
+      const tokenHash = linkData.properties?.hashed_token;
+
+      // Store Meta connection
       const { data: connection, error: insertError } = await adminClient
         .from("meta_connections")
         .upsert(
@@ -127,6 +153,16 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Update profile with meta_user_id
+      await adminClient
+        .from("profiles")
+        .upsert({
+          id: userId,
+          email: meData.email,
+          full_name: meData.name,
+          meta_user_id: meData.id,
+        }, { onConflict: "id" });
+
       // Fetch ad accounts
       const accountsRes = await fetch(
         `https://graph.facebook.com/v21.0/me/adaccounts?fields=name,account_id,currency,timezone_name,amount_spent&access_token=${accessToken}`
@@ -149,12 +185,23 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Fetch Facebook pages for industry/category data
+      const pagesRes = await fetch(
+        `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,category&access_token=${accessToken}`
+      );
+      const pagesData = await pagesRes.json();
+
       return new Response(
         JSON.stringify({
           success: true,
+          tokenHash,
+          email: meData.email,
           connectionId: connection.id,
           userName: meData.name,
+          userEmail: meData.email,
+          metaUserId: meData.id,
           accounts: accountsData.data || [],
+          pages: pagesData.data || [],
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );

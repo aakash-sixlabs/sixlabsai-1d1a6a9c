@@ -16,7 +16,10 @@ export type WizardStep =
 interface WizardState {
   step: WizardStep;
   metaConnected: boolean;
+  profileComplete: boolean;
   selectedAccount: string | null;
+  selectedAccountName: string | null;
+  selectedMetaAccountId: string | null;
   dateRange: string;
   syncComplete: boolean;
   pdpUrl: string;
@@ -36,7 +39,10 @@ interface WizardContextType {
 const initial: WizardState = {
   step: "landing",
   metaConnected: false,
+  profileComplete: false,
   selectedAccount: null,
+  selectedAccountName: null,
+  selectedMetaAccountId: null,
   dateRange: "90",
   syncComplete: false,
   pdpUrl: "",

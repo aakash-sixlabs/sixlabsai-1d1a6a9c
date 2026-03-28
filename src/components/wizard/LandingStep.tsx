@@ -12,7 +12,11 @@ import {
   TrendingUp,
   FileText,
   Rocket,
+  Loader2,
 } from "lucide-react";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const steps = [
   { num: 1, label: "Connect Meta", icon: Link, desc: "Link your ad account" },
@@ -28,7 +32,38 @@ const valuePills = [
 ];
 
 export const LandingStep = () => {
-  const { setStep } = useWizard();
+  const { setStep, updateState } = useWizard();
+  const [connecting, setConnecting] = useState(false);
+
+  const handleConnectMeta = async () => {
+    setConnecting(true);
+    try {
+      // Check if already connected via callback
+      const stored = sessionStorage.getItem("meta_connection");
+      if (stored) {
+        updateState({ metaConnected: true });
+        setStep("account-select");
+        return;
+      }
+
+      // Get the OAuth URL from edge function (no auth required)
+      const redirectUri = `${window.location.origin}/meta-callback`;
+      const { data, error } = await supabase.functions.invoke(
+        "meta-oauth?action=get-auth-url",
+        { body: { redirectUri } }
+      );
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      // Redirect to Meta OAuth
+      window.location.href = data.authUrl;
+    } catch (err: any) {
+      console.error("Meta connect error:", err);
+      toast.error(err.message || "Failed to start Meta connection");
+      setConnecting(false);
+    }
+  };
 
   return (
     <div className="container max-w-3xl py-16 lg:py-24 flex flex-col items-center text-center">
@@ -71,16 +106,23 @@ export const LandingStep = () => {
               Let's create your first ad
             </h2>
             <p className="text-muted-foreground text-sm max-w-md mb-6">
-              We'll guide you through connecting your Meta account, analyzing
-              performance, and generating creatives — it only takes a few
-              minutes.
+              Sign in with your Meta account to get started — we'll connect your
+              ad data and guide you through the process.
             </p>
             <Button
               size="lg"
-              onClick={() => setStep("meta-connect")}
+              onClick={handleConnectMeta}
+              disabled={connecting}
               className="gap-2"
             >
-              Get Started <ArrowRight className="w-4 h-4" />
+              {connecting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+                  <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" />
+                </svg>
+              )}
+              {connecting ? "Connecting…" : "Connect with Meta"}
             </Button>
           </CardContent>
         </Card>

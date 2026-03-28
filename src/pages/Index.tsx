@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { WizardProvider, useWizard } from "@/context/WizardContext";
 import { WizardShell } from "@/components/wizard/WizardShell";
 import { LandingStep } from "@/components/wizard/LandingStep";
@@ -12,21 +12,71 @@ import { PdpInputStep } from "@/components/wizard/PdpInputStep";
 import { PdpScrapeStep } from "@/components/wizard/PdpScrapeStep";
 import { StrategyStep } from "@/components/wizard/StrategyStep";
 import { OutputStep } from "@/components/wizard/OutputStep";
+import { ProfileDialog } from "@/components/wizard/ProfileDialog";
 import { supabase } from "@/integrations/supabase/client";
 
 const WizardRouter = () => {
   const { state, setStep, updateState } = useWizard();
   const [searchParams] = useSearchParams();
+  const [showProfileDialog, setShowProfileDialog] = useState(false);
+  const [checkingProfile, setCheckingProfile] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthed(!!session);
+    });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthed(!!session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     // Handle return from Meta OAuth
-    if (searchParams.get("meta") === "connected" && state.step === "landing") {
+    if (searchParams.get("meta") === "connected" && isAuthed) {
       updateState({ metaConnected: true });
-      setStep("account-select");
+      // Check if profile is complete
+      checkProfileComplete();
     }
-  }, [searchParams]);
+  }, [searchParams, isAuthed]);
+
+  const checkProfileComplete = async () => {
+    setCheckingProfile(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile || !profile.full_name) {
+        setShowProfileDialog(true);
+        updateState({ profileComplete: false });
+      } else {
+        updateState({ profileComplete: true });
+        setStep("account-select");
+      }
+    } catch {
+      setShowProfileDialog(true);
+    } finally {
+      setCheckingProfile(false);
+    }
+  };
+
+  const handleProfileComplete = () => {
+    setShowProfileDialog(false);
+    updateState({ profileComplete: true });
+    setStep("account-select");
+  };
 
   const stepComponent = () => {
+    // If not authed, always show landing
+    if (!isAuthed) return <LandingStep />;
+
     switch (state.step) {
       case "landing": return <LandingStep />;
       case "meta-connect": return <MetaConnectStep />;
@@ -43,36 +93,18 @@ const WizardRouter = () => {
     }
   };
 
-  return <WizardShell currentStep={state.step}>{stepComponent()}</WizardShell>;
+  return (
+    <>
+      {/* Gray out background when profile dialog is showing */}
+      <div className={showProfileDialog ? "opacity-30 pointer-events-none" : ""}>
+        <WizardShell currentStep={state.step}>{stepComponent()}</WizardShell>
+      </div>
+      <ProfileDialog open={showProfileDialog} onComplete={handleProfileComplete} />
+    </>
+  );
 };
 
 const Index = () => {
-  const [authChecked, setAuthChecked] = useState(false);
-  const [isAuthed, setIsAuthed] = useState(false);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthed(!!session);
-      setAuthChecked(true);
-    });
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthed(!!session);
-      setAuthChecked(true);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (authChecked && !isAuthed) {
-      navigate("/auth");
-    }
-  }, [authChecked, isAuthed, navigate]);
-
-  if (!authChecked || !isAuthed) return null;
-
   return (
     <WizardProvider>
       <WizardRouter />
