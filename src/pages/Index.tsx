@@ -96,6 +96,9 @@ const WizardRouter = () => {
 
         {/* Account select overlay — shown after profile is complete */}
         <AccountSelectOverlay open={isAuthed && state.step === "account-select" && !showProfileDialog} />
+
+        {/* Data sync overlay — shown during sync */}
+        {isAuthed && state.step === "data-sync" && <DataSyncStep asOverlay />}
       </>
     );
   }
