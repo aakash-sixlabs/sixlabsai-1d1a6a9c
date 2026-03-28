@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
         `client_id=${META_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&state=${state}` +
-        `&scope=ads_read,business_management,email` +
+        `&scope=ads_read,business_management` +
         `&response_type=code`;
 
       return new Response(JSON.stringify({ authUrl, state }), {
@@ -79,43 +79,43 @@ Deno.serve(async (req) => {
       );
       const meData = await meRes.json();
 
-      if (!meData.email) {
-        return new Response(
-          JSON.stringify({ error: "Email permission is required. Please allow email access." }),
-          { status: 400, headers: corsHeaders }
-        );
-      }
+      // Use Meta User ID as the primary identity
+      const placeholderEmail = `meta_${meData.id}@users.noreply`;
 
       // Create or find Supabase auth user
       let userId: string;
-      const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
-        email: meData.email,
-        email_confirm: true,
-        user_metadata: {
-          full_name: meData.name,
-          meta_user_id: meData.id,
-        },
-      });
 
-      if (createError) {
-        // User likely exists — look them up
-        const { data: listData } = await adminClient.auth.admin.listUsers();
-        const existingUser = listData?.users?.find((u: any) => u.email === meData.email);
-        if (!existingUser) {
+      // First, search for existing user by meta_user_id in metadata
+      const { data: listData } = await adminClient.auth.admin.listUsers();
+      const existingUser = listData?.users?.find(
+        (u: any) => u.user_metadata?.meta_user_id === meData.id
+      );
+
+      if (existingUser) {
+        userId = existingUser.id;
+      } else {
+        const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
+          email: placeholderEmail,
+          email_confirm: true,
+          user_metadata: {
+            full_name: meData.name,
+            meta_user_id: meData.id,
+          },
+        });
+
+        if (createError) {
           return new Response(
-            JSON.stringify({ error: "Failed to create or find user account." }),
+            JSON.stringify({ error: "Failed to create user account." }),
             { status: 500, headers: corsHeaders }
           );
         }
-        userId = existingUser.id;
-      } else {
         userId = createData.user.id;
       }
 
       // Generate magic link token for session
       const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
         type: "magiclink",
-        email: meData.email,
+        email: placeholderEmail,
       });
 
       if (linkError || !linkData) {
@@ -153,12 +153,12 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Update profile with meta_user_id
+      // Update profile with meta_user_id and real email if available
       await adminClient
         .from("profiles")
         .upsert({
           id: userId,
-          email: meData.email,
+          email: meData.email || null,
           full_name: meData.name,
           meta_user_id: meData.id,
         }, { onConflict: "id" });
@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
           email: meData.email,
           connectionId: connection.id,
           userName: meData.name,
-          userEmail: meData.email,
+          userEmail: meData.email || null,
           metaUserId: meData.id,
           accounts: accountsData.data || [],
           pages: pagesData.data || [],
