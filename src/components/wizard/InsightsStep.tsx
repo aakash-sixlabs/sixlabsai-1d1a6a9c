@@ -304,7 +304,7 @@ export const InsightsStep = () => {
               {enriched.length} creatives analyzed · Ranked by performance
             </p>
           </div>
-          <Button size="lg" className="gap-2 shadow-md" onClick={() => setStep("pdp-input")}>
+          <Button size="lg" className="gap-2 shadow-md" onClick={() => navigate("/pdp-input")}>
             Generate New Creative <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
