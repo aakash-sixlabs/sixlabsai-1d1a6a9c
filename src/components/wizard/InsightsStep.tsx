@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useWizard } from "@/context/WizardContext";
+
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,6 +19,7 @@ import {
   Filter,
 } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -214,7 +215,7 @@ function analyzeCreative(creative: Creative, insight: Insight | undefined): { wo
 // ─── Main Component ──────────────────────────────────────────────
 
 export const InsightsStep = () => {
-  const { setStep } = useWizard();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [enriched, setEnriched] = useState<EnrichedCreative[]>([]);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
@@ -303,7 +304,7 @@ export const InsightsStep = () => {
               {enriched.length} creatives analyzed · Ranked by performance
             </p>
           </div>
-          <Button size="lg" className="gap-2 shadow-md" onClick={() => setStep("pdp-input")}>
+          <Button size="lg" className="gap-2 shadow-md" onClick={() => navigate("/pdp-input")}>
             Generate New Creative <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
