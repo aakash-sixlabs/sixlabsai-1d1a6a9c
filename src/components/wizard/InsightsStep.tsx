@@ -215,7 +215,7 @@ function analyzeCreative(creative: Creative, insight: Insight | undefined): { wo
 // ─── Main Component ──────────────────────────────────────────────
 
 export const InsightsStep = () => {
-  const { setStep } = useWizard();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [enriched, setEnriched] = useState<EnrichedCreative[]>([]);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
