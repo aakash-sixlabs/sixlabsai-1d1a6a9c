@@ -146,6 +146,8 @@ export const InsightsStep = () => {
   const [activeView, setActiveView] = useState("discover");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [adAccounts, setAdAccounts] = useState<{ id: string; account_id: string; account_name: string }[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
