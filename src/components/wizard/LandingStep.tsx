@@ -6,11 +6,11 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWizard } from "@/context/WizardContext";
-import metaLogo from "@/assets/meta-logo.jpg";
+import metaLogo from "@/assets/meta-logo.png";
 
 /* ── Meta logo as image ── */
 const MetaLogo = ({ className }: { className?: string }) => (
-  <img src={metaLogo} alt="Meta" className={className} />
+  <img src={metaLogo} alt="Meta" className={className} style={{ objectFit: "contain" }} />
 );
 
 /* ── Mock ad creative cards for the showcase ── */
