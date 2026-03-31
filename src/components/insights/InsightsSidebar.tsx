@@ -2,18 +2,23 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
   Compass,
-  Eye,
   FolderOpen,
   Bookmark,
-  Users,
-  BarChart3,
   TrendingUp,
   Flame,
-  Zap,
   Search,
   ChevronRight,
+  ChevronDown,
+  Building2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SidebarItem {
   label: string;
@@ -28,13 +33,29 @@ const mainNav: SidebarItem[] = [
   { label: "Ad Library", icon: <FolderOpen className="w-4 h-4" />, id: "library" },
 ];
 
+interface AdAccount {
+  id: string;
+  account_id: string;
+  account_name: string;
+}
+
 interface InsightsSidebarProps {
   activeView: string;
   onViewChange: (view: string) => void;
   campaignBoards: { id: string; name: string; count: number }[];
+  adAccounts?: AdAccount[];
+  selectedAccountId?: string;
+  onAccountChange?: (accountId: string) => void;
 }
 
-export const InsightsSidebar = ({ activeView, onViewChange, campaignBoards }: InsightsSidebarProps) => {
+export const InsightsSidebar = ({
+  activeView,
+  onViewChange,
+  campaignBoards,
+  adAccounts = [],
+  selectedAccountId,
+  onAccountChange,
+}: InsightsSidebarProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredBoards = campaignBoards.filter((b) =>
@@ -43,6 +64,30 @@ export const InsightsSidebar = ({ activeView, onViewChange, campaignBoards }: In
 
   return (
     <aside className="w-56 border-r border-border bg-card/50 flex flex-col h-full shrink-0">
+      {/* Ad Account Switcher */}
+      {adAccounts.length > 0 && (
+        <div className="p-3 border-b border-border">
+          <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+            Ad Account
+          </label>
+          <Select value={selectedAccountId} onValueChange={onAccountChange}>
+            <SelectTrigger className="h-9 text-xs bg-background">
+              <div className="flex items-center gap-2 truncate">
+                <Building2 className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <SelectValue placeholder="Select account" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              {adAccounts.map((acc) => (
+                <SelectItem key={acc.id} value={acc.id} className="text-xs">
+                  {acc.account_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {/* Main nav */}
       <div className="p-3 space-y-0.5">
         {mainNav.map((item) => (

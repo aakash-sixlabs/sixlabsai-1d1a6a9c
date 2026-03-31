@@ -146,9 +146,29 @@ export const InsightsStep = () => {
   const [activeView, setActiveView] = useState("discover");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [adAccounts, setAdAccounts] = useState<{ id: string; account_id: string; account_name: string }[]>([]);
+  const [selectedAccountId, setSelectedAccountId] = useState<string>("");
 
   useEffect(() => {
     const fetchData = async () => {
+      // Fetch ad accounts
+      const accountsRes = await supabase.from("ad_accounts").select("id, account_id, account_name");
+      const fetchedAccounts = accountsRes.data || [];
+      
+      if (fetchedAccounts.length === 0) {
+        // Mock ad accounts for dev mode
+        const mockAccounts = [
+          { id: "mock-acc-1", account_id: "act_111222333", account_name: "Glow Skin Co. Ads" },
+          { id: "mock-acc-2", account_id: "act_444555666", account_name: "FitFuel Performance" },
+          { id: "mock-acc-3", account_id: "act_777888999", account_name: "UrbanThreads Growth" },
+        ];
+        setAdAccounts(mockAccounts);
+        setSelectedAccountId(mockAccounts[0].id);
+      } else {
+        setAdAccounts(fetchedAccounts);
+        setSelectedAccountId(fetchedAccounts[0].id);
+      }
+
       const [adsRes, creativesRes, insightsRes, adSetsRes, campaignsRes] = await Promise.all([
         supabase.from("ads").select("*"),
         supabase.from("ad_creatives").select("*"),
@@ -164,7 +184,6 @@ export const InsightsStep = () => {
       const campaigns = campaignsRes.data || [];
 
       if (creatives.length === 0) {
-        // Use mock data when no real data
         setAds(generateMockData());
         setLoading(false);
         return;
@@ -304,6 +323,9 @@ export const InsightsStep = () => {
           activeView={activeView}
           onViewChange={setActiveView}
           campaignBoards={campaignBoards}
+          adAccounts={adAccounts}
+          selectedAccountId={selectedAccountId}
+          onAccountChange={setSelectedAccountId}
         />
         <main className="flex-1 overflow-auto">
           <div className="p-6 max-w-[1400px]">
