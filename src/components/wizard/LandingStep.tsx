@@ -6,19 +6,11 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWizard } from "@/context/WizardContext";
+import metaLogo from "@/assets/meta-logo.jpg";
 
-/* ── Meta infinity logo ── */
+/* ── Meta logo as image ── */
 const MetaLogo = ({ className }: { className?: string }) => (
-  <svg viewBox="0 0 512 512" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="meta-grad" x1="0" y1="256" x2="512" y2="256" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#0668E1" />
-        <stop offset="0.5" stopColor="#0080FB" />
-        <stop offset="1" stopColor="#00A3FF" />
-      </linearGradient>
-    </defs>
-    <path fill="url(#meta-grad)" d="M115.34 219.07c-21.87 33.55-35.09 68.59-35.09 96.14 0 31.73 13.07 50.66 36.42 50.66 16.49 0 33.64-15.33 53.84-48.86l17.62-29.14c22.72-37.72 48.94-74.96 84.28-74.96 35.67 0 62.53 25.55 74.27 64.63 7.69-16.12 12.12-35.11 12.12-55.7 0-46.72-25.87-80.9-69.14-80.9-38.38 0-65.2 28.9-92.53 68.97l-18.44 27.62c-14.68 24.02-36.21 52.3-62.84 52.3-22.42 0-39.56-15.7-39.56-46.37 0-10.82 2-22.58 6.02-34.47l33.03 10.08Zm271.32 73.86c0-15.94-4.66-26.56-14.85-26.56-16.23 0-34.37 23.78-51.43 51.97l-10.99 18.22c-17.62 29.14-40.15 56.62-74.27 56.62-44.49 0-75.14-35.28-75.14-87.92 0-14.01 2.03-28.54 6.02-43.24-15.52 29.05-24.12 59.52-24.12 84.91 0 52.78 30.38 87.92 75.14 87.92 34.92 0 58.65-21.87 84.33-60.68l13.07-19.73c21.78-32.92 37.09-61.44 72.24-61.44z" />
-  </svg>
+  <img src={metaLogo} alt="Meta" className={className} />
 );
 
 /* ── Mock ad creative cards for the showcase ── */
