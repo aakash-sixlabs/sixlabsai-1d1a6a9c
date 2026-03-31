@@ -327,15 +327,16 @@ export const InsightsStep = () => {
         (a) => a.adName.toLowerCase().includes(q) || a.campaignName.toLowerCase().includes(q)
       );
     }
-    if (activeView.startsWith("campaign-")) {
-      const campId = activeView.replace("campaign-", "");
-      result = result.filter((a) => a.campaignId === campId);
-    }
     if (activeView === "top") {
       result = result.slice(0, Math.max(1, Math.ceil(ads.length * 0.2)));
     }
-    if (activeView === "fatigue") {
-      result = [...result].sort((a, b) => b.decayScore - a.decayScore);
+    if (activeView === "opportunities") {
+      // Ads with decent spend but below-average ROAS — room to improve
+      result = [...result].filter((a) => (a.spend ?? 0) > 1000 && (a.roas ?? 0) < 2).sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0));
+    }
+    if (activeView === "needs-review") {
+      // Ads with high decay / poor performance needing attention
+      result = [...result].filter((a) => a.decayScore > 50).sort((a, b) => b.decayScore - a.decayScore);
     }
     return result;
   }, [ads, searchQuery, activeView]);
@@ -381,6 +382,16 @@ export const InsightsStep = () => {
   // Top / bottom sections
   const topAds = filteredAds.slice(0, Math.max(1, Math.ceil(filteredAds.length * 0.2)));
   const latestAds = filteredAds;
+
+  const viewTitle = useMemo(() => {
+    switch (activeView) {
+      case "top": return "Top Performers";
+      case "opportunities": return "Opportunities";
+      case "needs-review": return "Needs Review";
+      case "library": return "Ad Library";
+      default: return "All Ads";
+    }
+  }, [activeView]);
 
   if (loading) {
     return (
@@ -452,17 +463,19 @@ export const InsightsStep = () => {
               </div>
             </motion.div>
 
-            {/* Digest Cards */}
-            <DigestCards
-              totalAds={ads.length}
-              newAdsLast14Days={Math.min(ads.length, 5)}
-              velocityChange={40}
-              topPerformer={topPerformer}
-              formatMix={formatMix}
-            />
+            {/* Digest Cards — only on Home */}
+            {activeView === "discover" && (
+              <DigestCards
+                totalAds={ads.length}
+                newAdsLast14Days={Math.min(ads.length, 5)}
+                velocityChange={40}
+                topPerformer={topPerformer}
+                formatMix={formatMix}
+              />
+            )}
 
-            {/* Top performers */}
-            {activeView !== "fatigue" && (
+            {/* Top performers — on Home */}
+            {activeView === "discover" && (
               <AdCreativeGrid
                 ads={topAds}
                 title="🔥 Top Performers"
@@ -470,10 +483,10 @@ export const InsightsStep = () => {
               />
             )}
 
-            {/* All / Latest Ads */}
+            {/* Main grid */}
             <AdCreativeGrid
               ads={latestAds}
-              title={activeView === "fatigue" ? "Creative Fatigue — Highest First" : "All Ads"}
+              title={viewTitle}
               onAdClick={(id) => console.log("View ad", id)}
             />
           </div>
