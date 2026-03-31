@@ -16,7 +16,15 @@ const SYNC_STEPS = [
   "Preparing insights",
 ];
 
-export const DataSyncStep = ({ asOverlay = false, onComplete }: { asOverlay?: boolean; onComplete?: () => void }) => {
+export const DataSyncStep = ({
+  asOverlay = false,
+  onComplete,
+  isDevMode = false,
+}: {
+  asOverlay?: boolean;
+  onComplete?: () => void;
+  isDevMode?: boolean;
+}) => {
   const { state, updateState } = useWizard();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState("Connecting to Meta");
@@ -29,13 +37,29 @@ export const DataSyncStep = ({ asOverlay = false, onComplete }: { asOverlay?: bo
     if (onComplete) {
       onComplete();
     } else {
-      navigate("/data-review");
+      navigate("/insights");
     }
   };
 
   useEffect(() => {
     if (syncStarted) return;
     setSyncStarted(true);
+
+    // Dev mode: simulate sync with delays
+    if (isDevMode) {
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        if (i < SYNC_STEPS.length) {
+          setCurrentStep(SYNC_STEPS[i]);
+        } else {
+          clearInterval(interval);
+          updateState({ syncComplete: true });
+          setTimeout(() => handleComplete(), 500);
+        }
+      }, 800);
+      return () => clearInterval(interval);
+    }
 
     const startSync = async () => {
       try {
@@ -108,9 +132,6 @@ export const DataSyncStep = ({ asOverlay = false, onComplete }: { asOverlay?: bo
           <p className="text-xs text-muted-foreground mt-1.5 text-center">{Math.round(((effectiveIdx + 1) / SYNC_STEPS.length) * 100)}% complete</p>
         </div>
       )}
-      <Button variant="ghost" size="sm" className="w-full text-xs text-muted-foreground" onClick={() => { updateState({ syncComplete: true }); handleComplete(); }}>
-        Skip (Dev Mode)
-      </Button>
     </motion.div>
   );
 

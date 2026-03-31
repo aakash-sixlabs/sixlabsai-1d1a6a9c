@@ -3,18 +3,30 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { useWizard } from "@/context/WizardContext";
 import { DashboardBackground } from "@/components/wizard/DashboardBackground";
 import { ProfileOverlay, AccountSelectOverlay } from "@/components/wizard/OnboardingOverlay";
+import { ToolExplanationOverlay } from "@/components/wizard/ToolExplanationOverlay";
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
 import { supabase } from "@/integrations/supabase/client";
+
+type OnboardingPhase = "loading" | "profile" | "account-select" | "tool-explanation" | "data-sync";
 
 const Onboarding = () => {
   const { state, updateState } = useWizard();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [showProfileDialog, setShowProfileDialog] = useState(false);
-  const [onboardingStep, setOnboardingStep] = useState<"loading" | "profile" | "account-select" | "data-sync">("loading");
+  const [phase, setPhase] = useState<OnboardingPhase>("loading");
+  const isDevMode = searchParams.get("dev") === "true";
 
   useEffect(() => {
     const init = async () => {
+      // Dev mode: skip auth check
+      if (isDevMode) {
+        updateState({ metaConnected: true });
+        setShowProfileDialog(true);
+        setPhase("profile");
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/");
@@ -25,15 +37,20 @@ const Onboarding = () => {
         updateState({ metaConnected: true });
         await checkProfileComplete();
       } else if (state.selectedAccount && !state.syncComplete) {
-        setOnboardingStep("data-sync");
+        setPhase("data-sync");
       } else {
-        setOnboardingStep("account-select");
+        setPhase("account-select");
       }
     };
     init();
   }, []);
 
   const checkProfileComplete = async () => {
+    if (isDevMode) {
+      setShowProfileDialog(true);
+      setPhase("profile");
+      return;
+    }
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -44,39 +61,56 @@ const Onboarding = () => {
         .eq("id", user.id)
         .single();
 
-      if (!profile || !profile.full_name) {
+      // For new users (query param), always show profile
+      const isNew = searchParams.get("new") === "true";
+      if (isNew || !profile || !profile.full_name) {
         setShowProfileDialog(true);
-        setOnboardingStep("profile");
+        setPhase("profile");
       } else {
         updateState({ profileComplete: true });
-        setOnboardingStep("account-select");
+        setPhase("account-select");
       }
     } catch {
       setShowProfileDialog(true);
-      setOnboardingStep("profile");
+      setPhase("profile");
     }
   };
 
   const handleProfileComplete = () => {
     setShowProfileDialog(false);
     updateState({ profileComplete: true });
-    setOnboardingStep("account-select");
+    setPhase("account-select");
+  };
+
+  const handleAccountSelected = () => {
+    // After selecting default ad account, show tool explanation
+    setPhase("tool-explanation");
+  };
+
+  const handleToolExplanationContinue = () => {
+    setPhase("data-sync");
   };
 
   const handleSyncComplete = () => {
-    navigate("/data-review");
+    navigate("/insights");
   };
 
   return (
     <>
       <DashboardBackground />
-      <ProfileOverlay open={showProfileDialog} onComplete={handleProfileComplete} />
+      <ProfileOverlay open={showProfileDialog} onComplete={handleProfileComplete} isDevMode={isDevMode} />
       <AccountSelectOverlay
-        open={onboardingStep === "account-select" && !showProfileDialog}
-        onStartSync={() => setOnboardingStep("data-sync")}
+        open={phase === "account-select" && !showProfileDialog}
+        onStartSync={handleAccountSelected}
+        isDevMode={isDevMode}
+        saveAsDefault
       />
-      {onboardingStep === "data-sync" && (
-        <DataSyncStep asOverlay onComplete={handleSyncComplete} />
+      <ToolExplanationOverlay
+        open={phase === "tool-explanation"}
+        onContinue={handleToolExplanationContinue}
+      />
+      {phase === "data-sync" && (
+        <DataSyncStep asOverlay onComplete={handleSyncComplete} isDevMode={isDevMode} />
       )}
     </>
   );
