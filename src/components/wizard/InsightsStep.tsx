@@ -323,6 +323,9 @@ export const InsightsStep = () => {
           activeView={activeView}
           onViewChange={setActiveView}
           campaignBoards={campaignBoards}
+          adAccounts={adAccounts}
+          selectedAccountId={selectedAccountId}
+          onAccountChange={setSelectedAccountId}
         />
         <main className="flex-1 overflow-auto">
           <div className="p-6 max-w-[1400px]">
