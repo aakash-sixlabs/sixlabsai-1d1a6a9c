@@ -192,6 +192,33 @@ Deno.serve(async (req) => {
       );
       const pagesData = await pagesRes.json();
 
+      // Determine if new or returning user
+      const isNewUser = !existingUser;
+
+      // Check for default ad account
+      let defaultAdAccountId = null;
+      let defaultAdAccountName = null;
+      let defaultMetaAccountId = null;
+      if (!isNewUser) {
+        const { data: profile } = await adminClient
+          .from("profiles")
+          .select("default_ad_account_id")
+          .eq("id", userId)
+          .single();
+        if (profile?.default_ad_account_id) {
+          const { data: defaultAcc } = await adminClient
+            .from("ad_accounts")
+            .select("id, account_id, account_name")
+            .eq("id", profile.default_ad_account_id)
+            .single();
+          if (defaultAcc) {
+            defaultAdAccountId = defaultAcc.id;
+            defaultAdAccountName = defaultAcc.account_name;
+            defaultMetaAccountId = defaultAcc.account_id;
+          }
+        }
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -203,6 +230,10 @@ Deno.serve(async (req) => {
           metaUserId: meData.id,
           accounts: accountsData.data || [],
           pages: pagesData.data || [],
+          isNewUser,
+          defaultAdAccountId,
+          defaultAdAccountName,
+          defaultMetaAccountId,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
