@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Loader2, ArrowRight } from "lucide-react";
@@ -9,6 +9,8 @@ import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
 import { DigestCards } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
+import { SyncNotificationBar } from "@/components/insights/SyncNotificationBar";
+import { useWizard } from "@/context/WizardContext";
 
 // ─── Types ───────────────────────────────────────────────────────
 
