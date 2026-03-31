@@ -1,11 +1,18 @@
 import { motion } from "framer-motion";
-import { useWizard } from "@/context/WizardContext";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Loader2, Zap } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Zap, Bug } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useWizard } from "@/context/WizardContext";
+
+/* ── Meta "infinity" logo ── */
+const MetaLogo = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 512 512" className={className} fill="currentColor">
+    <path d="M120.95 208.08c-26.2 40.7-41.5 82.5-41.5 115.8 0 38.5 15.5 60.7 43.1 60.7 19.4 0 39.2-17.7 62.5-56.5l20.8-34.7c26.8-44.7 57.8-88.8 99.3-88.8 42 0 73.6 30.5 87.4 76.9 9.1-19.2 14.5-41.8 14.5-66.5 0-55.6-30.7-96.3-81.7-96.3-45.1 0-76.9 34.4-109 82.1L195 233.3c-17.3 28.8-42.7 62.3-74.1 62.3-26.5 0-46.9-18.6-46.9-55.2 0-12.7 2.3-26.6 7-40.8zM391.5 323.9c0-19-5.5-31.7-17.5-31.7-19.2 0-40.7 28.4-60.8 61.9l-13 21.7c-20.8 34.7-47.5 67.4-87.5 67.4-52.4 0-88.6-42-88.6-104.7 0-16.7 2.4-34 7.1-51.5-18.3 34.6-28.5 70.9-28.5 101.2 0 62.8 35.8 104.7 88.6 104.7 41.2 0 69.2-26.1 99.5-72.3l15.4-23.5c25.7-39.2 43.8-73.2 85.3-73.2z" />
+  </svg>
+);
 
 /* ── Mock ad creative cards for the showcase ── */
 const mockAds = [
@@ -59,6 +66,40 @@ const ScrollColumn = ({ ads, direction = "up", duration = 35 }: { ads: typeof mo
 
 export const LandingStep = () => {
   const [connecting, setConnecting] = useState(false);
+  const navigate = useNavigate();
+  const { updateState } = useWizard();
+
+  // Listen for popup auth completion
+  const handleAuthMessage = useCallback((event: MessageEvent) => {
+    if (event.data?.type === "META_AUTH_COMPLETE") {
+      const { connectionData } = event.data;
+      sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
+      // Check if new or returning user
+      if (connectionData.isNewUser) {
+        navigate("/onboarding?meta=connected&new=true");
+      } else {
+        // Returning user — go straight to insights with their default account
+        updateState({
+          metaConnected: true,
+          profileComplete: true,
+          selectedAccount: connectionData.defaultAdAccountId || null,
+          selectedAccountName: connectionData.defaultAdAccountName || null,
+          selectedMetaAccountId: connectionData.defaultMetaAccountId || null,
+        });
+        navigate("/insights");
+      }
+      setConnecting(false);
+    }
+    if (event.data?.type === "META_AUTH_ERROR") {
+      toast.error(event.data.error || "Meta connection failed");
+      setConnecting(false);
+    }
+  }, [navigate, updateState]);
+
+  useEffect(() => {
+    window.addEventListener("message", handleAuthMessage);
+    return () => window.removeEventListener("message", handleAuthMessage);
+  }, [handleAuthMessage]);
 
   const handleConnectMeta = async () => {
     setConnecting(true);
@@ -67,12 +108,52 @@ export const LandingStep = () => {
       const { data, error } = await supabase.functions.invoke("meta-oauth?action=get-auth-url", { body: { redirectUri } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      window.location.href = data.authUrl;
+
+      // Open in popup
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.innerWidth - width) / 2;
+      const top = window.screenY + (window.innerHeight - height) / 2;
+      const popup = window.open(
+        data.authUrl,
+        "meta-auth",
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
+
+      // Poll for popup close without completion
+      const timer = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(timer);
+          setConnecting(false);
+        }
+      }, 500);
     } catch (err: any) {
       console.error("Meta connect error:", err);
       toast.error(err.message || "Failed to start Meta connection");
       setConnecting(false);
     }
+  };
+
+  const handleDevBypass = () => {
+    // Mock a new user with sample data
+    const mockConnectionData = {
+      connectionId: "mock-connection-id",
+      userName: "Alex Johnson",
+      userEmail: "alex@example.com",
+      metaUserId: "mock-meta-123",
+      accounts: [
+        { account_id: "act_111222333", name: "Glow Skin Co. Ads", currency: "USD" },
+        { account_id: "act_444555666", name: "FitFuel Performance", currency: "USD" },
+        { account_id: "act_777888999", name: "UrbanThreads Growth", currency: "EUR" },
+      ],
+      pages: [
+        { id: "page_001", name: "Glow Skin Co.", category: "Beauty & Skincare" },
+        { id: "page_002", name: "FitFuel", category: "Health & Nutrition" },
+      ],
+    };
+    sessionStorage.setItem("meta_connection", JSON.stringify(mockConnectionData));
+    updateState({ metaConnected: true });
+    navigate("/onboarding?meta=connected&new=true&dev=true");
   };
 
   return (
@@ -95,9 +176,9 @@ export const LandingStep = () => {
           <p className="text-sm text-muted-foreground text-center mb-10">Generate data-driven ad creatives in minutes.</p>
           <Button size="lg" variant="outline" onClick={handleConnectMeta} disabled={connecting} className="w-full gap-3 h-12 text-sm font-medium border-border hover:bg-secondary/80 rounded-full">
             {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-              <svg viewBox="0 0 24 24" className="w-5 h-5 text-[#1877F2]" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" /></svg>
+              <MetaLogo className="w-5 h-5 text-[#0082FB]" />
             )}
-            {connecting ? "Connecting…" : "Continue with Meta"}
+            {connecting ? "Connecting…" : "Login with Meta"}
           </Button>
           <div className="flex items-center gap-4 my-6"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">or</span><div className="flex-1 h-px bg-border" /></div>
           <div className="relative">
@@ -105,7 +186,19 @@ export const LandingStep = () => {
             <input type="email" placeholder="Email" disabled className="w-full h-12 pl-11 pr-4 rounded-full border bg-secondary/40 text-sm text-muted-foreground placeholder:text-muted-foreground/60 cursor-not-allowed" />
           </div>
           <Button variant="secondary" disabled className="w-full mt-3 h-12 rounded-full text-sm font-medium text-muted-foreground">Continue with email</Button>
-          <p className="text-[11px] text-muted-foreground text-center mt-8"><a href="#" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
+          
+          {/* Dev bypass button */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleDevBypass}
+            className="w-full mt-4 gap-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <Bug className="w-3.5 h-3.5" />
+            Dev Mode — Test New User Flow
+          </Button>
+
+          <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="#" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
         </motion.div>
       </div>
     </div>

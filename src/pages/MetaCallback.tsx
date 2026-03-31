@@ -14,13 +14,11 @@ const MetaCallback = () => {
       const errorParam = searchParams.get("error");
 
       if (errorParam) {
-        setError("Meta connection was cancelled.");
-        setTimeout(() => navigate("/"), 3000);
+        handleError("Meta connection was cancelled.");
         return;
       }
       if (!code) {
-        setError("No authorization code received.");
-        setTimeout(() => navigate("/"), 3000);
+        handleError("No authorization code received.");
         return;
       }
 
@@ -34,22 +32,49 @@ const MetaCallback = () => {
         const { error: otpError } = await supabase.auth.verifyOtp({ token_hash: data.tokenHash, type: "magiclink" });
         if (otpError) throw otpError;
 
-        sessionStorage.setItem("meta_connection", JSON.stringify({
+        const connectionData = {
           connectionId: data.connectionId,
           userName: data.userName,
           userEmail: data.userEmail,
           metaUserId: data.metaUserId,
           accounts: data.accounts,
           pages: data.pages || [],
-        }));
+          isNewUser: data.isNewUser ?? true,
+          defaultAdAccountId: data.defaultAdAccountId || null,
+          defaultAdAccountName: data.defaultAdAccountName || null,
+          defaultMetaAccountId: data.defaultMetaAccountId || null,
+        };
 
-        navigate("/onboarding?meta=connected");
+        // If opened as popup, send message back to opener
+        if (window.opener) {
+          window.opener.postMessage({ type: "META_AUTH_COMPLETE", connectionData }, window.location.origin);
+          window.close();
+          return;
+        }
+
+        // Fallback: direct navigation (if popup was blocked)
+        sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
+        if (connectionData.isNewUser) {
+          navigate("/onboarding?meta=connected&new=true");
+        } else {
+          navigate("/insights");
+        }
       } catch (err: any) {
         console.error("Token exchange error:", err);
-        setError(err.message || "Failed to connect Meta account.");
-        setTimeout(() => navigate("/"), 5000);
+        handleError(err.message || "Failed to connect Meta account.");
       }
     };
+
+    const handleError = (msg: string) => {
+      if (window.opener) {
+        window.opener.postMessage({ type: "META_AUTH_ERROR", error: msg }, window.location.origin);
+        window.close();
+        return;
+      }
+      setError(msg);
+      setTimeout(() => navigate("/"), 5000);
+    };
+
     exchangeToken();
   }, [searchParams, navigate]);
 
