@@ -395,6 +395,12 @@ export const InsightsStep = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      <SyncNotificationBar
+        status={syncStatus}
+        currentStep={syncStep}
+        onDismiss={() => setSyncStatus("idle")}
+        onRetry={triggerBackgroundSync}
+      />
       <InsightsTopBar
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
