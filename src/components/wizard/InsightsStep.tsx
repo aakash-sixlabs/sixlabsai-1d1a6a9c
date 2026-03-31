@@ -143,6 +143,7 @@ function computeDecay(insight: Insight | undefined): number {
 
 export const InsightsStep = () => {
   const navigate = useNavigate();
+  const { state } = useWizard();
   const [loading, setLoading] = useState(true);
   const [ads, setAds] = useState<EnrichedAd[]>([]);
   const [activeView, setActiveView] = useState("discover");
@@ -150,92 +151,171 @@ export const InsightsStep = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [adAccounts, setAdAccounts] = useState<{ id: string; account_id: string; account_name: string }[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+  const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "complete" | "error">("idle");
+  const [syncStep, setSyncStep] = useState<string>("");
 
-  useEffect(() => {
-    const fetchData = async () => {
-      // Fetch ad accounts
-      const accountsRes = await supabase.from("ad_accounts").select("id, account_id, account_name");
-      const fetchedAccounts = accountsRes.data || [];
-      
-      if (fetchedAccounts.length === 0) {
-        // Mock ad accounts for dev mode
-        const mockAccounts = [
-          { id: "mock-acc-1", account_id: "act_111222333", account_name: "Glow Skin Co. Ads" },
-          { id: "mock-acc-2", account_id: "act_444555666", account_name: "FitFuel Performance" },
-          { id: "mock-acc-3", account_id: "act_777888999", account_name: "UrbanThreads Growth" },
-        ];
-        setAdAccounts(mockAccounts);
-        setSelectedAccountId(mockAccounts[0].id);
-      } else {
-        setAdAccounts(fetchedAccounts);
-        setSelectedAccountId(fetchedAccounts[0].id);
+  const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
+    const insightByAd = new Map<string, Insight>();
+    insights.forEach((ins: any) => insightByAd.set(ins.ad_id, ins));
+
+    const adMap = new Map<string, Ad>();
+    dbAds.forEach((ad: any) => adMap.set(ad.id, ad));
+
+    const adSetMap = new Map<string, AdSet>();
+    adSets.forEach((as: any) => adSetMap.set(as.id, as));
+
+    const campaignMap = new Map<string, Campaign>();
+    campaigns.forEach((c: any) => campaignMap.set(c.id, c));
+
+    const enriched: EnrichedAd[] = creatives
+      .map((c: any) => {
+        const ad = adMap.get(c.ad_id);
+        if (!ad) return null;
+        const insight = insightByAd.get(c.ad_id);
+        const adSet = adSetMap.get(ad.adset_id);
+        const campaign = adSet ? campaignMap.get(adSet.campaign_id) : undefined;
+        const imgs = Array.isArray(c.image_urls) ? c.image_urls : [];
+        const roas = insight?.roas ?? 0;
+        const ctr = insight?.ctr ?? 0;
+
+        return {
+          id: c.id,
+          adName: ad.ad_name,
+          campaignName: campaign?.campaign_name || "Unknown Campaign",
+          campaignId: campaign?.id || "",
+          imageUrl: (imgs[0] as string) || null,
+          creativeType: c.creative_type,
+          score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
+          decayScore: computeDecay(insight),
+          spend: insight?.spend ?? null,
+          roas: insight?.roas ?? null,
+          ctr: insight?.ctr ?? null,
+          impressions: insight?.impressions ?? null,
+        };
+      })
+      .filter(Boolean) as EnrichedAd[];
+
+    enriched.sort((a, b) => b.score - a.score);
+    return enriched;
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    const accountsRes = await supabase.from("ad_accounts").select("id, account_id, account_name");
+    const fetchedAccounts = accountsRes.data || [];
+
+    if (fetchedAccounts.length === 0) {
+      const mockAccounts = [
+        { id: "mock-acc-1", account_id: "act_111222333", account_name: "Glow Skin Co. Ads" },
+        { id: "mock-acc-2", account_id: "act_444555666", account_name: "FitFuel Performance" },
+        { id: "mock-acc-3", account_id: "act_777888999", account_name: "UrbanThreads Growth" },
+      ];
+      setAdAccounts(mockAccounts);
+      if (!selectedAccountId) setSelectedAccountId(mockAccounts[0].id);
+    } else {
+      setAdAccounts(fetchedAccounts);
+      if (!selectedAccountId) setSelectedAccountId(fetchedAccounts[0].id);
+    }
+
+    const [adsRes, creativesRes, insightsRes, adSetsRes, campaignsRes] = await Promise.all([
+      supabase.from("ads").select("*"),
+      supabase.from("ad_creatives").select("*"),
+      supabase.from("ad_insights").select("*"),
+      supabase.from("ad_sets").select("*"),
+      supabase.from("campaigns").select("*"),
+    ]);
+
+    const dbAds = adsRes.data || [];
+    const creatives = creativesRes.data || [];
+    const insights = insightsRes.data || [];
+    const adSetsData = adSetsRes.data || [];
+    const campaignsData = campaignsRes.data || [];
+
+    if (creatives.length === 0) {
+      setAds(generateMockData());
+    } else {
+      setAds(enrichAndSet(dbAds as any, creatives as any, insights as any, adSetsData as any, campaignsData as any));
+    }
+    setLoading(false);
+  }, [enrichAndSet, selectedAccountId]);
+
+  // Background sync for returning users
+  const triggerBackgroundSync = useCallback(async () => {
+    const accountId = state.selectedAccount;
+    if (!accountId) return;
+
+    setSyncStatus("syncing");
+    setSyncStep("Connecting to Meta");
+
+    // Listen for sync progress via realtime
+    const channel = supabase
+      .channel("bg-sync-progress")
+      .on("postgres_changes", { event: "*", schema: "public", table: "sync_jobs" }, (payload) => {
+        const job = payload.new as any;
+        if (job.current_step) setSyncStep(job.current_step);
+        if (job.status === "complete") {
+          setSyncStatus("complete");
+          // Refresh data
+          fetchData();
+          supabase.removeChannel(channel);
+        }
+        if (job.status === "error") {
+          setSyncStatus("error");
+          supabase.removeChannel(channel);
+        }
+      })
+      .subscribe();
+
+    try {
+      const { data, error } = await supabase.functions.invoke("meta-sync", {
+        body: { adAccountId: accountId, dateRangeDays: state.dateRange || "90" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      // If sync completes before realtime fires
+      if (data?.success) {
+        setSyncStatus("complete");
+        fetchData();
+        supabase.removeChannel(channel);
       }
+    } catch (err: any) {
+      console.error("Background sync error:", err);
+      setSyncStatus("error");
+      supabase.removeChannel(channel);
+    }
+  }, [state.selectedAccount, state.dateRange, fetchData]);
 
-      const [adsRes, creativesRes, insightsRes, adSetsRes, campaignsRes] = await Promise.all([
-        supabase.from("ads").select("*"),
-        supabase.from("ad_creatives").select("*"),
-        supabase.from("ad_insights").select("*"),
-        supabase.from("ad_sets").select("*"),
-        supabase.from("campaigns").select("*"),
-      ]);
-
-      const dbAds = adsRes.data || [];
-      const creatives = creativesRes.data || [];
-      const insights = insightsRes.data || [];
-      const adSets = adSetsRes.data || [];
-      const campaigns = campaignsRes.data || [];
-
-      if (creatives.length === 0) {
-        setAds(generateMockData());
-        setLoading(false);
+  // Initial load: fetch existing data immediately, then sync in background
+  useEffect(() => {
+    fetchData().then(() => {
+      // For dev mode, simulate a background sync
+      const isDevMode = sessionStorage.getItem("meta_connection")?.includes("mock");
+      if (isDevMode) {
+        setSyncStatus("syncing");
+        setSyncStep("Connecting to Meta");
+        const steps = [
+          "Pulling campaigns and ad sets",
+          "Pulling ads and creatives",
+          "Pulling ad performance",
+          "Filtering supported formats",
+          "Preparing insights",
+        ];
+        let i = 0;
+        const interval = setInterval(() => {
+          if (i < steps.length) {
+            setSyncStep(steps[i]);
+            i++;
+          } else {
+            clearInterval(interval);
+            setSyncStatus("complete");
+          }
+        }, 1200);
         return;
       }
-
-      const insightByAd = new Map<string, Insight>();
-      insights.forEach((ins: any) => insightByAd.set(ins.ad_id, ins));
-
-      const adMap = new Map<string, Ad>();
-      dbAds.forEach((ad: any) => adMap.set(ad.id, ad));
-
-      const adSetMap = new Map<string, AdSet>();
-      adSets.forEach((as: any) => adSetMap.set(as.id, as));
-
-      const campaignMap = new Map<string, Campaign>();
-      campaigns.forEach((c: any) => campaignMap.set(c.id, c));
-
-      const enriched: EnrichedAd[] = creatives
-        .map((c: any) => {
-          const ad = adMap.get(c.ad_id);
-          if (!ad) return null;
-          const insight = insightByAd.get(c.ad_id);
-          const adSet = adSetMap.get(ad.adset_id);
-          const campaign = adSet ? campaignMap.get(adSet.campaign_id) : undefined;
-          const imgs = Array.isArray(c.image_urls) ? c.image_urls : [];
-          const roas = insight?.roas ?? 0;
-          const ctr = insight?.ctr ?? 0;
-
-          return {
-            id: c.id,
-            adName: ad.ad_name,
-            campaignName: campaign?.campaign_name || "Unknown Campaign",
-            campaignId: campaign?.id || "",
-            imageUrl: (imgs[0] as string) || null,
-            creativeType: c.creative_type,
-            score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
-            decayScore: computeDecay(insight),
-            spend: insight?.spend ?? null,
-            roas: insight?.roas ?? null,
-            ctr: insight?.ctr ?? null,
-            impressions: insight?.impressions ?? null,
-          };
-        })
-        .filter(Boolean) as EnrichedAd[];
-
-      enriched.sort((a, b) => b.score - a.score);
-      setAds(enriched);
-      setLoading(false);
-    };
-    fetchData();
+      // Real sync for authenticated users
+      if (state.selectedAccount) {
+        triggerBackgroundSync();
+      }
+    });
   }, []);
 
   // Derived data
