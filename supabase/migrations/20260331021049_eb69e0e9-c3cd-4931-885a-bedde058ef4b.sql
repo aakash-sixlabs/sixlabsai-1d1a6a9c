@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS default_ad_account_id uuid REFERENCES public.ad_accounts(id) ON DELETE SET NULL;

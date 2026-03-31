@@ -374,6 +374,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          default_ad_account_id: string | null
           email: string | null
           full_name: string | null
           id: string
@@ -382,6 +383,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          default_ad_account_id?: string | null
           email?: string | null
           full_name?: string | null
           id: string
@@ -390,12 +392,21 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          default_ad_account_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
           meta_user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_default_ad_account_id_fkey"
+            columns: ["default_ad_account_id"]
+            isOneToOne: false
+            referencedRelation: "ad_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sync_jobs: {
         Row: {
