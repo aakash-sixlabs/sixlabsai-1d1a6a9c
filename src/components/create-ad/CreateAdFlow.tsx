@@ -8,11 +8,11 @@ import { PromoDetailsStep } from "./steps/PromoDetailsStep";
 import { ReviewStep } from "./steps/ReviewStep";
 
 export type CreativeGoal =
-  | "brand-promo"
-  | "product-promo"
-  | "new-launch"
-  | "evergreen"
-  | "retarget";
+  | "sale-promo"
+  | "product-highlight"
+  | "new-arrival"
+  | "brand-story"
+  | "category-highlight";
 
 export interface PromoDetails {
   discountType: "percentage" | "fixed";
@@ -46,8 +46,8 @@ const initialState: CreateAdState = {
   },
 };
 
-const GOAL_NEEDS_PRODUCT: CreativeGoal[] = ["product-promo", "new-launch", "retarget"];
-const GOAL_NEEDS_PROMO: CreativeGoal[] = ["brand-promo", "product-promo"];
+const GOAL_NEEDS_PRODUCT: CreativeGoal[] = ["product-highlight", "new-arrival"];
+const GOAL_NEEDS_PROMO: CreativeGoal[] = ["sale-promo"];
 
 export const CreateAdFlow = () => {
   const navigate = useNavigate();
