@@ -10,7 +10,6 @@ import DataReview from "./pages/DataReview";
 import Insights from "./pages/Insights";
 import CreateAd from "./pages/CreateAd";
 import PdpScrape from "./pages/PdpScrape";
-import Strategy from "./pages/Strategy";
 import Output from "./pages/Output";
 import MetaCallback from "./pages/MetaCallback";
 import NotFound from "./pages/NotFound";
