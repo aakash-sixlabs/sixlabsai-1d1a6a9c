@@ -1,86 +1,194 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Copy, Download, RefreshCw, Sparkles, TrendingUp, MessageSquare, ImageIcon } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Download, RefreshCw, X, Pencil, Check, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-const MOCK_COPY = {
-  headline: "Your glow-up starts here",
-  primaryText: "Real results in just 2 weeks. Our 20% Vitamin C Serum delivers deep hydration and a noticeable glow — no greasy formula, no fuss. Join thousands who've already made the switch.",
-  cta: "Shop Now",
-};
-
-const RATIONALE = [
-  "This creative uses a lifestyle composition because your historical winners frequently performed better with real-world product presentation than plain packshots.",
-  "The headline is short and benefit-led because concise headlines correlated with 1.8x stronger engagement in your account.",
-  "The copy highlights hydration and glow because those were the most common positive review themes on the PDP.",
-  "We avoided text overlays and promo badges because that pattern appeared in 54% of your historical losers.",
-];
-
-const SOURCES = [
-  { label: "Historical Winners", icon: TrendingUp },
-  { label: "Review Language", icon: MessageSquare },
-  { label: "PDP Image Selection", icon: ImageIcon },
-];
+/* ── Mock creatives ── */
+const MOCK_CREATIVES = Array.from({ length: 12 }, (_, i) => ({
+  id: `creative-${i + 1}`,
+  label: `Variant ${i + 1}`,
+  gradient: [
+    "from-primary/20 via-accent/10 to-secondary",
+    "from-accent/20 via-primary/10 to-muted",
+    "from-warning/20 via-accent/10 to-card",
+    "from-primary/30 via-muted to-accent/10",
+    "from-secondary via-primary/5 to-accent/15",
+    "from-accent/25 via-card to-primary/10",
+  ][i % 6],
+}));
 
 export const OutputStep = () => {
   const navigate = useNavigate();
-  const [activeVariant, setActiveVariant] = useState(0);
+  const [selected, setSelected] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
 
-  const copyToClipboard = (text: string) => { navigator.clipboard.writeText(text); toast.success("Copied to clipboard"); };
+  const selectedCreative = MOCK_CREATIVES.find((c) => c.id === selected);
+  const selectedIndex = MOCK_CREATIVES.findIndex((c) => c.id === selected);
+
+  const navigateCreative = (dir: 1 | -1) => {
+    const next = selectedIndex + dir;
+    if (next >= 0 && next < MOCK_CREATIVES.length) {
+      setSelected(MOCK_CREATIVES[next].id);
+      setEditingId(null);
+      setEditText("");
+    }
+  };
+
+  const handleEdit = (id: string) => {
+    setEditingId(id);
+    setEditText("");
+  };
+
+  const submitEdit = () => {
+    if (!editText.trim()) return;
+    toast.success("Edit submitted — regenerating creative…");
+    setEditingId(null);
+    setEditText("");
+  };
+
+  const downloadAll = () => toast.success("Downloading all creatives…");
+  const regenerateAll = () => toast.success("Regenerating all creatives…");
 
   return (
-    <div className="container max-w-5xl py-12">
+    <div className="container max-w-6xl py-10">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-foreground">Generated Creative</h2>
-            <p className="text-muted-foreground">Your performance-informed ad creative is ready.</p>
+            <h2 className="text-2xl font-bold text-foreground font-display">Your Creatives</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {MOCK_CREATIVES.length} creatives generated. Click to enlarge, edit, or download.
+            </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/output")}><RefreshCw className="w-3.5 h-3.5" /> Regenerate</Button>
-            <Button size="sm" className="gap-1.5"><Download className="w-3.5 h-3.5" /> Download</Button>
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={regenerateAll}>
+              <RefreshCw className="w-3.5 h-3.5" /> Regenerate All
+            </Button>
+            <Button size="sm" className="gap-1.5" onClick={downloadAll}>
+              <Download className="w-3.5 h-3.5" /> Download All
+            </Button>
           </div>
         </div>
-        <div className="grid lg:grid-cols-5 gap-8">
-          <div className="lg:col-span-3">
-            <div className="rounded-lg border bg-card overflow-hidden">
-              <div className="flex border-b">
-                {["Primary Creative", "Variant B"].map((v, i) => (
-                  <button key={i} onClick={() => setActiveVariant(i)} className={`px-4 py-2.5 text-sm font-medium transition-colors ${activeVariant === i ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>{v}</button>
-                ))}
+
+        {/* Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {MOCK_CREATIVES.map((c, i) => (
+            <motion.div
+              key={c.id}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
+              className="group relative rounded-xl border border-border bg-card overflow-hidden cursor-pointer hover:shadow-md transition-all"
+              onClick={() => { setSelected(c.id); setEditingId(null); setEditText(""); }}
+            >
+              <div className={`aspect-square bg-gradient-to-br ${c.gradient} flex items-center justify-center`}>
+                <span className="text-3xl font-bold text-foreground/20 font-display">{i + 1}</span>
               </div>
-              <div className="aspect-square bg-gradient-to-br from-primary/5 via-card to-accent/5 flex items-center justify-center p-8">
-                <div className="text-center space-y-4">
-                  <Sparkles className="w-12 h-12 text-primary mx-auto" />
-                  <div className="font-display text-2xl font-bold text-foreground">{MOCK_COPY.headline}</div>
-                  <p className="text-sm text-muted-foreground max-w-sm">[Generated static ad creative would appear here — lifestyle product image with warm lighting, clean composition]</p>
-                </div>
+              <div className="px-3 py-2.5 flex items-center justify-between">
+                <span className="text-xs font-medium text-foreground">{c.label}</span>
+                <button
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted"
+                  onClick={(e) => { e.stopPropagation(); setSelected(c.id); handleEdit(c.id); }}
+                >
+                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
               </div>
-            </div>
-          </div>
-          <div className="lg:col-span-2 space-y-6">
-            <div className="rounded-lg border bg-card p-5">
-              <h3 className="font-display font-semibold text-foreground mb-4">Ad Copy</h3>
-              <div className="space-y-4">
-                <div><div className="flex items-center justify-between mb-1"><span className="text-xs text-muted-foreground uppercase tracking-wide">Headline</span><button onClick={() => copyToClipboard(MOCK_COPY.headline)} className="text-muted-foreground hover:text-foreground"><Copy className="w-3.5 h-3.5" /></button></div><p className="text-sm font-medium text-foreground">{MOCK_COPY.headline}</p></div>
-                <div><div className="flex items-center justify-between mb-1"><span className="text-xs text-muted-foreground uppercase tracking-wide">Primary Text</span><button onClick={() => copyToClipboard(MOCK_COPY.primaryText)} className="text-muted-foreground hover:text-foreground"><Copy className="w-3.5 h-3.5" /></button></div><p className="text-sm text-foreground">{MOCK_COPY.primaryText}</p></div>
-                <div><span className="text-xs text-muted-foreground uppercase tracking-wide">CTA</span><p className="text-sm font-medium text-primary mt-1">{MOCK_COPY.cta}</p></div>
-              </div>
-            </div>
-            <div className="rounded-lg border bg-card p-5">
-              <h3 className="font-display font-semibold text-foreground mb-3">Why This Was Generated</h3>
-              <ul className="space-y-2.5">{RATIONALE.map((r, i) => <li key={i} className="text-sm text-muted-foreground flex items-start gap-2"><span className="text-primary mt-0.5 shrink-0">→</span> {r}</li>)}</ul>
-            </div>
-            <div className="flex flex-wrap gap-2">{SOURCES.map((s, i) => <span key={i} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted text-xs font-medium text-muted-foreground"><s.icon className="w-3 h-3" /> {s.label}</span>)}</div>
-          </div>
+            </motion.div>
+          ))}
         </div>
-        <div className="mt-8 flex gap-3">
-          <Button variant="outline" onClick={() => navigate("/create-ad")}>Try Another Product</Button>
-          <Button variant="outline" onClick={() => navigate("/insights")}>Back to Insights</Button>
+
+        {/* Back */}
+        <div className="mt-8">
+          <Button variant="outline" onClick={() => navigate("/create-ad")}>
+            ← Create Another Ad
+          </Button>
         </div>
       </motion.div>
+
+      {/* ── Lightbox Dialog ── */}
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditingId(null); } }}>
+        <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden bg-card border-border">
+          {selectedCreative && (
+            <div className="flex flex-col">
+              {/* Image area */}
+              <div className="relative">
+                <div className={`aspect-[4/3] bg-gradient-to-br ${selectedCreative.gradient} flex items-center justify-center`}>
+                  <span className="text-6xl font-bold text-foreground/15 font-display">{selectedIndex + 1}</span>
+                </div>
+
+                {/* Nav arrows */}
+                {selectedIndex > 0 && (
+                  <button
+                    onClick={() => navigateCreative(-1)}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition-colors shadow-sm"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-foreground" />
+                  </button>
+                )}
+                {selectedIndex < MOCK_CREATIVES.length - 1 && (
+                  <button
+                    onClick={() => navigateCreative(1)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition-colors shadow-sm"
+                  >
+                    <ChevronRight className="w-5 h-5 text-foreground" />
+                  </button>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display font-semibold text-foreground">{selectedCreative.label}</h3>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleEdit(selectedCreative.id)}>
+                      <Pencil className="w-3.5 h-3.5" /> Edit
+                    </Button>
+                    <Button size="sm" className="gap-1.5" onClick={() => toast.success("Downloading…")}>
+                      <Download className="w-3.5 h-3.5" /> Download
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Edit panel */}
+                <AnimatePresence>
+                  {editingId === selectedCreative.id && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
+                        <p className="text-sm font-medium text-foreground">What would you like to change?</p>
+                        <Textarea
+                          placeholder="e.g. Make the background warmer, add a badge with '20% OFF', change the headline…"
+                          value={editText}
+                          onChange={(e) => setEditText(e.target.value)}
+                          className="resize-none bg-card"
+                          rows={3}
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
+                            <X className="w-3.5 h-3.5 mr-1" /> Cancel
+                          </Button>
+                          <Button size="sm" onClick={submitEdit} disabled={!editText.trim()}>
+                            <Check className="w-3.5 h-3.5 mr-1" /> Submit Edit
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
