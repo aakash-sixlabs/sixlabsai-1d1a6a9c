@@ -81,7 +81,7 @@ export const InsightsTopBar = ({
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search creatives..."
+            placeholder="Search creatives, concepts, or formats..."
             className="h-8 pl-9 text-xs bg-secondary/50 border-0 rounded-lg focus-visible:ring-1"
           />
         </div>
