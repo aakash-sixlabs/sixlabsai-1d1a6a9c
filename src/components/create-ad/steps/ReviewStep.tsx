@@ -1,14 +1,14 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, Tag, Package, Rocket, Repeat, Target } from "lucide-react";
+import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
-  "brand-promo": { label: "Brand Promotion", icon: Tag },
-  "product-promo": { label: "Product Promotion", icon: Package },
-  "new-launch": { label: "New Product Launch", icon: Rocket },
-  evergreen: { label: "Evergreen Creative", icon: Repeat },
-  retarget: { label: "Retargeting Ad", icon: Target },
+  "sale-promo": { label: "Sale / Promotion", icon: Tag },
+  "product-highlight": { label: "Product Highlight", icon: Sparkles },
+  "new-arrival": { label: "New Arrival", icon: Rocket },
+  "brand-story": { label: "Brand Story", icon: Heart },
+  "category-highlight": { label: "Category Highlight", icon: LayoutGrid },
 };
 
 interface ReviewStepProps {
