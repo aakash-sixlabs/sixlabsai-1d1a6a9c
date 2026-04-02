@@ -97,6 +97,10 @@ export const CreateAdFlow = () => {
   const phase = getPhase();
   const PHASES = ["Goal", "Details", "Review"];
 
+  if (isGenerating) {
+    return <GeneratingStep />;
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar with static 3-phase progress */}
@@ -185,7 +189,7 @@ export const CreateAdFlow = () => {
               />
             )}
             {stepKey === "review" && (
-              <ReviewStep state={state} onBack={back} />
+              <ReviewStep state={state} onBack={back} onGenerate={() => setIsGenerating(true)} />
             )}
           </motion.div>
         </AnimatePresence>

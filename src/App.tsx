@@ -30,7 +30,6 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/create-ad" element={<CreateAd />} />
             <Route path="/pdp-scrape" element={<PdpScrape />} />
-            <Route path="/strategy" element={<Strategy />} />
             <Route path="/output" element={<Output />} />
             <Route path="/meta-callback" element={<MetaCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
