@@ -22,8 +22,7 @@ export const ReviewStep = ({ state, onBack }: ReviewStepProps) => {
   const GoalIcon = goalInfo?.icon;
 
   const handleGenerate = () => {
-    // For now navigate to output/strategy
-    navigate("/strategy");
+    onGenerate();
   };
 
   return (
