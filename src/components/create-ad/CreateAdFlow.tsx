@@ -77,26 +77,49 @@ export const CreateAdFlow = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-background">
-      <div className="container max-w-2xl py-12">
-        {/* Progress */}
-        <div className="mb-10">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-muted-foreground">
-              Step {currentStep + 1} of {totalSteps}
-            </p>
-            <p className="text-sm font-medium text-foreground">{steps[currentStep]?.label}</p>
-          </div>
-          <div className="h-1 w-full bg-muted rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-primary rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
-              transition={{ duration: 0.3 }}
-            />
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Minimal top bar */}
+      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container max-w-2xl flex items-center justify-between h-12">
+          <button
+            onClick={() => navigate("/insights")}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Back to Dashboard
+          </button>
+          <div className="flex items-center gap-3">
+            {steps.map((s, i) => (
+              <div key={s.key} className="flex items-center gap-2">
+                <div
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    i < currentStep
+                      ? "bg-primary"
+                      : i === currentStep
+                      ? "bg-primary"
+                      : "bg-muted"
+                  }`}
+                />
+                <span
+                  className={`text-xs hidden sm:inline transition-colors ${
+                    i === currentStep
+                      ? "text-foreground font-medium"
+                      : i < currentStep
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground/50"
+                  }`}
+                >
+                  {s.label}
+                </span>
+                {i < steps.length - 1 && (
+                  <div className={`w-6 h-px ${i < currentStep ? "bg-primary/40" : "bg-muted"}`} />
+                )}
+              </div>
+            ))}
           </div>
         </div>
+      </header>
 
+      <div className="flex-1 container max-w-2xl py-12">
         {/* Steps */}
         <AnimatePresence mode="wait">
           <motion.div
