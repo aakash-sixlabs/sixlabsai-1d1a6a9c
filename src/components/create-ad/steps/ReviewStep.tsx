@@ -91,7 +91,7 @@ export const ReviewStep = ({ state, onBack }: ReviewStepProps) => {
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
         <Button size="lg" onClick={handleGenerate} className="gap-2">
-          <Sparkles className="w-4 h-4" /> Generate Ad Creative
+          <Sparkles className="w-4 h-4" /> Create New Ad
         </Button>
       </div>
 
