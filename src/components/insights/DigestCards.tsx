@@ -63,9 +63,10 @@ export const DigestCards = ({
             <p className="text-sm font-semibold text-foreground mb-1">{topPerformer.name}</p>
             <p className="text-xs text-accent font-medium mb-2">{topPerformer.roas.toFixed(1)}x ROAS</p>
             <div className="text-[11px] text-muted-foreground space-y-0.5">
-              <p>Avg spend: <span className="text-foreground font-medium">${topPerformer.avgSpend.toLocaleString()}</span></p>
+              <p>Avg Spend: <span className="text-foreground font-medium">${topPerformer.avgSpend.toLocaleString()}</span></p>
               <p>Format: <span className="text-foreground font-medium">{topPerformer.topFormat}</span></p>
             </div>
+            <p className="text-[10px] text-muted-foreground/60 mt-2 italic">High ROAS driven by bold color contrast + lifestyle framing</p>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">No data yet</p>
