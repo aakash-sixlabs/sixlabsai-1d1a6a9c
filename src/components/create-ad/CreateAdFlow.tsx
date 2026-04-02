@@ -7,6 +7,7 @@ import { AspectRatioStep } from "./steps/AspectRatioStep";
 import { PromoDetailsStep } from "./steps/PromoDetailsStep";
 import { PromoScopeStep, PromoScope } from "./steps/PromoScopeStep";
 import { ReviewStep } from "./steps/ReviewStep";
+import { GeneratingStep } from "./steps/GeneratingStep";
 
 export type CreativeGoal =
   | "sale-promo"
