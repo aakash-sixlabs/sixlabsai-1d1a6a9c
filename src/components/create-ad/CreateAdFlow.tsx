@@ -57,6 +57,7 @@ export const CreateAdFlow = () => {
   const navigate = useNavigate();
   const [state, setState] = useState<CreateAdState>(initialState);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const update = (partial: Partial<CreateAdState>) =>
     setState((s) => ({ ...s, ...partial }));
