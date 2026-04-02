@@ -26,6 +26,7 @@ interface AdCreativeCardData {
 interface AdCreativeGridProps {
   ads: AdCreativeCardData[];
   title: string;
+  subtitle?: string;
   onAdClick?: (id: string) => void;
 }
 
