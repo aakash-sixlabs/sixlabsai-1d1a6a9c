@@ -8,7 +8,7 @@ import Landing from "./pages/Landing";
 import Onboarding from "./pages/Onboarding";
 import DataReview from "./pages/DataReview";
 import Insights from "./pages/Insights";
-import PdpInput from "./pages/PdpInput";
+import CreateAd from "./pages/CreateAd";
 import PdpScrape from "./pages/PdpScrape";
 import Strategy from "./pages/Strategy";
 import Output from "./pages/Output";
