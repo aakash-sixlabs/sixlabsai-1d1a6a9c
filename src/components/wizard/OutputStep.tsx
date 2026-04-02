@@ -77,7 +77,7 @@ export const OutputStep = () => {
           </div>
         </div>
         <div className="mt-8 flex gap-3">
-          <Button variant="outline" onClick={() => navigate("/pdp-input")}>Try Another Product</Button>
+          <Button variant="outline" onClick={() => navigate("/create-ad")}>Try Another Product</Button>
           <Button variant="outline" onClick={() => navigate("/insights")}>Back to Insights</Button>
         </div>
       </motion.div>

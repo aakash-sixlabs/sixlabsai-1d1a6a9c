@@ -8,7 +8,7 @@ import Landing from "./pages/Landing";
 import Onboarding from "./pages/Onboarding";
 import DataReview from "./pages/DataReview";
 import Insights from "./pages/Insights";
-import PdpInput from "./pages/PdpInput";
+import CreateAd from "./pages/CreateAd";
 import PdpScrape from "./pages/PdpScrape";
 import Strategy from "./pages/Strategy";
 import Output from "./pages/Output";
@@ -29,7 +29,7 @@ const App = () => (
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/data-review" element={<DataReview />} />
             <Route path="/insights" element={<Insights />} />
-            <Route path="/pdp-input" element={<PdpInput />} />
+            <Route path="/create-ad" element={<CreateAd />} />
             <Route path="/pdp-scrape" element={<PdpScrape />} />
             <Route path="/strategy" element={<Strategy />} />
             <Route path="/output" element={<Output />} />

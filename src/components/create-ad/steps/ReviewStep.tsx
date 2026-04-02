@@ -1,0 +1,99 @@
+import { CreateAdState } from "../CreateAdFlow";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Sparkles, Tag, Package, Rocket, Repeat, Target } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
+const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
+  "brand-promo": { label: "Brand Promotion", icon: Tag },
+  "product-promo": { label: "Product Promotion", icon: Package },
+  "new-launch": { label: "New Product Launch", icon: Rocket },
+  evergreen: { label: "Evergreen Creative", icon: Repeat },
+  retarget: { label: "Retargeting Ad", icon: Target },
+};
+
+interface ReviewStepProps {
+  state: CreateAdState;
+  onBack: () => void;
+}
+
+export const ReviewStep = ({ state, onBack }: ReviewStepProps) => {
+  const navigate = useNavigate();
+  const goalInfo = state.goal ? GOAL_LABELS[state.goal] : null;
+  const GoalIcon = goalInfo?.icon;
+
+  const handleGenerate = () => {
+    // For now navigate to output/strategy
+    navigate("/strategy");
+  };
+
+  return (
+    <div>
+      <h2 className="text-2xl font-bold text-foreground mb-1">Review & Generate</h2>
+      <p className="text-muted-foreground mb-8">
+        Here's a summary of your creative brief. Hit generate when you're ready.
+      </p>
+
+      <div className="space-y-4">
+        {/* Goal */}
+        <div className="p-4 rounded-lg bg-card border border-border">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Goal</p>
+          <div className="flex items-center gap-2">
+            {GoalIcon && <GoalIcon className="w-4 h-4 text-primary" />}
+            <p className="font-medium text-foreground">{goalInfo?.label}</p>
+          </div>
+        </div>
+
+        {/* Product */}
+        {state.productInputMethod && (
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Product</p>
+            <p className="font-medium text-foreground">
+              {state.productInputMethod === "url" ? state.productUrl : "Uploaded image"}
+            </p>
+          </div>
+        )}
+
+        {/* Aspect Ratios */}
+        <div className="p-4 rounded-lg bg-card border border-border">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Formats</p>
+          <div className="flex flex-wrap gap-2">
+            {state.aspectRatios.map((r) => (
+              <span key={r} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                {r}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Promo Details */}
+        {state.promoDetails.discountValue && (
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Promotion</p>
+            <p className="font-medium text-foreground">
+              {state.promoDetails.discountType === "percentage"
+                ? `${state.promoDetails.discountValue}% off`
+                : `$${state.promoDetails.discountValue} off`}
+              {state.promoDetails.promoCode && ` · Code: ${state.promoDetails.promoCode}`}
+            </p>
+            {state.promoDetails.duration && (
+              <p className="text-sm text-muted-foreground mt-1">{state.promoDetails.duration}</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-10 flex justify-between">
+        <Button variant="ghost" size="lg" onClick={onBack} className="gap-2">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </Button>
+        <Button size="lg" onClick={handleGenerate} className="gap-2">
+          <Sparkles className="w-4 h-4" /> Generate Ad Creative
+        </Button>
+      </div>
+
+      <p className="text-center text-xs text-muted-foreground/60 mt-4">
+        AI combines your top performers, competitor insights, and industry trends — instantly.
+      </p>
+    </div>
+  );
+};

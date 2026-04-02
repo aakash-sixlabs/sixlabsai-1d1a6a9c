@@ -445,7 +445,7 @@ export const InsightsStep = () => {
                 <Button
                   size="lg"
                   className="gap-2 rounded-full px-6 shadow-sm"
-                  onClick={() => navigate("/pdp-input")}
+                  onClick={() => navigate("/create-ad")}
                   title="We don't use templates — every ad is generated from real performance data."
                 >
                   <Wand2 className="w-4 h-4" />
