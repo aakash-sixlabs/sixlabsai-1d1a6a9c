@@ -1,42 +1,42 @@
 import { CreativeGoal } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Tag, Package, Rocket, Repeat, Target } from "lucide-react";
+import { ArrowRight, Tag, Sparkles, Rocket, Heart, LayoutGrid } from "lucide-react";
 
 const GOALS: { value: CreativeGoal; label: string; description: string; icon: React.ElementType; example: string }[] = [
   {
-    value: "brand-promo",
-    label: "Brand Promotion",
-    description: "Run a sitewide or brand-level promotion",
+    value: "sale-promo",
+    label: "Sale / Promotion",
+    description: "Run a sale, discount, or limited-time offer",
     icon: Tag,
     example: 'e.g. "40% off sitewide this weekend"',
   },
   {
-    value: "product-promo",
-    label: "Product Promotion",
-    description: "Promote a specific product with a deal",
-    icon: Package,
-    example: 'e.g. "40% off XYZ running shoes"',
+    value: "product-highlight",
+    label: "Product Highlight",
+    description: "Showcase a product's value without a discount",
+    icon: Sparkles,
+    example: 'e.g. "Meet the shoe built for marathon day"',
   },
   {
-    value: "new-launch",
-    label: "New Product Launch",
-    description: "Announce and drive awareness for a new product",
+    value: "new-arrival",
+    label: "New Arrival",
+    description: "Introduce a new product to your audience",
     icon: Rocket,
-    example: 'e.g. "Introducing our new hydration serum"',
+    example: 'e.g. "Just dropped: our lightweight summer jacket"',
   },
   {
-    value: "evergreen",
-    label: "Evergreen Creative",
-    description: "Always-on creative that represents your brand",
-    icon: Repeat,
-    example: 'e.g. "Shop our bestselling collection"',
+    value: "brand-story",
+    label: "Brand Story",
+    description: "Always-on creative that tells your brand's story",
+    icon: Heart,
+    example: 'e.g. "Designed for athletes, by athletes"',
   },
   {
-    value: "retarget",
-    label: "Retargeting Ad",
-    description: "Re-engage visitors who viewed a product",
-    icon: Target,
-    example: 'e.g. "Still thinking about XYZ? It\'s selling fast"',
+    value: "category-highlight",
+    label: "Category Highlight",
+    description: "Spotlight an entire product category or collection",
+    icon: LayoutGrid,
+    example: 'e.g. "Shop our bestselling skincare line"',
   },
 ];
 
