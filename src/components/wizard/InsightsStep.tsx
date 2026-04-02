@@ -448,18 +448,11 @@ export const InsightsStep = () => {
 
               {/* Tab pills */}
               <div className="flex items-center gap-1 mt-4 mb-6">
-                {["Explore", "For You"].map((tab) => (
-                  <button
-                    key={tab}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      tab === "For You"
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                ))}
+                <button
+                  className="px-4 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground"
+                >
+                  For You
+                </button>
               </div>
             </motion.div>
 
