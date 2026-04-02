@@ -49,9 +49,9 @@ interface GoalStepProps {
 export const GoalStep = ({ selected, onSelect, onNext }: GoalStepProps) => {
   return (
     <div>
-      <h2 className="text-2xl font-bold text-foreground mb-1">What's the goal of this ad?</h2>
+      <h2 className="text-2xl font-bold text-foreground mb-1">What kind of ad do you want to create?</h2>
       <p className="text-muted-foreground mb-8">
-        Choose the type of creative you'd like to generate. We'll tailor the output accordingly.
+        Pick the creative type — we'll tailor the flow and output to match.
       </p>
 
       <div className="space-y-3">

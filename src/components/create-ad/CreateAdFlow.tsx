@@ -46,8 +46,8 @@ const initialState: CreateAdState = {
   },
 };
 
-const GOAL_NEEDS_PRODUCT: CreativeGoal[] = ["product-promo", "new-launch", "retarget"];
-const GOAL_NEEDS_PROMO: CreativeGoal[] = ["brand-promo", "product-promo"];
+const GOAL_NEEDS_PRODUCT: CreativeGoal[] = ["product-highlight", "new-arrival"];
+const GOAL_NEEDS_PROMO: CreativeGoal[] = ["sale-promo"];
 
 export const CreateAdFlow = () => {
   const navigate = useNavigate();
