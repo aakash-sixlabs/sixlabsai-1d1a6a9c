@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { MoreHorizontal, Play, TrendingUp, Flame } from "lucide-react";
+import { MoreHorizontal, TrendingUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
@@ -42,8 +42,8 @@ export const AdCreativeGrid = ({ ads, title, onAdClick }: AdCreativeGridProps) =
 
   return (
     <div className="mb-8">
-      <h2 className="font-display font-bold text-xl text-foreground mb-4">{title}</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <h3 className="font-display font-semibold text-sm text-muted-foreground mb-3">{title}</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {ads.map((ad, i) => (
           <AdCard key={ad.id} ad={ad} index={i} onClick={() => onAdClick?.(ad.id)} />
         ))}
@@ -53,46 +53,16 @@ export const AdCreativeGrid = ({ ads, title, onAdClick }: AdCreativeGridProps) =
 };
 
 function AdCard({ ad, index, onClick }: { ad: AdCreativeCardData; index: number; onClick: () => void }) {
-  const decayColor =
-    ad.decayScore >= 60 ? "text-destructive" : ad.decayScore >= 30 ? "text-warning" : "text-success";
-
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.04 }}
-      className="rounded-xl border border-border bg-card overflow-hidden group hover:shadow-lg hover:border-primary/20 transition-all cursor-pointer"
+      transition={{ duration: 0.25, delay: index * 0.03 }}
+      className="rounded-xl border border-border bg-card overflow-hidden group hover:shadow-md transition-all cursor-pointer"
       onClick={onClick}
     >
-      {/* Header with campaign name + menu */}
-      <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50">
-        <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-          <span className="text-[10px] font-bold text-primary">
-            {ad.campaignName.substring(0, 2).toUpperCase()}
-          </span>
-        </div>
-        <span className="text-sm font-medium text-foreground truncate flex-1">{ad.adName}</span>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem>View Details</DropdownMenuItem>
-            <DropdownMenuItem>Save Ad</DropdownMenuItem>
-            <DropdownMenuItem>Regenerate</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
-      {/* Image / Preview */}
-      <div className="relative aspect-square bg-muted/20">
+      {/* Image */}
+      <div className="relative aspect-square bg-secondary/30">
         {ad.imageUrl ? (
           <img
             src={ad.imageUrl}
@@ -105,46 +75,42 @@ function AdCard({ ad, index, onClick }: { ad: AdCreativeCardData; index: number;
             No preview
           </div>
         )}
-        {/* Type badge */}
-        {ad.creativeType.includes("carousel") && (
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-background/80 backdrop-blur-sm text-foreground border-0 text-[10px]">
-              Carousel
-            </Badge>
-          </div>
-        )}
-        {/* Play button for video */}
-        {ad.creativeType.includes("video") && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-10 h-10 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center">
-              <Play className="w-4 h-4 text-foreground fill-foreground" />
-            </div>
-          </div>
-        )}
         {/* Score pill */}
         <div className="absolute bottom-2 left-2">
-          <Badge className="bg-background/80 backdrop-blur-sm text-foreground border-0 text-[10px] font-semibold gap-1">
+          <Badge className="bg-card/90 backdrop-blur-sm text-foreground border-0 text-[10px] font-medium gap-1 shadow-sm">
             <TrendingUp className="w-3 h-3" />
             {ad.score}
           </Badge>
         </div>
+        {/* Menu */}
+        <div className="absolute top-1.5 right-1.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 backdrop-blur-sm hover:bg-card"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem className="text-xs">View Details</DropdownMenuItem>
+              <DropdownMenuItem className="text-xs">Save Ad</DropdownMenuItem>
+              <DropdownMenuItem className="text-xs">Remix</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* Bottom metrics */}
-      <div className="px-3 py-2.5 grid grid-cols-3 gap-2 text-center">
-        <div>
-          <p className="text-[10px] text-muted-foreground">Spend</p>
-          <p className="text-xs font-semibold text-foreground">{fmtCompact(ad.spend, "$")}</p>
-        </div>
-        <div>
-          <p className="text-[10px] text-muted-foreground">ROAS</p>
-          <p className="text-xs font-semibold text-foreground">
-            {ad.roas != null ? `${ad.roas.toFixed(1)}x` : "—"}
-          </p>
-        </div>
-        <div>
-          <p className="text-[10px] text-muted-foreground">Decay</p>
-          <p className={`text-xs font-semibold ${decayColor}`}>{ad.decayScore}</p>
+      {/* Info */}
+      <div className="px-3 py-2.5">
+        <p className="text-xs font-medium text-foreground truncate mb-1">{ad.adName}</p>
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+          <span>{fmtCompact(ad.spend, "$")}</span>
+          <span>{ad.roas != null ? `${ad.roas.toFixed(1)}x` : "—"}</span>
+          <span>{ad.ctr != null ? `${ad.ctr.toFixed(1)}% CTR` : ""}</span>
         </div>
       </div>
     </motion.div>
