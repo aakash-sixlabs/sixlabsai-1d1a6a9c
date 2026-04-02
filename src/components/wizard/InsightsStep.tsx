@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, ArrowRight } from "lucide-react";
+import { Loader2, ArrowRight, Sparkles, Wand2, Image, Type, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
@@ -428,33 +428,75 @@ export const InsightsStep = () => {
         />
         <main className="flex-1 overflow-auto">
           <div className="p-6 max-w-[1400px]">
-            {/* Digest header */}
+            {/* Hero — Generate New Creative */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
+              initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
+              transition={{ duration: 0.4 }}
+              className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 p-6 mb-8"
             >
-              <div className="flex items-center justify-between mb-1">
-                <div>
-                  <h1 className="font-display font-bold text-2xl text-foreground">Your Creative Digest</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Performance overview across {ads.length} creatives
+              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+              <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="w-5 h-5 text-primary" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-primary">AI-Powered</span>
+                  </div>
+                  <h1 className="font-display font-bold text-2xl lg:text-3xl text-foreground mb-2">
+                    Generate New Creatives
+                  </h1>
+                  <p className="text-sm text-muted-foreground max-w-lg">
+                    Turn any product page into scroll-stopping ad creatives. Our AI analyzes your top performers and generates winning variations.
                   </p>
+                  <div className="flex flex-wrap items-center gap-3 mt-4">
+                    <Button size="lg" className="gap-2 shadow-lg" onClick={() => navigate("/pdp-input")}>
+                      <Wand2 className="w-4 h-4" />
+                      Start Generating
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Image className="w-3.5 h-3.5" /> Static</span>
+                      <span className="flex items-center gap-1"><Film className="w-3.5 h-3.5" /> Video</span>
+                      <span className="flex items-center gap-1"><Type className="w-3.5 h-3.5" /> Copy</span>
+                    </div>
+                  </div>
                 </div>
-                <Button size="lg" className="gap-2 shadow-md" onClick={() => navigate("/pdp-input")}>
-                  Generate New Creative <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-
-              {/* Tab pills */}
-              <div className="flex items-center gap-1 mt-4 mb-6">
-                <button
-                  className="px-4 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground"
-                >
-                  For You
-                </button>
+                {/* Quick-stats context */}
+                <div className="flex gap-4 lg:gap-6 shrink-0">
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-foreground">{ads.length}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Creatives</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-foreground">{topAds.length}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Top Performers</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-2xl font-bold text-primary">{ads.filter(a => a.decayScore > 50).length}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Need Refresh</p>
+                  </div>
+                </div>
               </div>
             </motion.div>
+
+            {/* Section header */}
+            <div className="flex items-center justify-between mb-1">
+              <div>
+                <h2 className="font-display font-bold text-xl text-foreground">Your Creative Digest</h2>
+                <p className="text-xs text-muted-foreground">
+                  Performance overview across {ads.length} creatives
+                </p>
+              </div>
+            </div>
+
+            {/* Tab pills */}
+            <div className="flex items-center gap-1 mt-3 mb-6">
+              <button
+                className="px-4 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground"
+              >
+                For You
+              </button>
+            </div>
 
             {/* Digest Cards — only on Home */}
             {activeView === "discover" && (
