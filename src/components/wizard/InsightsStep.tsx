@@ -427,77 +427,37 @@ export const InsightsStep = () => {
           onAccountChange={setSelectedAccountId}
         />
         <main className="flex-1 overflow-auto">
-          <div className="p-6 max-w-[1400px]">
-            {/* Hero — Generate New Creative */}
+          <div className="px-8 py-8 max-w-[1200px] mx-auto">
+            {/* Hero — Create your next ad */}
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4 }}
-              className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 via-background to-accent/5 p-6 mb-8"
+              transition={{ duration: 0.35 }}
+              className="text-center mb-10"
             >
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-              <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Sparkles className="w-5 h-5 text-primary" />
-                    <span className="text-xs font-semibold uppercase tracking-wider text-primary">AI-Powered</span>
-                  </div>
-                  <h1 className="font-display font-bold text-2xl lg:text-3xl text-foreground mb-2">
-                    Create Your Next Winning Ad
-                  </h1>
-                  <p className="text-sm text-muted-foreground max-w-lg">
-                    We analyze your top performers, your competitors' best ads, and trending creatives in your industry — then craft static ads ready for any Meta campaign.
-                  </p>
-                  <div className="flex flex-wrap items-center gap-3 mt-4">
-                    <Button size="lg" className="gap-2 shadow-lg" onClick={() => navigate("/pdp-input")}>
-                      <Wand2 className="w-4 h-4" />
-                      Create New Ad
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {/* Value props */}
-                  <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-primary" /> Your top performers</span>
-                    <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-primary" /> Competitor insights</span>
-                    <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-primary" /> Industry trends</span>
-                  </div>
-                </div>
-                {/* Quick-stats context */}
-                <div className="flex gap-4 lg:gap-6 shrink-0">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-foreground">{ads.length}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Creatives</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-foreground">{topAds.length}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Top Performers</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary">{ads.filter(a => a.decayScore > 50).length}</p>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Need Refresh</p>
-                  </div>
-                </div>
+              <h1 className="font-display font-bold text-3xl text-foreground mb-3">
+                Create your next ad
+              </h1>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
+                We pick the best from your top performers, competitors, and industry trends — then craft ads ready for any Meta campaign.
+              </p>
+              <div className="flex items-center justify-center gap-3 mb-6">
+                <Button
+                  size="lg"
+                  className="gap-2 rounded-full px-6 shadow-sm"
+                  onClick={() => navigate("/pdp-input")}
+                >
+                  <Wand2 className="w-4 h-4" />
+                  Create New Ad
+                  <ArrowRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5" /> Your top performers</span>
+                <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5" /> Competitor insights</span>
+                <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Industry trends</span>
               </div>
             </motion.div>
-
-            {/* Section header */}
-            <div className="flex items-center justify-between mb-1">
-              <div>
-                <h2 className="font-display font-bold text-xl text-foreground">Your Creative Digest</h2>
-                <p className="text-xs text-muted-foreground">
-                  Performance overview across {ads.length} creatives
-                </p>
-              </div>
-            </div>
-
-            {/* Tab pills */}
-            <div className="flex items-center gap-1 mt-3 mb-6">
-              <button
-                className="px-4 py-1.5 text-sm font-medium rounded-md bg-primary text-primary-foreground"
-              >
-                For You
-              </button>
-            </div>
 
             {/* Digest Cards — only on Home */}
             {activeView === "discover" && (
@@ -509,6 +469,12 @@ export const InsightsStep = () => {
                 formatMix={formatMix}
               />
             )}
+
+            {/* Section header */}
+            <div className="flex items-center justify-between mb-4 mt-2">
+              <h2 className="font-display font-semibold text-lg text-foreground">{viewTitle}</h2>
+              <span className="text-xs text-muted-foreground">{filteredAds.length} creatives</span>
+            </div>
 
             {/* Top performers — on Home */}
             {activeView === "discover" && (
@@ -522,7 +488,7 @@ export const InsightsStep = () => {
             {/* Main grid */}
             <AdCreativeGrid
               ads={latestAds}
-              title={viewTitle}
+              title={activeView === "discover" ? "All Creatives" : viewTitle}
               onAdClick={(id) => console.log("View ad", id)}
             />
           </div>
