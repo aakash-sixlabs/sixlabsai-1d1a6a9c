@@ -435,27 +435,31 @@ export const InsightsStep = () => {
               transition={{ duration: 0.35 }}
               className="text-center mb-10"
             >
-              <h1 className="font-display font-bold text-3xl text-foreground mb-3">
-                Create your next ad
+              <h1 className="font-display font-bold text-3xl text-foreground mb-2">
+                Create your next winning ad
               </h1>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto mb-6">
-                We pick the best from your top performers, competitors, and industry trends — then craft ads ready for any Meta campaign.
+              <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
+                Powered by what's already working in your account, what's winning for competitors, and what's trending right now.
               </p>
-              <div className="flex items-center justify-center gap-3 mb-6">
+              <div className="flex flex-col items-center gap-3 mb-6">
                 <Button
                   size="lg"
                   className="gap-2 rounded-full px-6 shadow-sm"
                   onClick={() => navigate("/pdp-input")}
+                  title="We don't use templates — every ad is generated from real performance data."
                 >
                   <Wand2 className="w-4 h-4" />
                   Create New Ad
                   <ArrowRight className="w-4 h-4" />
                 </Button>
+                <p className="text-[11px] text-muted-foreground/70">
+                  AI combines your top performers, competitor insights, and industry trends — instantly.
+                </p>
               </div>
               <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5" /> Your top performers</span>
-                <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5" /> Competitor insights</span>
-                <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5" /> Industry trends</span>
+                <span className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1"><Trophy className="w-3.5 h-3.5" /> Your Top Performers</span>
+                <span className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1"><Target className="w-3.5 h-3.5" /> Competitor Insights</span>
+                <span className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1"><TrendingUp className="w-3.5 h-3.5" /> Industry Trends</span>
               </div>
             </motion.div>
 
