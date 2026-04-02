@@ -13,10 +13,10 @@ const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = 
 interface ReviewStepProps {
   state: CreateAdState;
   onBack: () => void;
+  onGenerate: () => void;
 }
 
-export const ReviewStep = ({ state, onBack }: ReviewStepProps) => {
-  const navigate = useNavigate();
+export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
   const goalInfo = state.goal ? GOAL_LABELS[state.goal] : null;
   const GoalIcon = goalInfo?.icon;
 
