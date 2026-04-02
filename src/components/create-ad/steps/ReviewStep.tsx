@@ -39,7 +39,11 @@ export const ReviewStep = ({ state, onBack }: ReviewStepProps) => {
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Goal</p>
           <div className="flex items-center gap-2">
             {GoalIcon && <GoalIcon className="w-4 h-4 text-primary" />}
-            <p className="font-medium text-foreground">{goalInfo?.label}</p>
+            <p className="font-medium text-foreground">
+              {goalInfo?.label}
+              {state.promoScope === "brand-wide" && " · Brand-wide"}
+              {state.promoScope === "product-specific" && " · Product-specific"}
+            </p>
           </div>
         </div>
 
