@@ -443,22 +443,23 @@ export const InsightsStep = () => {
                     <span className="text-xs font-semibold uppercase tracking-wider text-primary">AI-Powered</span>
                   </div>
                   <h1 className="font-display font-bold text-2xl lg:text-3xl text-foreground mb-2">
-                    Generate New Creatives
+                    Create Your Next Winning Ad
                   </h1>
                   <p className="text-sm text-muted-foreground max-w-lg">
-                    Turn any product page into scroll-stopping ad creatives. Our AI analyzes your top performers and generates winning variations.
+                    We analyze your top performers, your competitors' best ads, and trending creatives in your industry — then craft static ads ready for any Meta campaign.
                   </p>
                   <div className="flex flex-wrap items-center gap-3 mt-4">
                     <Button size="lg" className="gap-2 shadow-lg" onClick={() => navigate("/pdp-input")}>
                       <Wand2 className="w-4 h-4" />
-                      Start Generating
+                      Create New Ad
                       <ArrowRight className="w-4 h-4" />
                     </Button>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1"><Image className="w-3.5 h-3.5" /> Static</span>
-                      <span className="flex items-center gap-1"><Film className="w-3.5 h-3.5" /> Video</span>
-                      <span className="flex items-center gap-1"><Type className="w-3.5 h-3.5" /> Copy</span>
-                    </div>
+                  </div>
+                  {/* Value props */}
+                  <div className="flex flex-wrap items-center gap-4 mt-4 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-primary" /> Your top performers</span>
+                    <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-primary" /> Competitor insights</span>
+                    <span className="flex items-center gap-1.5"><TrendingUp className="w-3.5 h-3.5 text-primary" /> Industry trends</span>
                   </div>
                 </div>
                 {/* Quick-stats context */}
