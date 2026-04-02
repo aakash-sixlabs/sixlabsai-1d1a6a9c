@@ -1,7 +1,6 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 
 const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
   "sale-promo": { label: "Sale / Promotion", icon: Tag },
@@ -14,16 +13,15 @@ const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = 
 interface ReviewStepProps {
   state: CreateAdState;
   onBack: () => void;
+  onGenerate: () => void;
 }
 
-export const ReviewStep = ({ state, onBack }: ReviewStepProps) => {
-  const navigate = useNavigate();
+export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
   const goalInfo = state.goal ? GOAL_LABELS[state.goal] : null;
   const GoalIcon = goalInfo?.icon;
 
   const handleGenerate = () => {
-    // For now navigate to output/strategy
-    navigate("/strategy");
+    onGenerate();
   };
 
   return (

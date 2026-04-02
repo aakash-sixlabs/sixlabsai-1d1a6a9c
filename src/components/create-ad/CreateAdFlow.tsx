@@ -7,6 +7,7 @@ import { AspectRatioStep } from "./steps/AspectRatioStep";
 import { PromoDetailsStep } from "./steps/PromoDetailsStep";
 import { PromoScopeStep, PromoScope } from "./steps/PromoScopeStep";
 import { ReviewStep } from "./steps/ReviewStep";
+import { GeneratingStep } from "./steps/GeneratingStep";
 
 export type CreativeGoal =
   | "sale-promo"
@@ -56,6 +57,7 @@ export const CreateAdFlow = () => {
   const navigate = useNavigate();
   const [state, setState] = useState<CreateAdState>(initialState);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const update = (partial: Partial<CreateAdState>) =>
     setState((s) => ({ ...s, ...partial }));
@@ -94,6 +96,10 @@ export const CreateAdFlow = () => {
 
   const phase = getPhase();
   const PHASES = ["Goal", "Details", "Review"];
+
+  if (isGenerating) {
+    return <GeneratingStep />;
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -183,7 +189,7 @@ export const CreateAdFlow = () => {
               />
             )}
             {stepKey === "review" && (
-              <ReviewStep state={state} onBack={back} />
+              <ReviewStep state={state} onBack={back} onGenerate={() => setIsGenerating(true)} />
             )}
           </motion.div>
         </AnimatePresence>

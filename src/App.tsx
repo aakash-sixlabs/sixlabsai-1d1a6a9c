@@ -10,7 +10,6 @@ import DataReview from "./pages/DataReview";
 import Insights from "./pages/Insights";
 import CreateAd from "./pages/CreateAd";
 import PdpScrape from "./pages/PdpScrape";
-import Strategy from "./pages/Strategy";
 import Output from "./pages/Output";
 import MetaCallback from "./pages/MetaCallback";
 import NotFound from "./pages/NotFound";
@@ -31,7 +30,6 @@ const App = () => (
             <Route path="/insights" element={<Insights />} />
             <Route path="/create-ad" element={<CreateAd />} />
             <Route path="/pdp-scrape" element={<PdpScrape />} />
-            <Route path="/strategy" element={<Strategy />} />
             <Route path="/output" element={<Output />} />
             <Route path="/meta-callback" element={<MetaCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
