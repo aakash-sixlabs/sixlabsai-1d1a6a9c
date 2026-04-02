@@ -35,13 +35,14 @@ export const DigestCards = ({
       {/* Creative Velocity */}
       <div className="rounded-xl border border-border bg-card p-5">
         <p className="text-xs font-medium text-muted-foreground mb-3">Creative Velocity</p>
-        <p className="text-3xl font-bold text-foreground mb-1">{totalAds}</p>
+        <p className="text-3xl font-bold text-foreground mb-1">{totalAds} <span className="text-sm font-normal text-muted-foreground">active creatives</span></p>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className={velocityChange >= 0 ? "text-accent font-medium" : "text-destructive font-medium"}>
             {velocityChange >= 0 ? "+" : ""}{velocityChange}%
           </span>
-          <span>last 14 days · {newAdsLast14Days} new</span>
+          <span>vs last 14 days</span>
         </div>
+        <p className="text-[11px] text-muted-foreground/70 mt-2">You're scaling production — keep momentum with data-backed creatives.</p>
       </div>
 
       {/* Top Performer */}
