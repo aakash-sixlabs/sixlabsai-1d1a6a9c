@@ -8,11 +8,11 @@ import { PromoDetailsStep } from "./steps/PromoDetailsStep";
 import { ReviewStep } from "./steps/ReviewStep";
 
 export type CreativeGoal =
-  | "brand-promo"
-  | "product-promo"
-  | "new-launch"
-  | "evergreen"
-  | "retarget";
+  | "sale-promo"
+  | "product-highlight"
+  | "new-arrival"
+  | "brand-story"
+  | "category-highlight";
 
 export interface PromoDetails {
   discountType: "percentage" | "fixed";
