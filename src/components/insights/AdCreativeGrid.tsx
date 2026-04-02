@@ -38,12 +38,13 @@ const fmtCompact = (n: number | null | undefined, prefix = "") => {
   return `${prefix}${v.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
 };
 
-export const AdCreativeGrid = ({ ads, title, onAdClick }: AdCreativeGridProps) => {
+export const AdCreativeGrid = ({ ads, title, subtitle, onAdClick }: AdCreativeGridProps) => {
   if (ads.length === 0) return null;
 
   return (
     <div className="mb-8">
-      <h3 className="font-display font-semibold text-sm text-muted-foreground mb-3">{title}</h3>
+      <h3 className="font-display font-semibold text-sm text-muted-foreground mb-1">{title}</h3>
+      {subtitle && <p className="text-[11px] text-muted-foreground/60 mb-3">{subtitle}</p>}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {ads.map((ad, i) => (
           <AdCard key={ad.id} ad={ad} index={i} onClick={() => onAdClick?.(ad.id)} />

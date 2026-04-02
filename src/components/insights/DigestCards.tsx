@@ -93,6 +93,7 @@ export const DigestCards = ({
             <span className="w-2 h-2 rounded-full bg-muted-foreground/30" /> Video {videoPct}%
           </span>
         </div>
+        <p className="text-[10px] text-muted-foreground/60 mt-2 italic">Static is driving most performance — opportunity to test video for incremental lift</p>
       </div>
     </div>
   );

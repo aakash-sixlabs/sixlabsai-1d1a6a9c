@@ -482,19 +482,27 @@ export const InsightsStep = () => {
 
             {/* Top performers — on Home */}
             {activeView === "discover" && (
-              <AdCreativeGrid
-                ads={topAds}
-                title="🔥 Top Performers"
-                onAdClick={(id) => console.log("View ad", id)}
-              />
+              <>
+                <AdCreativeGrid
+                  ads={topAds}
+                  title="🔥 Top Performers"
+                  subtitle="These creatives are driving the strongest returns — use them to inform your next ad"
+                  onAdClick={(id) => console.log("View ad", id)}
+                />
+              </>
             )}
 
             {/* Main grid */}
             <AdCreativeGrid
               ads={latestAds}
-              title={activeView === "discover" ? "All Creatives" : viewTitle}
+              title={activeView === "discover" ? "All Ads" : viewTitle}
               onAdClick={(id) => console.log("View ad", id)}
             />
+
+            {/* Reinforcement */}
+            <p className="text-center text-[11px] text-muted-foreground/50 mt-8 mb-4">
+              Every ad you create makes the next one smarter.
+            </p>
           </div>
         </main>
       </div>

@@ -22,12 +22,16 @@ interface SidebarItem {
   count?: number;
 }
 
-const mainNav: SidebarItem[] = [
+interface NavItemMeta extends SidebarItem {
+  description?: string;
+}
+
+const mainNav: NavItemMeta[] = [
   { label: "Home", icon: <Home className="w-4 h-4" />, id: "discover" },
-  { label: "Top Performers", icon: <TrendingUp className="w-4 h-4" />, id: "top" },
-  { label: "Opportunities", icon: <Lightbulb className="w-4 h-4" />, id: "opportunities", count: 4 },
-  { label: "Ad Library", icon: <FolderOpen className="w-4 h-4" />, id: "library" },
-  { label: "Needs Review", icon: <AlertCircle className="w-4 h-4" />, id: "needs-review", count: 3 },
+  { label: "Top Performers", icon: <TrendingUp className="w-4 h-4" />, id: "top", description: "See what's driving results" },
+  { label: "Opportunities", icon: <Lightbulb className="w-4 h-4" />, id: "opportunities", count: 4, description: "Where performance can improve" },
+  { label: "Ad Library", icon: <FolderOpen className="w-4 h-4" />, id: "library", description: "All your creatives in one place" },
+  { label: "Needs Review", icon: <AlertCircle className="w-4 h-4" />, id: "needs-review", count: 3, description: "Underperforming or flagged ads" },
 ];
 
 interface AdAccount {
