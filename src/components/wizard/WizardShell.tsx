@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { StepIndicator } from "./StepIndicator";
 import { WizardStep } from "@/context/WizardContext";
 import { Zap } from "lucide-react";
@@ -10,24 +11,31 @@ export const WizardShell = ({
   currentStep: WizardStep;
   children: ReactNode;
 }) => {
+  const navigate = useNavigate();
   const showStepper = currentStep !== "landing";
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container flex items-center justify-between h-14">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-lg text-foreground">
-              CreativeGen
-            </span>
+    <div className="h-screen flex flex-col overflow-hidden bg-[hsl(222,47%,11%)]">
+      {/* Dark top bar */}
+      <header className="h-14 bg-[hsl(222,47%,11%)] flex items-center px-6 gap-4 shrink-0 z-50">
+        <div
+          className="flex items-center gap-2.5 cursor-pointer shrink-0"
+          onClick={() => navigate("/home")}
+        >
+          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+            <Zap className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
-          {showStepper && <StepIndicator currentStep={currentStep} />}
+          <span className="font-display font-bold text-[15px] text-white tracking-tight">
+            CreativeGen
+          </span>
         </div>
+        <div className="flex-1" />
+        {showStepper && <StepIndicator currentStep={currentStep} />}
       </header>
-      <main className="flex-1">{children}</main>
+      {/* Content card */}
+      <main className="flex-1 overflow-auto bg-card rounded-t-2xl">
+        {children}
+      </main>
     </div>
   );
 };
