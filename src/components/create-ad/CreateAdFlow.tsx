@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { AppShell } from "@/components/layout/AppShell";
 import { GoalStep } from "./steps/GoalStep";
 import { ProductInputStep } from "./steps/ProductInputStep";
 import { AspectRatioStep } from "./steps/AspectRatioStep";
@@ -101,46 +102,46 @@ export const CreateAdFlow = () => {
     return <GeneratingStep />;
   }
 
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Top bar with static 3-phase progress */}
-      <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container max-w-2xl flex items-center justify-between h-12">
-          <button
-            onClick={() => navigate("/home")}
-            className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+  const progressIndicator = (
+    <div className="flex items-center gap-3">
+      {PHASES.map((label, i) => (
+        <div key={label} className="flex items-center gap-2">
+          <div
+            className={`w-2 h-2 rounded-full transition-colors ${
+              i <= phase ? "bg-primary" : "bg-white/20"
+            }`}
+          />
+          <span
+            className={`text-xs hidden sm:inline transition-colors ${
+              i === phase
+                ? "text-white font-medium"
+                : i < phase
+                ? "text-white/60"
+                : "text-white/30"
+            }`}
           >
-            ← Back
-          </button>
-          <div className="flex items-center gap-3">
-            {PHASES.map((label, i) => (
-              <div key={label} className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full transition-colors ${
-                    i <= phase ? "bg-primary" : "bg-muted"
-                  }`}
-                />
-                <span
-                  className={`text-xs hidden sm:inline transition-colors ${
-                    i === phase
-                      ? "text-foreground font-medium"
-                      : i < phase
-                      ? "text-muted-foreground"
-                      : "text-muted-foreground/50"
-                  }`}
-                >
-                  {label}
-                </span>
-                {i < PHASES.length - 1 && (
-                  <div className={`w-6 h-px ${i < phase ? "bg-primary/40" : "bg-muted"}`} />
-                )}
-              </div>
-            ))}
-          </div>
+            {label}
+          </span>
+          {i < PHASES.length - 1 && (
+            <div className={`w-6 h-px ${i < phase ? "bg-primary/40" : "bg-white/15"}`} />
+          )}
         </div>
-      </header>
+      ))}
+    </div>
+  );
 
-      <div className="flex-1 container max-w-2xl py-12">
+  const backButton = (
+    <button
+      onClick={() => navigate("/home")}
+      className="text-sm text-white/60 hover:text-white transition-colors flex items-center gap-1.5"
+    >
+      ← Back
+    </button>
+  );
+
+  return (
+    <AppShell headerLeft={backButton} headerRight={progressIndicator}>
+      <div className="max-w-4xl mx-auto py-12 px-6">
         <AnimatePresence mode="wait">
           <motion.div
             key={stepKey}
@@ -194,6 +195,6 @@ export const CreateAdFlow = () => {
           </motion.div>
         </AnimatePresence>
       </div>
-    </div>
+    </AppShell>
   );
 };
