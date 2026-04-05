@@ -54,7 +54,7 @@ export const InsightsSidebar = ({
   onAccountChange,
 }: InsightsSidebarProps) => {
   return (
-    <aside className="w-56 border-r border-border/60 bg-card/50 flex flex-col h-full shrink-0">
+    <aside className="w-56 border-r border-border/60 bg-background flex flex-col h-full shrink-0">
       {/* Ad Account Switcher */}
       {adAccounts.length > 0 && (
         <div className="px-4 pt-5 pb-4">

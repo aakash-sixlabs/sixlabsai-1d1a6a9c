@@ -57,16 +57,16 @@ export const InsightsTopBar = ({
   };
 
   return (
-    <header className="h-16 border-b border-border/60 bg-card/80 backdrop-blur-md flex items-center px-6 gap-4 sticky top-0 z-50">
+    <header className="h-14 bg-[hsl(222,47%,11%)] flex items-center px-6 gap-4 sticky top-0 z-50">
       {/* Logo */}
       <div
         className="flex items-center gap-2.5 cursor-pointer shrink-0"
         onClick={() => navigate("/")}
       >
-        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center shadow-sm">
-          <Zap className="w-4 h-4 text-primary-foreground" />
+        <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+          <Zap className="w-3.5 h-3.5 text-primary-foreground" />
         </div>
-        <span className="font-display font-bold text-[17px] text-foreground tracking-tight">
+        <span className="font-display font-bold text-[15px] text-white tracking-tight">
           CreativeGen
         </span>
       </div>
@@ -75,14 +75,14 @@ export const InsightsTopBar = ({
       <div className="flex-1" />
 
       {/* Search */}
-      <div className="w-80">
+      <div className="w-72">
         <div className="relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <Input
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search creatives, concepts, or formats..."
-            className="h-10 pl-10 text-sm bg-background border border-border/60 rounded-xl focus-visible:ring-2 focus-visible:ring-primary/20 shadow-sm"
+            placeholder="Search creatives..."
+            className="h-9 pl-9 text-sm bg-white/10 border-0 rounded-lg text-white placeholder:text-white/40 focus-visible:ring-1 focus-visible:ring-white/20"
           />
         </div>
       </div>
@@ -92,10 +92,10 @@ export const InsightsTopBar = ({
         {/* Notifications */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl relative hover:bg-secondary">
-              <Bell className="w-[18px] h-[18px] text-muted-foreground" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg relative hover:bg-white/10">
+              <Bell className="w-[18px] h-[18px] text-white/70" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-destructive ring-2 ring-card" />
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-destructive ring-2 ring-[hsl(222,47%,11%)]" />
               )}
             </Button>
           </PopoverTrigger>
@@ -139,8 +139,8 @@ export const InsightsTopBar = ({
           </PopoverContent>
         </Popover>
 
-        <Avatar className="h-8 w-8 ml-1 ring-2 ring-border/40">
-          <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+        <Avatar className="h-7 w-7 ml-1 ring-2 ring-white/20">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
             {userName ? userName[0].toUpperCase() : "U"}
           </AvatarFallback>
         </Avatar>
