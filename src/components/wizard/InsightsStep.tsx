@@ -408,26 +408,26 @@ export const InsightsStep = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <SyncNotificationBar
-        status={syncStatus}
-        currentStep={syncStep}
-        onDismiss={() => setSyncStatus("idle")}
-        onRetry={triggerBackgroundSync}
-      />
-      <InsightsTopBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onFilterClick={() => setShowFilters(!showFilters)}
-      />
-      <div className="flex flex-1 overflow-hidden">
-        <InsightsSidebar
+    <div className="h-screen flex bg-background overflow-hidden">
+      <InsightsSidebar
           activeView={activeView}
           onViewChange={setActiveView}
           campaignBoards={campaignBoards}
           adAccounts={adAccounts}
           selectedAccountId={selectedAccountId}
           onAccountChange={setSelectedAccountId}
+      />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <SyncNotificationBar
+          status={syncStatus}
+          currentStep={syncStep}
+          onDismiss={() => setSyncStatus("idle")}
+          onRetry={triggerBackgroundSync}
+        />
+        <InsightsTopBar
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          onFilterClick={() => setShowFilters(!showFilters)}
         />
         <main className="flex-1 overflow-auto">
           <div className="px-8 py-10 max-w-[1200px] mx-auto">
