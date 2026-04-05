@@ -73,9 +73,9 @@ const NewArrivalSilhouette = ({ active }: { active: boolean }) => {
       {/* Image placeholder inside card */}
       <rect x="42" y="56" width="96" height="68" rx="4" fill={fg} opacity="0.1" />
       {/* Sparkle accents */}
-      <circle cx="136" y="52" r="3" fill={fg} opacity="0.3" />
-      <circle cx="148" y="44" r="2" fill={fg} opacity="0.2" />
-      <circle cx="40" y="52" r="2.5" fill={fg} opacity="0.25" />
+      <circle cx="136" cy="52" r="3" fill={fg} opacity="0.3" />
+      <circle cx="148" cy="44" r="2" fill={fg} opacity="0.2" />
+      <circle cx="40" cy="52" r="2.5" fill={fg} opacity="0.25" />
       {/* Text inside card */}
       <rect x="48" y="132" width="84" height="7" rx="2" fill={fg} opacity="0.35" />
       <rect x="56" y="144" width="68" height="5" rx="2" fill={fg} opacity="0.2" />
