@@ -42,10 +42,10 @@ export const AdCreativeGrid = ({ ads, title, subtitle, onAdClick }: AdCreativeGr
   if (ads.length === 0) return null;
 
   return (
-    <div className="mb-8">
-      <h3 className="font-display font-semibold text-sm text-muted-foreground mb-1">{title}</h3>
-      {subtitle && <p className="text-[11px] text-muted-foreground/60 mb-3">{subtitle}</p>}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="mb-10">
+      <h3 className="font-display font-semibold text-sm text-foreground mb-1">{title}</h3>
+      {subtitle && <p className="text-xs text-muted-foreground mb-4">{subtitle}</p>}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
         {ads.map((ad, i) => (
           <AdCard key={ad.id} ad={ad} index={i} onClick={() => onAdClick?.(ad.id)} />
         ))}
@@ -57,14 +57,14 @@ export const AdCreativeGrid = ({ ads, title, subtitle, onAdClick }: AdCreativeGr
 function AdCard({ ad, index, onClick }: { ad: AdCreativeCardData; index: number; onClick: () => void }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: index * 0.03 }}
-      className="rounded-xl border border-border bg-card overflow-hidden group hover:shadow-md transition-all cursor-pointer"
+      transition={{ duration: 0.3, delay: index * 0.04 }}
+      className="rounded-2xl border border-border/60 bg-card overflow-hidden group hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
       onClick={onClick}
     >
       {/* Image */}
-      <div className="relative aspect-square bg-secondary/30">
+      <div className="relative aspect-square bg-secondary/20">
         {ad.imageUrl ? (
           <img
             src={ad.imageUrl}
@@ -78,40 +78,40 @@ function AdCard({ ad, index, onClick }: { ad: AdCreativeCardData; index: number;
           </div>
         )}
         {/* Score pill */}
-        <div className="absolute bottom-2 left-2">
-          <Badge className="bg-card/90 backdrop-blur-sm text-foreground border-0 text-[10px] font-medium gap-1 shadow-sm">
-            <TrendingUp className="w-3 h-3" />
+        <div className="absolute bottom-2.5 left-2.5">
+          <Badge className="bg-card/95 backdrop-blur-md text-foreground border-0 text-[10px] font-semibold gap-1 shadow-md rounded-lg px-2 py-1">
+            <TrendingUp className="w-3 h-3 text-accent" />
             {ad.score}
           </Badge>
         </div>
         {/* Menu */}
-        <div className="absolute top-1.5 right-1.5">
+        <div className="absolute top-2 right-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity bg-card/80 backdrop-blur-sm hover:bg-card"
+                className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity bg-card/90 backdrop-blur-md hover:bg-card rounded-lg shadow-sm"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="w-3.5 h-3.5 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32">
-              <DropdownMenuItem className="text-xs">View Details</DropdownMenuItem>
-              <DropdownMenuItem className="text-xs">Save Ad</DropdownMenuItem>
-              <DropdownMenuItem className="text-xs">Remix</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="w-36 rounded-xl">
+              <DropdownMenuItem className="text-xs rounded-lg">View Details</DropdownMenuItem>
+              <DropdownMenuItem className="text-xs rounded-lg">Save Ad</DropdownMenuItem>
+              <DropdownMenuItem className="text-xs rounded-lg">Remix</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </div>
 
       {/* Info */}
-      <div className="px-3 py-2.5">
-        <p className="text-xs font-medium text-foreground truncate mb-1">{ad.adName}</p>
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+      <div className="px-3.5 py-3">
+        <p className="text-xs font-semibold text-foreground truncate mb-1.5">{ad.adName}</p>
+        <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
           <span>{fmtCompact(ad.spend, "$")}</span>
-          <span>{ad.roas != null ? `${ad.roas.toFixed(1)}x` : "—"}</span>
+          <span className="text-accent">{ad.roas != null ? `${ad.roas.toFixed(1)}x` : "—"}</span>
           <span>{ad.ctr != null ? `${ad.ctr.toFixed(1)}% CTR` : ""}</span>
         </div>
       </div>
