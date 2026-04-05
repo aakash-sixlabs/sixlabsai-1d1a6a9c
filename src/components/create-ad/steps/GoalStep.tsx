@@ -96,8 +96,8 @@ const BrandStorySilhouette = ({ active }: { active: boolean }) => {
       {/* Cinematic top image band */}
       <rect x="0" y="0" width="180" height="100" rx="8" fill={accent} />
       {/* Overlapping photo frames — collage feel */}
-      <rect x="14" y="16" width="70" height="50" rx="4" fill={fg} opacity="0.1" stroke={fg} strokeWidth="0.8" opacity="0.2" />
-      <rect x="96" y="24" width="66" height="56" rx="4" fill={fg} opacity="0.08" stroke={fg} strokeWidth="0.8" opacity="0.15" />
+      <rect x="14" y="16" width="70" height="50" rx="4" fill={fg} fillOpacity="0.1" stroke={fg} strokeWidth="0.8" strokeOpacity="0.2" />
+      <rect x="96" y="24" width="66" height="56" rx="4" fill={fg} fillOpacity="0.08" stroke={fg} strokeWidth="0.8" strokeOpacity="0.15" />
       {/* Quote / story text area */}
       <rect x="24" y="114" width="6" height="50" rx="3" fill={fg} opacity="0.2" />
       <rect x="40" y="116" width="110" height="6" rx="2" fill={fg} opacity="0.35" />
@@ -105,7 +105,7 @@ const BrandStorySilhouette = ({ active }: { active: boolean }) => {
       <rect x="40" y="140" width="88" height="5" rx="2" fill={fg} opacity="0.2" />
       <rect x="40" y="152" width="72" height="5" rx="2" fill={fg} opacity="0.15" />
       {/* Logo placeholder */}
-      <circle cx="90" cy="188" r="14" fill={fg} opacity="0.12" stroke={fg} strokeWidth="1" opacity="0.25" />
+      <circle cx="90" cy="188" r="14" fill={fg} fillOpacity="0.12" stroke={fg} strokeWidth="1" strokeOpacity="0.25" />
       <rect x="76" y="184" width="28" height="8" rx="2" fill={fg} opacity="0.2" />
     </svg>
   );
