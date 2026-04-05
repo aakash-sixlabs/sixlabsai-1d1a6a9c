@@ -408,7 +408,7 @@ export const InsightsStep = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-[hsl(222,47%,11%)]">
       {/* Dark top bar — full width */}
       <InsightsTopBar
         searchQuery={searchQuery}
@@ -421,8 +421,8 @@ export const InsightsStep = () => {
         onDismiss={() => setSyncStatus("idle")}
         onRetry={triggerBackgroundSync}
       />
-      {/* Sidebar + Main content */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* Sidebar + Main content as one card */}
+      <div className="flex flex-1 overflow-hidden bg-card rounded-t-2xl">
         <InsightsSidebar
           activeView={activeView}
           onViewChange={setActiveView}
@@ -431,7 +431,7 @@ export const InsightsStep = () => {
           selectedAccountId={selectedAccountId}
           onAccountChange={setSelectedAccountId}
         />
-        <main className="flex-1 overflow-auto bg-card rounded-tl-2xl border-t border-l border-border/60 shadow-sm">
+        <main className="flex-1 overflow-auto border-l border-border/60">
           <div className="px-8 py-10 max-w-[1200px] mx-auto">
             {/* Hero — Create your next ad */}
             <motion.div
