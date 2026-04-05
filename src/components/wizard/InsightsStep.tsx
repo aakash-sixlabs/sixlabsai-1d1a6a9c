@@ -287,6 +287,9 @@ export const InsightsStep = () => {
   // Initial load: fetch existing data immediately, then sync in background
   useEffect(() => {
     fetchData().then(() => {
+      // New user just completed onboarding sync — skip redundant background sync
+      if (state.syncComplete) return;
+
       // For dev mode, simulate a background sync
       const isDevMode = sessionStorage.getItem("meta_connection")?.includes("mock");
       if (isDevMode) {
@@ -311,7 +314,7 @@ export const InsightsStep = () => {
         }, 1200);
         return;
       }
-      // Real sync for authenticated users
+      // Returning user — sync in background
       if (state.selectedAccount) {
         triggerBackgroundSync();
       }
