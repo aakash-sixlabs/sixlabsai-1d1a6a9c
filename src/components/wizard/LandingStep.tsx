@@ -177,7 +177,7 @@ export const LandingStep = () => {
             {connecting ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Connecting…</>
             ) : (
-              <>Login with <MetaLogo className="h-4 w-auto" /></>
+              <>Login with <MetaLogo className="h-6 w-auto" /></>
             )}
           </Button>
           <div className="flex items-center gap-4 my-6"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">or</span><div className="flex-1 h-px bg-border" /></div>
