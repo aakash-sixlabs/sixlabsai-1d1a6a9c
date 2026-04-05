@@ -175,7 +175,7 @@ export const LandingStep = () => {
           <p className="text-sm text-muted-foreground text-center mb-10">Generate data-driven ad creatives in minutes.</p>
           <Button size="lg" variant="outline" onClick={handleConnectMeta} disabled={connecting} className="w-full gap-3 h-12 text-sm font-medium border-border bg-background hover:bg-accent hover:text-accent-foreground rounded-full">
             {connecting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-              <MetaLogo className="w-5 h-5" />
+              <MetaLogo className="w-28 h-7" />
             )}
             {connecting ? "Connecting…" : "Login with Meta"}
           </Button>
