@@ -2,111 +2,156 @@ import { CreativeGoal } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Check } from "lucide-react";
 
-const SalePromoIllustration = ({ active }: { active: boolean }) => (
-  <svg viewBox="0 0 120 90" fill="none" className="w-full h-full">
-    {/* Burst shape */}
-    <path d="M60 10L68 25L85 18L78 35L95 38L80 48L92 62L75 58L72 75L60 63L48 75L45 58L28 62L40 48L25 38L42 35L35 18L52 25Z" 
-      fill={active ? "hsl(var(--primary) / 0.15)" : "hsl(var(--muted))"} 
-      stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} 
-      strokeWidth="1.5" />
-    {/* Percent symbol */}
-    <circle cx="52" cy="38" r="5" fill={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.4)"} />
-    <circle cx="68" cy="52" r="5" fill={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.4)"} />
-    <line x1="70" y1="34" x2="50" y2="56" stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.4)"} strokeWidth="2.5" strokeLinecap="round" />
-  </svg>
-);
+/* ─── Brand-agnostic creative silhouettes ─── */
+/* Each SVG represents a wireframe of the actual ad output layout */
 
-const ProductHighlightIllustration = ({ active }: { active: boolean }) => (
-  <svg viewBox="0 0 120 90" fill="none" className="w-full h-full">
-    {/* Spotlight rays */}
-    <path d="M60 5L45 25H75Z" fill={active ? "hsl(var(--primary) / 0.1)" : "hsl(var(--muted) / 0.5)"} />
-    <path d="M60 5L30 30L40 25Z" fill={active ? "hsl(var(--primary) / 0.07)" : "hsl(var(--muted) / 0.3)"} />
-    <path d="M60 5L90 30L80 25Z" fill={active ? "hsl(var(--primary) / 0.07)" : "hsl(var(--muted) / 0.3)"} />
-    {/* Product card */}
-    <rect x="35" y="22" width="50" height="58" rx="6" 
-      fill={active ? "hsl(var(--primary) / 0.08)" : "hsl(var(--muted))"} 
-      stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} 
-      strokeWidth="1.5" />
-    {/* Image placeholder */}
-    <rect x="42" y="29" width="36" height="28" rx="3" fill={active ? "hsl(var(--primary) / 0.15)" : "hsl(var(--muted-foreground) / 0.1)"} />
-    {/* Text lines */}
-    <rect x="42" y="63" width="28" height="3" rx="1.5" fill={active ? "hsl(var(--primary) / 0.4)" : "hsl(var(--muted-foreground) / 0.2)"} />
-    <rect x="42" y="70" width="18" height="3" rx="1.5" fill={active ? "hsl(var(--primary) / 0.25)" : "hsl(var(--muted-foreground) / 0.12)"} />
-  </svg>
-);
+const SalePromoSilhouette = ({ active }: { active: boolean }) => {
+  const fg = active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.35)";
+  const bg = active ? "hsl(var(--primary) / 0.08)" : "hsl(var(--muted) / 0.6)";
+  const bgMid = active ? "hsl(var(--primary) / 0.15)" : "hsl(var(--muted))";
+  return (
+    <svg viewBox="0 0 180 220" fill="none" className="w-full h-full">
+      {/* Full-bleed image area */}
+      <rect x="0" y="0" width="180" height="220" rx="8" fill={bg} />
+      {/* Dashed border frame like reference */}
+      <rect x="10" y="10" width="160" height="200" rx="4" stroke={fg} strokeWidth="1.2" strokeDasharray="4 3" fill="none" />
+      {/* Large "SALE" text block */}
+      <rect x="28" y="36" width="60" height="48" rx="2" fill={fg} opacity="0.8" />
+      <rect x="92" y="44" width="56" height="32" rx="2" fill={fg} opacity="0.5" />
+      {/* Offer badge bar */}
+      <rect x="36" y="100" width="108" height="22" rx="4" fill={bgMid} stroke={fg} strokeWidth="1" />
+      <rect x="50" y="107" width="80" height="8" rx="2" fill={fg} opacity="0.4" />
+      {/* Sub-text lines */}
+      <rect x="48" y="134" width="84" height="6" rx="2" fill={fg} opacity="0.25" />
+      <rect x="56" y="146" width="68" height="6" rx="2" fill={fg} opacity="0.2" />
+      {/* URL / bottom text */}
+      <rect x="40" y="172" width="100" height="7" rx="2" fill={fg} opacity="0.3" />
+      {/* Deadline badge */}
+      <rect x="56" y="190" width="68" height="14" rx="3" fill={fg} opacity="0.15" />
+      <rect x="68" y="194" width="44" height="6" rx="2" fill={fg} opacity="0.35" />
+    </svg>
+  );
+};
 
-const NewArrivalIllustration = ({ active }: { active: boolean }) => (
-  <svg viewBox="0 0 120 90" fill="none" className="w-full h-full">
-    {/* Box */}
-    <rect x="30" y="30" width="60" height="45" rx="4" 
-      fill={active ? "hsl(var(--primary) / 0.08)" : "hsl(var(--muted))"} 
-      stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} 
-      strokeWidth="1.5" />
-    {/* Box flaps */}
-    <path d="M30 30L40 18H80L90 30" 
-      fill={active ? "hsl(var(--primary) / 0.12)" : "hsl(var(--muted))"} 
-      stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} 
-      strokeWidth="1.5" />
-    <line x1="60" y1="18" x2="60" y2="30" stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} strokeWidth="1.5" />
-    {/* Star / sparkle coming out */}
-    <path d="M60 12L62 8L64 12L68 10L64 14L66 18L62 15L60 18L58 15L54 18L56 14L52 10L56 12L58 8Z" 
-      fill={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} />
-    {/* NEW badge */}
-    <rect x="68" y="22" width="24" height="14" rx="3" fill={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.35)"} />
-    <text x="80" y="32" textAnchor="middle" fontSize="8" fontWeight="bold" fill="white">NEW</text>
-  </svg>
-);
+const ProductHighlightSilhouette = ({ active }: { active: boolean }) => {
+  const fg = active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.35)";
+  const bg = active ? "hsl(var(--primary) / 0.06)" : "hsl(var(--muted) / 0.5)";
+  const accent = active ? "hsl(var(--primary) / 0.2)" : "hsl(var(--muted))";
+  return (
+    <svg viewBox="0 0 180 220" fill="none" className="w-full h-full">
+      <rect x="0" y="0" width="180" height="220" rx="8" fill={bg} />
+      {/* Product image — large centered silhouette */}
+      <ellipse cx="90" cy="90" rx="48" ry="52" fill={accent} />
+      <rect x="66" y="58" width="48" height="64" rx="6" fill={fg} opacity="0.12" />
+      {/* Spotlight rays */}
+      <line x1="90" y1="20" x2="90" y2="34" stroke={fg} strokeWidth="1" opacity="0.2" />
+      <line x1="55" y1="35" x2="62" y2="46" stroke={fg} strokeWidth="1" opacity="0.15" />
+      <line x1="125" y1="35" x2="118" y2="46" stroke={fg} strokeWidth="1" opacity="0.15" />
+      {/* Product name */}
+      <rect x="44" y="156" width="92" height="8" rx="3" fill={fg} opacity="0.5" />
+      {/* Description line */}
+      <rect x="52" y="172" width="76" height="5" rx="2" fill={fg} opacity="0.2" />
+      {/* Price tag */}
+      <rect x="64" y="188" width="52" height="16" rx="4" fill={fg} opacity="0.35" />
+      <rect x="72" y="193" width="36" height="6" rx="2" fill={bg} />
+    </svg>
+  );
+};
 
-const BrandStoryIllustration = ({ active }: { active: boolean }) => (
-  <svg viewBox="0 0 120 90" fill="none" className="w-full h-full">
-    {/* Overlapping frames - collage style */}
-    <rect x="22" y="18" width="38" height="30" rx="4" 
-      fill={active ? "hsl(var(--primary) / 0.1)" : "hsl(var(--muted))"} 
-      stroke={active ? "hsl(var(--primary) / 0.5)" : "hsl(var(--muted-foreground) / 0.2)"} 
-      strokeWidth="1.5" transform="rotate(-5 41 33)" />
-    <rect x="55" y="15" width="42" height="32" rx="4" 
-      fill={active ? "hsl(var(--primary) / 0.08)" : "hsl(var(--muted))"} 
-      stroke={active ? "hsl(var(--primary) / 0.4)" : "hsl(var(--muted-foreground) / 0.2)"} 
-      strokeWidth="1.5" transform="rotate(3 76 31)" />
-    <rect x="30" y="42" width="55" height="35" rx="4" 
-      fill={active ? "hsl(var(--primary) / 0.12)" : "hsl(var(--muted))"} 
-      stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} 
-      strokeWidth="1.5" />
-    {/* Heart icon in center frame */}
-    <path d="M57.5 52C57.5 52 53 54 53 57.5C53 60 55 62 57.5 64C60 62 62 60 62 57.5C62 54 57.5 52 57.5 52Z" 
-      fill={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"} />
-  </svg>
-);
+const NewArrivalSilhouette = ({ active }: { active: boolean }) => {
+  const fg = active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.35)";
+  const bg = active ? "hsl(var(--primary) / 0.06)" : "hsl(var(--muted) / 0.5)";
+  const accent = active ? "hsl(var(--primary) / 0.18)" : "hsl(var(--muted))";
+  return (
+    <svg viewBox="0 0 180 220" fill="none" className="w-full h-full">
+      <rect x="0" y="0" width="180" height="220" rx="8" fill={bg} />
+      {/* "NEW" ribbon at top */}
+      <rect x="0" y="0" width="180" height="36" rx="8" fill={fg} opacity="0.12" />
+      <rect x="60" y="10" width="60" height="16" rx="8" fill={fg} opacity="0.5" />
+      {/* Product card centered */}
+      <rect x="30" y="48" width="120" height="110" rx="8" fill={accent} />
+      {/* Image placeholder inside card */}
+      <rect x="42" y="56" width="96" height="68" rx="4" fill={fg} opacity="0.1" />
+      {/* Sparkle accents */}
+      <circle cx="136" cy="52" r="3" fill={fg} opacity="0.3" />
+      <circle cx="148" cy="44" r="2" fill={fg} opacity="0.2" />
+      <circle cx="40" cy="52" r="2.5" fill={fg} opacity="0.25" />
+      {/* Text inside card */}
+      <rect x="48" y="132" width="84" height="7" rx="2" fill={fg} opacity="0.35" />
+      <rect x="56" y="144" width="68" height="5" rx="2" fill={fg} opacity="0.2" />
+      {/* CTA button */}
+      <rect x="50" y="174" width="80" height="24" rx="12" fill={fg} opacity="0.4" />
+      <rect x="66" y="182" width="48" height="8" rx="3" fill={bg} />
+    </svg>
+  );
+};
 
-const CategoryHighlightIllustration = ({ active }: { active: boolean }) => (
-  <svg viewBox="0 0 120 90" fill="none" className="w-full h-full">
-    {/* 2x2 grid of product thumbnails */}
-    {[
-      { x: 24, y: 14 },
-      { x: 64, y: 14 },
-      { x: 24, y: 50 },
-      { x: 64, y: 50 },
-    ].map((pos, i) => (
-      <g key={i}>
-        <rect x={pos.x} y={pos.y} width="32" height="28" rx="4"
-          fill={active ? "hsl(var(--primary) / 0.08)" : "hsl(var(--muted))"}
-          stroke={active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.3)"}
-          strokeWidth="1.5" />
-        <rect x={pos.x + 5} y={pos.y + 4} width="22" height="12" rx="2"
-          fill={active ? "hsl(var(--primary) / 0.15)" : "hsl(var(--muted-foreground) / 0.1)"} />
-        <rect x={pos.x + 5} y={pos.y + 20} width="16" height="2.5" rx="1.25"
-          fill={active ? "hsl(var(--primary) / 0.3)" : "hsl(var(--muted-foreground) / 0.15)"} />
-      </g>
-    ))}
-  </svg>
-);
+const BrandStorySilhouette = ({ active }: { active: boolean }) => {
+  const fg = active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.35)";
+  const bg = active ? "hsl(var(--primary) / 0.06)" : "hsl(var(--muted) / 0.5)";
+  const accent = active ? "hsl(var(--primary) / 0.15)" : "hsl(var(--muted))";
+  return (
+    <svg viewBox="0 0 180 220" fill="none" className="w-full h-full">
+      <rect x="0" y="0" width="180" height="220" rx="8" fill={bg} />
+      {/* Cinematic top image band */}
+      <rect x="0" y="0" width="180" height="100" rx="8" fill={accent} />
+      {/* Overlapping photo frames — collage feel */}
+      <rect x="14" y="16" width="70" height="50" rx="4" fill={fg} fillOpacity="0.1" stroke={fg} strokeWidth="0.8" strokeOpacity="0.2" />
+      <rect x="96" y="24" width="66" height="56" rx="4" fill={fg} fillOpacity="0.08" stroke={fg} strokeWidth="0.8" strokeOpacity="0.15" />
+      {/* Quote / story text area */}
+      <rect x="24" y="114" width="6" height="50" rx="3" fill={fg} opacity="0.2" />
+      <rect x="40" y="116" width="110" height="6" rx="2" fill={fg} opacity="0.35" />
+      <rect x="40" y="128" width="100" height="5" rx="2" fill={fg} opacity="0.25" />
+      <rect x="40" y="140" width="88" height="5" rx="2" fill={fg} opacity="0.2" />
+      <rect x="40" y="152" width="72" height="5" rx="2" fill={fg} opacity="0.15" />
+      {/* Logo placeholder */}
+      <circle cx="90" cy="188" r="14" fill={fg} fillOpacity="0.12" stroke={fg} strokeWidth="1" strokeOpacity="0.25" />
+      <rect x="76" y="184" width="28" height="8" rx="2" fill={fg} opacity="0.2" />
+    </svg>
+  );
+};
 
-const GOALS: { value: CreativeGoal; label: string; description: string; Illustration: React.FC<{ active: boolean }> }[] = [
-  { value: "sale-promo", label: "Sale / Promotion", description: "Discount or limited-time offer", Illustration: SalePromoIllustration },
-  { value: "product-highlight", label: "Product Highlight", description: "Showcase a product's value", Illustration: ProductHighlightIllustration },
-  { value: "new-arrival", label: "New Arrival", description: "Introduce a new product", Illustration: NewArrivalIllustration },
-  { value: "brand-story", label: "Brand Story", description: "Tell your brand's story", Illustration: BrandStoryIllustration },
-  { value: "category-highlight", label: "Category Highlight", description: "Spotlight a collection", Illustration: CategoryHighlightIllustration },
+const CategoryHighlightSilhouette = ({ active }: { active: boolean }) => {
+  const fg = active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground) / 0.35)";
+  const bg = active ? "hsl(var(--primary) / 0.06)" : "hsl(var(--muted) / 0.5)";
+  const accent = active ? "hsl(var(--primary) / 0.14)" : "hsl(var(--muted))";
+  return (
+    <svg viewBox="0 0 180 220" fill="none" className="w-full h-full">
+      <rect x="0" y="0" width="180" height="220" rx="8" fill={bg} />
+      {/* Category title bar */}
+      <rect x="28" y="16" width="124" height="10" rx="3" fill={fg} opacity="0.4" />
+      <rect x="48" y="32" width="84" height="6" rx="2" fill={fg} opacity="0.15" />
+      {/* 2x2 product grid */}
+      {[
+        { x: 16, y: 52 },
+        { x: 96, y: 52 },
+        { x: 16, y: 130 },
+        { x: 96, y: 130 },
+      ].map((pos, i) => (
+        <g key={i}>
+          <rect x={pos.x} y={pos.y} width="68" height="64" rx="6" fill={accent} />
+          <rect x={pos.x + 10} y={pos.y + 8} width="48" height="32" rx="3" fill={fg} opacity="0.1" />
+          <rect x={pos.x + 14} y={pos.y + 46} width="40" height="5" rx="2" fill={fg} opacity="0.25" />
+          <rect x={pos.x + 18} y={pos.y + 54} width="32" height="4" rx="2" fill={fg} opacity="0.15" />
+        </g>
+      ))}
+      {/* "Shop All" CTA */}
+      <rect x="56" y="204" width="68" height="10" rx="5" fill={fg} opacity="0.2" />
+    </svg>
+  );
+};
+
+const GOALS: {
+  value: CreativeGoal;
+  label: string;
+  description: string;
+  Illustration: React.FC<{ active: boolean }>;
+}[] = [
+  { value: "sale-promo", label: "Sale / Promotion", description: "Discount or limited-time offer with bold visuals", Illustration: SalePromoSilhouette },
+  { value: "product-highlight", label: "Product Highlight", description: "Showcase a hero product front and center", Illustration: ProductHighlightSilhouette },
+  { value: "new-arrival", label: "New Arrival", description: "Announce a new product with impact", Illustration: NewArrivalSilhouette },
+  { value: "brand-story", label: "Brand Story", description: "Tell your brand's narrative with imagery", Illustration: BrandStorySilhouette },
+  { value: "category-highlight", label: "Category Highlight", description: "Spotlight a product collection or category", Illustration: CategoryHighlightSilhouette },
 ];
 
 interface GoalStepProps {
@@ -117,42 +162,81 @@ interface GoalStepProps {
 
 export const GoalStep = ({ selected, onSelect, onNext }: GoalStepProps) => {
   return (
-    <div>
+    <div className="max-w-4xl mx-auto">
       <h2 className="text-2xl font-bold text-foreground mb-1">What kind of ad do you want to create?</h2>
-      <p className="text-muted-foreground mb-8">
+      <p className="text-muted-foreground mb-10">
         Pick the creative type — we'll tailor the flow and output to match.
       </p>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {GOALS.map((g) => {
+      {/* Top row: 3 cards */}
+      <div className="grid grid-cols-3 gap-5 mb-5">
+        {GOALS.slice(0, 3).map((g) => {
           const isSelected = selected === g.value;
           return (
             <button
               key={g.value}
               onClick={() => onSelect(g.value)}
-              className={`relative text-left p-3 rounded-xl border-2 transition-all duration-200 flex flex-col items-center ${
+              className={`group relative text-left rounded-2xl border-2 transition-all duration-200 overflow-hidden ${
                 isSelected
-                  ? "border-primary bg-primary/5 shadow-sm"
-                  : "border-border hover:border-primary/40 bg-card"
+                  ? "border-primary bg-primary/[0.03] shadow-md ring-1 ring-primary/20"
+                  : "border-border/80 bg-card hover:border-primary/30 hover:shadow-sm"
               }`}
             >
               {isSelected && (
-                <div className="absolute top-2 left-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-3 h-3 text-primary-foreground" />
+                <div className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>
               )}
-              <div className="w-full aspect-[4/3] mb-3">
-                <g.Illustration active={isSelected} />
+              <div className="px-4 pt-4 pb-2">
+                <div className="w-full aspect-[9/11] mb-3 flex items-center justify-center">
+                  <g.Illustration active={isSelected} />
+                </div>
               </div>
-              <p className="font-semibold text-sm text-foreground text-center">{g.label}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 text-center">{g.description}</p>
+              <div className="px-5 pb-5">
+                <p className="font-semibold text-sm text-foreground">{g.label}</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{g.description}</p>
+              </div>
             </button>
           );
         })}
       </div>
 
-      <div className="mt-8 flex justify-end">
-        <Button size="lg" onClick={onNext} disabled={!selected} className="gap-2">
+      {/* Bottom row: 2 cards, centered */}
+      <div className="grid grid-cols-3 gap-5">
+        <div /> {/* spacer */}
+        {GOALS.slice(3).map((g) => {
+          const isSelected = selected === g.value;
+          return (
+            <button
+              key={g.value}
+              onClick={() => onSelect(g.value)}
+              className={`group relative text-left rounded-2xl border-2 transition-all duration-200 overflow-hidden ${
+                isSelected
+                  ? "border-primary bg-primary/[0.03] shadow-md ring-1 ring-primary/20"
+                  : "border-border/80 bg-card hover:border-primary/30 hover:shadow-sm"
+              }`}
+            >
+              {isSelected && (
+                <div className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                </div>
+              )}
+              <div className="px-4 pt-4 pb-2">
+                <div className="w-full aspect-[9/11] mb-3 flex items-center justify-center">
+                  <g.Illustration active={isSelected} />
+                </div>
+              </div>
+              <div className="px-5 pb-5">
+                <p className="font-semibold text-sm text-foreground">{g.label}</p>
+                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{g.description}</p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="mt-10 flex justify-end">
+        <Button size="lg" onClick={onNext} disabled={!selected} className="gap-2 rounded-xl">
           Continue <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
