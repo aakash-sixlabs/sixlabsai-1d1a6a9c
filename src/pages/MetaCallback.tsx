@@ -57,7 +57,7 @@ const MetaCallback = () => {
         if (connectionData.isNewUser) {
           navigate("/onboarding?meta=connected&new=true");
         } else {
-          navigate("/insights");
+          navigate("/home");
         }
       } catch (err: any) {
         console.error("Token exchange error:", err);
