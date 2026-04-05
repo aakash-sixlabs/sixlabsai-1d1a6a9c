@@ -408,20 +408,8 @@ export const InsightsStep = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <SyncNotificationBar
-        status={syncStatus}
-        currentStep={syncStep}
-        onDismiss={() => setSyncStatus("idle")}
-        onRetry={triggerBackgroundSync}
-      />
-      <InsightsTopBar
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onFilterClick={() => setShowFilters(!showFilters)}
-      />
-      <div className="flex flex-1 overflow-hidden">
-        <InsightsSidebar
+    <div className="h-screen flex bg-background overflow-hidden">
+      <InsightsSidebar
           activeView={activeView}
           onViewChange={setActiveView}
           campaignBoards={campaignBoards}
