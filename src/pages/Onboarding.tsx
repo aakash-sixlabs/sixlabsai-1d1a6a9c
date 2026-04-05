@@ -92,7 +92,7 @@ const Onboarding = () => {
   };
 
   const handleSyncComplete = () => {
-    navigate("/insights");
+    navigate("/home");
   };
 
   return (

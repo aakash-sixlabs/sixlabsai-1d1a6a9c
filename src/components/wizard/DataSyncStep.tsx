@@ -37,7 +37,7 @@ export const DataSyncStep = ({
     if (onComplete) {
       onComplete();
     } else {
-      navigate("/insights");
+      navigate("/home");
     }
   };
 

@@ -85,7 +85,7 @@ export const LandingStep = () => {
           selectedAccountName: connectionData.defaultAdAccountName || null,
           selectedMetaAccountId: connectionData.defaultMetaAccountId || null,
         });
-        navigate("/insights");
+        navigate("/home");
       }
       setConnecting(false);
     }

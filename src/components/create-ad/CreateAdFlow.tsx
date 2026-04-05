@@ -107,7 +107,7 @@ export const CreateAdFlow = () => {
       <header className="border-b border-border/50 bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container max-w-2xl flex items-center justify-between h-12">
           <button
-            onClick={() => navigate("/insights")}
+            onClick={() => navigate("/home")}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
             ← Back

@@ -70,7 +70,7 @@ export const DataReviewStep = () => {
             <h2 className="text-2xl font-bold text-foreground">Synced Data Review</h2>
             <p className="text-muted-foreground text-sm mt-1">{campaigns.length} campaigns · {adSets.length} ad sets · {ads.length} ads · {creatives.length} creatives</p>
           </div>
-          <Button size="lg" className="gap-2" onClick={() => navigate("/insights")}>Continue <ArrowRight className="w-4 h-4" /></Button>
+          <Button size="lg" className="gap-2" onClick={() => navigate("/home")}>Continue <ArrowRight className="w-4 h-4" /></Button>
         </div>
         <div className="rounded-lg border border-border bg-card overflow-auto">
           <table className="w-full text-sm">
