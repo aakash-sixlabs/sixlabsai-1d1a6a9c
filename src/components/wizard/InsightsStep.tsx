@@ -430,39 +430,39 @@ export const InsightsStep = () => {
           onAccountChange={setSelectedAccountId}
         />
         <main className="flex-1 overflow-auto">
-          <div className="px-8 py-8 max-w-[1200px] mx-auto">
+          <div className="px-8 py-10 max-w-[1200px] mx-auto">
             {/* Hero — Create your next ad */}
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35 }}
-              className="text-center mb-10"
+              transition={{ duration: 0.4, ease: "easeOut" }}
+              className="text-center mb-12"
             >
-              <h1 className="font-display font-bold text-3xl text-foreground mb-2">
+              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full mb-4">
+                <Sparkles className="w-3.5 h-3.5" />
+                AI-Powered Creative Intelligence
+              </div>
+              <h1 className="font-display font-bold text-4xl text-foreground mb-3 tracking-tight">
                 Create your next winning ad
               </h1>
-              <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">
+              <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-8 leading-relaxed">
                 Powered by what's already working in your account, what's winning for competitors, and what's trending right now.
               </p>
-              <div className="flex flex-col items-center gap-3 mb-6">
+              <div className="flex flex-col items-center gap-4 mb-8">
                 <Button
                   size="lg"
-                  className="gap-2 rounded-full px-6 shadow-sm"
+                  className="gap-2.5 rounded-xl px-8 py-3 shadow-md hover:shadow-lg transition-shadow text-sm font-semibold h-12"
                   onClick={() => navigate("/create-ad")}
-                  title="We don't use templates — every ad is generated from real performance data."
                 >
                   <Wand2 className="w-4 h-4" />
                   Create New Ad
                   <ArrowRight className="w-4 h-4" />
                 </Button>
-                <p className="text-[11px] text-muted-foreground/70">
-                  AI combines your top performers, competitor insights, and industry trends — instantly.
-                </p>
               </div>
-              <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1"><Trophy className="w-3.5 h-3.5" /> Your Top Performers</span>
-                <span className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1"><Target className="w-3.5 h-3.5" /> Competitor Insights</span>
-                <span className="flex items-center gap-1.5 bg-secondary/60 rounded-full px-3 py-1"><TrendingUp className="w-3.5 h-3.5" /> Industry Trends</span>
+              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-4 py-2 shadow-sm"><Trophy className="w-3.5 h-3.5 text-accent" /> Your Top Performers</span>
+                <span className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-4 py-2 shadow-sm"><Target className="w-3.5 h-3.5 text-primary" /> Competitor Insights</span>
+                <span className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-4 py-2 shadow-sm"><TrendingUp className="w-3.5 h-3.5 text-accent" /> Industry Trends</span>
               </div>
             </motion.div>
 
@@ -478,9 +478,9 @@ export const InsightsStep = () => {
             )}
 
             {/* Section header */}
-            <div className="flex items-center justify-between mb-4 mt-2">
-              <h2 className="font-display font-semibold text-lg text-foreground">{viewTitle}</h2>
-              <span className="text-xs text-muted-foreground">{filteredAds.length} creatives</span>
+            <div className="flex items-center justify-between mb-5 mt-2">
+              <h2 className="font-display font-bold text-xl text-foreground tracking-tight">{viewTitle}</h2>
+              <span className="text-xs text-muted-foreground bg-secondary/80 px-3 py-1 rounded-full font-medium">{filteredAds.length} creatives</span>
             </div>
 
             {/* Top performers — on Home */}
@@ -503,8 +503,8 @@ export const InsightsStep = () => {
             />
 
             {/* Reinforcement */}
-            <p className="text-center text-[11px] text-muted-foreground/50 mt-8 mb-4">
-              Every ad you create makes the next one smarter.
+            <p className="text-center text-xs text-muted-foreground/40 mt-12 mb-6 font-medium">
+              Every ad you create makes the next one smarter ✨
             </p>
           </div>
         </main>
