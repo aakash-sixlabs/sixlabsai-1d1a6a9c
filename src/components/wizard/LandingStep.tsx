@@ -173,11 +173,11 @@ export const LandingStep = () => {
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground text-center mb-2">Welcome to CreativeGen</h1>
           <p className="text-sm text-muted-foreground text-center mb-10">Generate data-driven ad creatives in minutes.</p>
-          <Button size="lg" variant="outline" onClick={handleConnectMeta} disabled={connecting} className="w-full gap-1.5 h-12 text-sm font-medium border-border bg-background hover:bg-accent hover:text-accent-foreground rounded-full">
+          <Button size="lg" variant="outline" onClick={handleConnectMeta} disabled={connecting} className="w-full gap-3 h-12 text-sm font-medium border-border bg-background hover:bg-accent hover:text-accent-foreground rounded-lg justify-center">
             {connecting ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Connecting…</>
             ) : (
-              <>Login with <MetaLogo className="h-6 w-auto" /></>
+              <><MetaLogo className="h-5 w-auto" /> Continue with Meta</>
             )}
           </Button>
           <div className="flex items-center gap-4 my-6"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">or</span><div className="flex-1 h-px bg-border" /></div>
