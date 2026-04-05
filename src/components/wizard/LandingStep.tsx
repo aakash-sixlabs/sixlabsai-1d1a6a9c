@@ -108,8 +108,30 @@ export const LandingStep = () => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      // Redirect in same window (popups are unreliable in iframe/preview)
-      window.location.href = data.authUrl;
+      // Open Meta login in a new window; callback posts message back
+      const width = 600;
+      const height = 700;
+      const left = window.screenX + (window.innerWidth - width) / 2;
+      const top = window.screenY + (window.innerHeight - height) / 2;
+      const popup = window.open(
+        data.authUrl,
+        "meta-auth",
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no`
+      );
+
+      // If popup was blocked, fall back to same-window redirect
+      if (!popup) {
+        window.location.href = data.authUrl;
+        return;
+      }
+
+      // Poll for popup close without completion
+      const timer = setInterval(() => {
+        if (popup.closed) {
+          clearInterval(timer);
+          setConnecting(false);
+        }
+      }, 500);
     } catch (err: any) {
       console.error("Meta connect error:", err);
       toast.error(err.message || "Failed to start Meta connection");
