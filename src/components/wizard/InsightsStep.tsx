@@ -408,28 +408,30 @@ export const InsightsStep = () => {
   }
 
   return (
-    <div className="h-screen flex bg-background overflow-hidden">
-      <InsightsSidebar
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Dark top bar — full width */}
+      <InsightsTopBar
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onFilterClick={() => setShowFilters(!showFilters)}
+      />
+      <SyncNotificationBar
+        status={syncStatus}
+        currentStep={syncStep}
+        onDismiss={() => setSyncStatus("idle")}
+        onRetry={triggerBackgroundSync}
+      />
+      {/* Sidebar + Main content */}
+      <div className="flex flex-1 overflow-hidden">
+        <InsightsSidebar
           activeView={activeView}
           onViewChange={setActiveView}
           campaignBoards={campaignBoards}
           adAccounts={adAccounts}
           selectedAccountId={selectedAccountId}
           onAccountChange={setSelectedAccountId}
-      />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <SyncNotificationBar
-          status={syncStatus}
-          currentStep={syncStep}
-          onDismiss={() => setSyncStatus("idle")}
-          onRetry={triggerBackgroundSync}
         />
-        <InsightsTopBar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onFilterClick={() => setShowFilters(!showFilters)}
-        />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto bg-card rounded-tl-2xl border-t border-l border-border/60 shadow-sm">
           <div className="px-8 py-10 max-w-[1200px] mx-auto">
             {/* Hero — Create your next ad */}
             <motion.div
