@@ -47,7 +47,8 @@ const initialState: CreateAdState = {
     discountType: "percentage",
     discountValue: "",
     promoCode: "",
-    duration: "",
+    startDate: "",
+    endDate: "",
     additionalNotes: "",
   },
 };
