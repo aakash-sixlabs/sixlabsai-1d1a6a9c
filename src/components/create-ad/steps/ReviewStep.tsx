@@ -77,8 +77,12 @@ export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
                 : `$${state.promoDetails.discountValue} off`}
               {state.promoDetails.promoCode && ` · Code: ${state.promoDetails.promoCode}`}
             </p>
-            {state.promoDetails.duration && (
-              <p className="text-sm text-muted-foreground mt-1">{state.promoDetails.duration}</p>
+            {(state.promoDetails.startDate || state.promoDetails.endDate) && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {state.promoDetails.startDate && new Date(state.promoDetails.startDate).toLocaleDateString()}
+                {state.promoDetails.startDate && state.promoDetails.endDate && " – "}
+                {state.promoDetails.endDate && new Date(state.promoDetails.endDate).toLocaleDateString()}
+              </p>
             )}
           </div>
         )}
