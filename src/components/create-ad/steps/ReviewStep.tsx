@@ -10,6 +10,25 @@ const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = 
   "category-highlight": { label: "Category Highlight", icon: LayoutGrid },
 };
 
+const formatOffer = (d: CreateAdState["promoDetails"]): string => {
+  switch (d.offerType) {
+    case "percentage":
+      return `${d.discountValue}% off`;
+    case "fixed":
+      return `$${d.discountValue} off`;
+    case "bogo":
+      return `Buy ${d.buyQty} Get ${d.getQty} Free`;
+    case "trial":
+      return `Try for $${d.trialPrice}`;
+    case "freebie":
+      return d.freebieDescription;
+    case "custom":
+      return d.customOfferHeadline;
+    default:
+      return "";
+  }
+};
+
 interface ReviewStepProps {
   state: CreateAdState;
   onBack: () => void;
@@ -19,10 +38,6 @@ interface ReviewStepProps {
 export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
   const goalInfo = state.goal ? GOAL_LABELS[state.goal] : null;
   const GoalIcon = goalInfo?.icon;
-
-  const handleGenerate = () => {
-    onGenerate();
-  };
 
   return (
     <div>
@@ -68,13 +83,11 @@ export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
         </div>
 
         {/* Promo Details */}
-        {state.promoDetails.discountValue && (
+        {state.promoDetails.offerType && (
           <div className="p-4 rounded-lg bg-card border border-border">
             <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Promotion</p>
             <p className="font-medium text-foreground">
-              {state.promoDetails.discountType === "percentage"
-                ? `${state.promoDetails.discountValue}% off`
-                : `$${state.promoDetails.discountValue} off`}
+              {formatOffer(state.promoDetails)}
               {state.promoDetails.promoCode && ` · Code: ${state.promoDetails.promoCode}`}
             </p>
             {(state.promoDetails.startDate || state.promoDetails.endDate) && (
@@ -92,7 +105,7 @@ export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
         <Button variant="ghost" size="lg" onClick={onBack} className="gap-2">
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button size="lg" onClick={handleGenerate} className="gap-2">
+        <Button size="lg" onClick={onGenerate} className="gap-2">
           <Sparkles className="w-4 h-4" /> Create New Ad
         </Button>
       </div>
