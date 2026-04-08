@@ -21,7 +21,8 @@ export interface PromoDetails {
   discountType: "percentage" | "fixed";
   discountValue: string;
   promoCode: string;
-  duration: string;
+  startDate: string;
+  endDate: string;
   additionalNotes: string;
 }
 
@@ -46,7 +47,8 @@ const initialState: CreateAdState = {
     discountType: "percentage",
     discountValue: "",
     promoCode: "",
-    duration: "",
+    startDate: "",
+    endDate: "",
     additionalNotes: "",
   },
 };

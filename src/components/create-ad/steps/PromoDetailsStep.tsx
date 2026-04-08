@@ -2,7 +2,12 @@ import { PromoDetails } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ArrowRight, Percent, DollarSign } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 interface PromoDetailsStepProps {
   details: PromoDetails;
@@ -13,6 +18,23 @@ interface PromoDetailsStepProps {
 
 export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDetailsStepProps) => {
   const set = (partial: Partial<PromoDetails>) => onUpdate({ ...details, ...partial });
+
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    details.startDate ? new Date(details.startDate) : undefined
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    details.endDate ? new Date(details.endDate) : undefined
+  );
+
+  const handleStartDate = (date: Date | undefined) => {
+    setStartDate(date);
+    set({ startDate: date?.toISOString() ?? "" });
+  };
+
+  const handleEndDate = (date: Date | undefined) => {
+    setEndDate(date);
+    set({ endDate: date?.toISOString() ?? "" });
+  };
 
   return (
     <div>
@@ -88,16 +110,63 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
           />
         </div>
 
-        {/* Duration */}
+        {/* Promotion Duration - Date Range */}
         <div>
           <label className="block text-sm font-medium text-foreground mb-2">
             Promotion Duration <span className="text-muted-foreground font-normal">(optional)</span>
           </label>
-          <Input
-            placeholder="e.g. This weekend only, Ends June 30"
-            value={details.duration}
-            onChange={(e) => set({ duration: e.target.value })}
-          />
+          <div className="flex items-center gap-3">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[180px] justify-start text-left font-normal",
+                    !startDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {startDate ? format(startDate, "MMM d, yyyy") : "Start date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={startDate}
+                  onSelect={handleStartDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            <span className="text-muted-foreground text-sm">to</span>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "w-[180px] justify-start text-left font-normal",
+                    !endDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {endDate ? format(endDate, "MMM d, yyyy") : "End date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={endDate}
+                  onSelect={handleEndDate}
+                  disabled={(date) => startDate ? date < startDate : false}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {/* Additional Notes */}
