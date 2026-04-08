@@ -17,9 +17,17 @@ export type CreativeGoal =
   | "brand-story"
   | "category-highlight";
 
+export type OfferType = "percentage" | "fixed" | "bogo" | "trial" | "freebie" | "custom";
+
 export interface PromoDetails {
-  discountType: "percentage" | "fixed";
+  offerType: OfferType | null;
   discountValue: string;
+  buyQty: string;
+  getQty: string;
+  bogoDiscount: string;
+  trialPrice: string;
+  freebieDescription: string;
+  customOfferHeadline: string;
   promoCode: string;
   startDate: string;
   endDate: string;
@@ -44,8 +52,14 @@ const initialState: CreateAdState = {
   productInputMethod: null,
   aspectRatios: [],
   promoDetails: {
-    discountType: "percentage",
+    offerType: null,
     discountValue: "",
+    buyQty: "1",
+    getQty: "1",
+    bogoDiscount: "free",
+    trialPrice: "",
+    freebieDescription: "",
+    customOfferHeadline: "",
     promoCode: "",
     startDate: "",
     endDate: "",
