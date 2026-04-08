@@ -21,7 +21,8 @@ export interface PromoDetails {
   discountType: "percentage" | "fixed";
   discountValue: string;
   promoCode: string;
-  duration: string;
+  startDate: string;
+  endDate: string;
   additionalNotes: string;
 }
 
