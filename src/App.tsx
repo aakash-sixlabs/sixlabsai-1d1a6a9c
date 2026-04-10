@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WizardProvider } from "@/context/WizardContext";
 import Landing from "./pages/Landing";
+import SixLabsLanding from "./pages/SixLabsLanding";
 import Onboarding from "./pages/Onboarding";
 import DataReview from "./pages/DataReview";
 import Insights from "./pages/Insights";
