@@ -111,7 +111,7 @@ export default function SixLabsLanding() {
           <Button
             size="sm"
             className="bg-white text-[hsl(222,47%,11%)] hover:bg-white/90 font-semibold text-sm rounded-lg"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/login")}
           >
             Get Started
           </Button>
@@ -150,7 +150,7 @@ export default function SixLabsLanding() {
             <Button
               size="lg"
               className="bg-primary hover:bg-primary/90 text-white font-semibold rounded-xl px-8 h-12 text-[15px] gap-2"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/login")}
             >
               Start Free <ArrowRight className="w-4 h-4" />
             </Button>
@@ -371,7 +371,7 @@ export default function SixLabsLanding() {
           <Button
             size="lg"
             className="mt-8 bg-white text-[hsl(222,47%,11%)] hover:bg-white/90 font-semibold rounded-xl px-10 h-12 text-[15px] gap-2"
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/login")}
           >
             Get Started Free <ArrowRight className="w-4 h-4" />
           </Button>
