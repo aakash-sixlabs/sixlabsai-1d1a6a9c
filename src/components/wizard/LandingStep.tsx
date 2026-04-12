@@ -28,6 +28,7 @@ const mockAds = [
 const col1 = [mockAds[0], mockAds[1], mockAds[2], mockAds[3]];
 const col2 = [mockAds[4], mockAds[5], mockAds[6], mockAds[7]];
 const col3 = [mockAds[2], mockAds[5], mockAds[0], mockAds[7]];
+const col4 = [mockAds[3], mockAds[6], mockAds[1], mockAds[4]];
 
 const AdCard = ({ ad }: { ad: typeof mockAds[0] }) => (
   <div className="rounded-xl border bg-card shadow-sm overflow-hidden flex-shrink-0 w-full">
@@ -165,10 +166,11 @@ export const LandingStep = () => {
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-[55%] bg-secondary/50 p-8 items-center justify-center overflow-hidden relative">
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: "radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "24px 24px" }} />
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="relative w-full max-w-2xl h-[calc(100vh-4rem)] grid grid-cols-3 gap-4 px-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="relative w-full max-w-3xl h-[calc(100vh-4rem)] grid grid-cols-4 gap-4 px-4">
           <ScrollColumn ads={col1} direction="up" duration={40} />
           <ScrollColumn ads={col2} direction="down" duration={35} />
           <ScrollColumn ads={col3} direction="up" duration={45} />
+          <ScrollColumn ads={col4} direction="down" duration={38} />
         </motion.div>
       </div>
       <div className="w-full lg:w-[45%] flex flex-col items-center justify-center px-6 sm:px-12 lg:px-16 bg-background">
