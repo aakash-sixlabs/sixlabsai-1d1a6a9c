@@ -197,9 +197,7 @@ const OnboardingV2 = () => {
     startPull();
   };
 
-  const handleGoToDashboard = () => {
-    navigate("/home");
-  };
+  const selectedAccountName = accounts.find((a) => a.id === selected)?.account_name ?? "your account";
 
   const stepIdx = PULL_STEPS.indexOf(currentStep);
   const effectiveIdx = stepIdx >= 0 ? stepIdx : 0;
@@ -422,23 +420,14 @@ const OnboardingV2 = () => {
 
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">
-                You're all set!
+                Thank you!
               </h2>
               <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                Your Meta account is connected and we've received all your
-                campaign, ad, and creative performance data. Our team will take
-                it from here.
+                Thank you for providing us access to{" "}
+                <span className="font-semibold text-foreground">{selectedAccountName}</span>.
+                The team will share the link for our review portal once the
+                creatives are ready for your review.
               </p>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-2">
-              <Button
-                size="lg"
-                className="w-full gap-2"
-                onClick={handleGoToDashboard}
-              >
-                Go to Dashboard <ArrowRight className="w-4 h-4" />
-              </Button>
             </div>
           </motion.div>
         </DialogContent>
