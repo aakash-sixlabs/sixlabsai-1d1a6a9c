@@ -1,20 +1,25 @@
 
 
-## Plan: Update completion modal in OnboardingV2
+## Plan: Route all users through Onboarding V2, gate /home to super admin
 
-**What changes:**
+**Super admin email:** `aakash.ahuja101@gmail.com`
 
-In `src/pages/OnboardingV2.tsx`, update the Phase 3 "Complete" dialog (lines 399–445):
+### Changes
 
-1. Remove the "Go to Dashboard" button and the `handleGoToDashboard` function
-2. Update the copy to thank the user for providing access to their selected ad account (by name), and inform them the team will share a link to the review portal once creatives are ready
-3. Reference the selected account name dynamically from the `accounts` + `selected` state
+**1. New file: `src/lib/superAdmin.ts`**
+- Export `SUPER_ADMIN_EMAIL = "aakash.ahuja101@gmail.com"`
+- Export helper `isSuperAdmin(email: string): boolean`
 
-**Updated completion content will read:**
+**2. `src/components/wizard/LandingStep.tsx`**
+- Remove the `isNewUser` conditional — always navigate to `/onboarding-v2?meta=connected` after auth
 
-> **Thank you!**
->
-> Thank you for providing us access to **{account name}**. The team will share the link for our review portal once the creatives are ready for your review.
+**3. `src/pages/MetaCallback.tsx`**
+- Remove the `isNewUser` conditional in fallback navigation — always navigate to `/onboarding-v2?meta=connected`
 
-No other files need changes.
+**4. `src/pages/Insights.tsx`**
+- Add auth guard: fetch user profile, check `profiles.email` against super admin
+- Non-admin users get redirected to `/onboarding-v2`
+
+**5. `src/pages/Onboarding.tsx`**
+- Same guard as Insights — redirect non-admin users to `/onboarding-v2`
 
