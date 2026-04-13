@@ -55,7 +55,7 @@ const MetaCallback = () => {
         // Fallback: direct navigation (if popup was blocked)
         sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
         if (connectionData.isNewUser) {
-          navigate("/onboarding?meta=connected&new=true");
+          navigate("/onboarding-v2?meta=connected&new=true");
         } else {
           navigate("/home");
         }
