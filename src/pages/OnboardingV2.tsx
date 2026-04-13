@@ -429,6 +429,14 @@ const OnboardingV2 = () => {
                 creatives are ready for your review.
               </p>
             </div>
+
+            <Button
+              size="lg"
+              className="w-full gap-2"
+              onClick={() => navigate("/")}
+            >
+              Go to Homepage <ArrowRight className="w-4 h-4" />
+            </Button>
           </motion.div>
         </DialogContent>
       </Dialog>
