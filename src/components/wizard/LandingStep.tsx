@@ -75,7 +75,7 @@ export const LandingStep = () => {
       sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
       // Check if new or returning user
       if (connectionData.isNewUser) {
-        navigate("/onboarding?meta=connected&new=true");
+        navigate("/onboarding-v2?meta=connected&new=true");
       } else {
         // Returning user — go straight to insights with their default account
         updateState({
@@ -158,7 +158,7 @@ export const LandingStep = () => {
     };
     sessionStorage.setItem("meta_connection", JSON.stringify(mockConnectionData));
     updateState({ metaConnected: true });
-    navigate("/onboarding?meta=connected&new=true&dev=true");
+    navigate("/onboarding-v2?meta=connected&new=true&dev=true");
   };
 
   return (
