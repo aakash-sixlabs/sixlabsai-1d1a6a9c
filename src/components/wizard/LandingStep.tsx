@@ -71,22 +71,9 @@ export const LandingStep = () => {
   // Listen for popup auth completion
   const handleAuthMessage = useCallback((event: MessageEvent) => {
     if (event.data?.type === "META_AUTH_COMPLETE") {
-      const { connectionData } = event.data;
+      const connectionData = event.data.connectionData;
       sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
-      // Check if new or returning user
-      if (connectionData.isNewUser) {
-        navigate("/onboarding-v2?meta=connected&new=true");
-      } else {
-        // Returning user — go straight to insights with their default account
-        updateState({
-          metaConnected: true,
-          profileComplete: true,
-          selectedAccount: connectionData.defaultAdAccountId || null,
-          selectedAccountName: connectionData.defaultAdAccountName || null,
-          selectedMetaAccountId: connectionData.defaultMetaAccountId || null,
-        });
-        navigate("/home");
-      }
+      navigate("/onboarding-v2?meta=connected");
       setConnecting(false);
     }
     if (event.data?.type === "META_AUTH_ERROR") {

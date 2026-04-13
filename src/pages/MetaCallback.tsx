@@ -54,11 +54,7 @@ const MetaCallback = () => {
 
         // Fallback: direct navigation (if popup was blocked)
         sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
-        if (connectionData.isNewUser) {
-          navigate("/onboarding-v2?meta=connected&new=true");
-        } else {
-          navigate("/home");
-        }
+        navigate("/onboarding-v2?meta=connected");
       } catch (err: any) {
         console.error("Token exchange error:", err);
         handleError(err.message || "Failed to connect Meta account.");
