@@ -1,25 +1,22 @@
 
 
-## Plan: Route all users through Onboarding V2, gate /home to super admin
+## Plan: Redirect `/` to `/login` with Konami code easter egg
 
-**Super admin email:** `aakash.ahuja101@gmail.com`
+### What happens
+- Anyone visiting `/` gets immediately redirected to `/login`
+- On `/login`, entering the Konami code (↑↑↓↓←→←→) reveals a hidden "Explore Six Labs →" link below the Privacy Policy/Terms line
+- Clicking that link sets a sessionStorage flag and navigates to `/`
+- The `/` (SixLabsLanding) page checks for that flag on mount — if missing, redirects to `/login`; if present, renders normally
 
-### Changes
+### Files to change
 
-**1. New file: `src/lib/superAdmin.ts`**
-- Export `SUPER_ADMIN_EMAIL = "aakash.ahuja101@gmail.com"`
-- Export helper `isSuperAdmin(email: string): boolean`
+**1. `src/pages/SixLabsLanding.tsx`**
+- On mount, check `sessionStorage.getItem("easter_egg_access")`
+- If not set, redirect to `/login`
+- If set, render the marketing landing page as normal
 
 **2. `src/components/wizard/LandingStep.tsx`**
-- Remove the `isNewUser` conditional — always navigate to `/onboarding-v2?meta=connected` after auth
-
-**3. `src/pages/MetaCallback.tsx`**
-- Remove the `isNewUser` conditional in fallback navigation — always navigate to `/onboarding-v2?meta=connected`
-
-**4. `src/pages/Insights.tsx`**
-- Add auth guard: fetch user profile, check `profiles.email` against super admin
-- Non-admin users get redirected to `/onboarding-v2`
-
-**5. `src/pages/Onboarding.tsx`**
-- Same guard as Insights — redirect non-admin users to `/onboarding-v2`
+- Add a `useEffect` that listens for the Konami code sequence via `keydown` events
+- When the code is entered, show a subtle animated link below the Privacy/Terms line: "Explore Six Labs →"
+- Clicking the link sets `sessionStorage.setItem("easter_egg_access", "true")` and navigates to `/`
 
