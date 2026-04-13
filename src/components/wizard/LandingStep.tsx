@@ -213,6 +213,19 @@ export const LandingStep = () => {
           </Button>
 
           <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="#" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
+          {easterEgg && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center mt-3">
+              <button
+                onClick={() => {
+                  sessionStorage.setItem("easter_egg_access", "true");
+                  navigate("/");
+                }}
+                className="text-[11px] text-muted-foreground/60 hover:text-primary transition-colors"
+              >
+                Explore Six Labs →
+              </button>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </div>
