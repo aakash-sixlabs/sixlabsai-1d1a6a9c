@@ -7,6 +7,7 @@ import { WizardProvider } from "@/context/WizardContext";
 import Landing from "./pages/Landing";
 import SixLabsLanding from "./pages/SixLabsLanding";
 import Onboarding from "./pages/Onboarding";
+import OnboardingV2 from "./pages/OnboardingV2";
 import DataReview from "./pages/DataReview";
 import Insights from "./pages/Insights";
 import CreateAd from "./pages/CreateAd";
