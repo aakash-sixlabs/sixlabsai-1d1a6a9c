@@ -29,6 +29,7 @@ const App = () => (
             <Route path="/" element={<SixLabsLanding />} />
             <Route path="/login" element={<Landing />} />
             <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/onboarding-v2" element={<OnboardingV2 />} />
             <Route path="/data-review" element={<DataReview />} />
             <Route path="/home" element={<Insights />} />
             <Route path="/create-ad" element={<CreateAd />} />
