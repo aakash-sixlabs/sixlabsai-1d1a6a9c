@@ -67,7 +67,7 @@ export const InsightsTopBar = ({
           <Zap className="w-3.5 h-3.5 text-primary-foreground" />
         </div>
         <span className="font-display font-bold text-[15px] text-white tracking-tight">
-          CreativeGen
+          Six Labs
         </span>
       </div>
 
