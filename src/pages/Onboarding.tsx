@@ -6,6 +6,7 @@ import { ProfileOverlay, AccountSelectOverlay } from "@/components/wizard/Onboar
 import { ToolExplanationOverlay } from "@/components/wizard/ToolExplanationOverlay";
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
 import { supabase } from "@/integrations/supabase/client";
+import { isSuperAdmin } from "@/lib/superAdmin";
 
 type OnboardingPhase = "loading" | "profile" | "account-select" | "tool-explanation" | "data-sync";
 
@@ -19,6 +20,13 @@ const Onboarding = () => {
 
   useEffect(() => {
     const init = async () => {
+      // Gate: only super admin can access v1 onboarding
+      if (!isDevMode) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { navigate("/login"); return; }
+        const { data: profile } = await supabase.from("profiles").select("email").eq("id", user.id).single();
+        if (!isSuperAdmin(profile?.email)) { navigate("/onboarding-v2"); return; }
+      }
       // Dev mode: skip auth check
       if (isDevMode) {
         updateState({ metaConnected: true });
