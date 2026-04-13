@@ -63,10 +63,31 @@ const ScrollColumn = ({ ads, direction = "up", duration = 35 }: { ads: typeof mo
   );
 };
 
+const KONAMI = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRight","ArrowLeft","ArrowRight"];
+
 export const LandingStep = () => {
   const [connecting, setConnecting] = useState(false);
+  const [easterEgg, setEasterEgg] = useState(false);
   const navigate = useNavigate();
   const { updateState } = useWizard();
+
+  // Konami code listener
+  useEffect(() => {
+    let pos = 0;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === KONAMI[pos]) {
+        pos++;
+        if (pos === KONAMI.length) {
+          setEasterEgg(true);
+          pos = 0;
+        }
+      } else {
+        pos = 0;
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   // Listen for popup auth completion
   const handleAuthMessage = useCallback((event: MessageEvent) => {
