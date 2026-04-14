@@ -214,15 +214,38 @@ export const LandingStep = () => {
 
           <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="#" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
           {easterEgg && (
-            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center mt-3">
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center mt-3 space-y-1.5">
               <button
                 onClick={() => {
                   sessionStorage.setItem("easter_egg_access", "true");
                   navigate("/");
                 }}
-                className="text-[11px] text-muted-foreground/60 hover:text-primary transition-colors"
+                className="text-[11px] text-muted-foreground/60 hover:text-primary transition-colors block mx-auto"
               >
                 Explore Six Labs →
+              </button>
+              <button
+                onClick={() => {
+                  const mockConnectionData = {
+                    connectionId: "mock-connection-id",
+                    userName: "Alex Johnson",
+                    userEmail: "alex@example.com",
+                    metaUserId: "mock-meta-123",
+                    accounts: [
+                      { account_id: "act_111222333", name: "Glow Skin Co. Ads", currency: "USD" },
+                      { account_id: "act_444555666", name: "FitFuel Performance", currency: "USD" },
+                    ],
+                    pages: [
+                      { id: "page_001", name: "Glow Skin Co.", category: "Beauty & Skincare" },
+                    ],
+                  };
+                  sessionStorage.setItem("meta_connection", JSON.stringify(mockConnectionData));
+                  updateState({ metaConnected: true });
+                  navigate("/onboarding?dev=true&meta=connected&new=true");
+                }}
+                className="text-[11px] text-muted-foreground/60 hover:text-primary transition-colors block mx-auto"
+              >
+                Test Onboarding V1 →
               </button>
             </motion.div>
           )}
