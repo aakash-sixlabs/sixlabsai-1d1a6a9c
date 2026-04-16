@@ -179,14 +179,24 @@ export const LandingStep = () => {
           <ScrollColumn ads={col3} direction="up" duration={45} />
         </motion.div>
       </div>
-      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center px-6 sm:px-12 lg:px-16 bg-background">
+      <div className="w-full lg:w-[45%] flex flex-col items-center justify-center px-6 sm:px-12 lg:px-16 bg-background py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-sm">
-          <div className="flex items-center gap-2 justify-center mb-8 lg:hidden">
+          <div className="flex items-center gap-2 justify-center mb-6 lg:hidden">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center"><Zap className="w-4 h-4 text-primary-foreground" /></div>
-            <span className="font-display font-bold text-lg text-foreground">CreativeGen</span>
+            <span className="font-display font-bold text-lg text-foreground">Six Labs</span>
+          </div>
+          {/* Mobile ad showcase */}
+          <div className="lg:hidden mb-8 relative h-56 overflow-hidden rounded-xl bg-secondary/40">
+            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />
+            <div className="absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-background to-transparent z-10 pointer-events-none" />
+            <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background to-transparent z-10 pointer-events-none" />
+            <div className="grid grid-cols-2 gap-3 px-3 h-full">
+              <ScrollColumn ads={col1} direction="up" duration={40} />
+              <ScrollColumn ads={col2} direction="down" duration={35} />
+            </div>
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground text-center mb-2">Better ads, that actually work.</h1>
-          <p className="text-sm text-muted-foreground text-center mb-10">Connect your Meta account to get started</p>
+          <p className="text-sm text-muted-foreground text-center mb-6">Connect your Meta account to get started</p>
           <Button size="lg" variant="outline" onClick={handleConnectMeta} disabled={connecting} className="w-full gap-1.5 h-12 text-sm font-medium border-border bg-background hover:bg-accent hover:text-accent-foreground rounded-full">
             {connecting ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Connecting…</>
