@@ -30,8 +30,12 @@ export const DataSyncStep = ({
   const [currentStep, setCurrentStep] = useState("Connecting to Meta");
   const [error, setError] = useState<string | null>(null);
   const [syncStarted, setSyncStarted] = useState(false);
+  const [simulatedIdx, setSimulatedIdx] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
 
-  const currentIdx = SYNC_STEPS.indexOf(currentStep);
+  const realIdx = SYNC_STEPS.indexOf(currentStep);
+  // Use whichever is further along: real backend progress or simulated progress
+  const currentIdx = isComplete ? SYNC_STEPS.length - 1 : Math.max(realIdx, simulatedIdx);
 
   const handleComplete = () => {
     if (onComplete) {
