@@ -50,6 +50,22 @@ export const DataSyncStep = ({
     setSyncStarted(true);
 
     // Dev mode: simulate sync with delays
+  // Smoothly advance simulated progress through steps so the UI doesn't sit still.
+  // Stops one step before the end — only real completion fills the final tick.
+  useEffect(() => {
+    if (error || isComplete) return;
+    if (simulatedIdx >= SYNC_STEPS.length - 1) return;
+    const timeout = setTimeout(() => {
+      setSimulatedIdx((i) => Math.min(i + 1, SYNC_STEPS.length - 1));
+    }, 1400);
+    return () => clearTimeout(timeout);
+  }, [simulatedIdx, error, isComplete]);
+
+  useEffect(() => {
+    if (syncStarted) return;
+    setSyncStarted(true);
+
+    // Dev mode: simulate sync with delays
     if (isDevMode) {
       let i = 0;
       const interval = setInterval(() => {
@@ -58,6 +74,7 @@ export const DataSyncStep = ({
           setCurrentStep(SYNC_STEPS[i]);
         } else {
           clearInterval(interval);
+          setIsComplete(true);
           updateState({ syncComplete: true });
           setTimeout(() => handleComplete(), 500);
         }
@@ -72,6 +89,7 @@ export const DataSyncStep = ({
         });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
+        setIsComplete(true);
         updateState({ syncComplete: true });
         setCurrentStep("Preparing insights");
         setTimeout(() => handleComplete(), 1000);
@@ -87,6 +105,7 @@ export const DataSyncStep = ({
         const job = payload.new as any;
         if (job.current_step) setCurrentStep(job.current_step);
         if (job.status === "complete") {
+          setIsComplete(true);
           updateState({ syncComplete: true });
           setTimeout(() => handleComplete(), 1000);
         }
