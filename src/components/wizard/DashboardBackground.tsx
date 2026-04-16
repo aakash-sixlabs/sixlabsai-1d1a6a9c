@@ -1,61 +1,73 @@
-import { Zap, BarChart3, Image, TrendingUp, Layers, FileText, Settings, Search, Bell } from "lucide-react";
+import { Home, FolderOpen, TrendingUp, Lightbulb, AlertCircle, Search, Bell, Zap } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 /**
- * A placeholder / skeleton dashboard that's always visible
- * behind the onboarding overlay modals.
+ * A placeholder / skeleton dashboard that mirrors the /home (Insights) layout
+ * and is always visible behind the onboarding overlay modals.
  */
 export const DashboardBackground = () => {
   return (
-    <div className="min-h-screen flex bg-background">
-      {/* Sidebar */}
-      <aside className="hidden lg:flex w-60 flex-col border-r bg-card/50">
-        <div className="flex items-center gap-2 px-5 h-14 border-b">
+    <div className="min-h-screen flex flex-col bg-background">
+      {/* Dark top bar — matches InsightsTopBar */}
+      <header className="h-14 bg-[hsl(222,47%,11%)] flex items-center px-6 gap-4 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
             <Zap className="w-3.5 h-3.5 text-primary-foreground" />
           </div>
-          <span className="font-display font-bold text-foreground">CreativeGen</span>
+          <span className="font-display font-bold text-[15px] text-white tracking-tight">
+            Six Labs
+          </span>
         </div>
-
-        <nav className="flex-1 px-3 py-4 space-y-1">
-          {[
-            { icon: BarChart3, label: "Dashboard", active: true },
-            { icon: Image, label: "Creatives" },
-            { icon: TrendingUp, label: "Insights" },
-            { icon: Layers, label: "Campaigns" },
-            { icon: FileText, label: "Reports" },
-            { icon: Settings, label: "Settings" },
-          ].map(({ icon: Icon, label, active }) => (
-            <div
-              key={label}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm ${
-                active
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground"
-              }`}
-            >
-              <Icon className="w-4 h-4" />
-              {label}
-            </div>
-          ))}
-        </nav>
-      </aside>
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col">
-        {/* Top bar */}
-        <header className="h-14 border-b bg-card/30 flex items-center justify-between px-6">
-          <div className="flex items-center gap-3">
-            <Search className="w-4 h-4 text-muted-foreground" />
-            <Skeleton className="h-4 w-48 rounded" />
+        <div className="flex-1" />
+        <div className="w-72">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+            <div className="h-9 pl-9 text-sm bg-white/10 rounded-lg" />
           </div>
-          <div className="flex items-center gap-3">
-            <Bell className="w-4 h-4 text-muted-foreground" />
-            <Skeleton className="w-8 h-8 rounded-full" />
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="h-8 w-8 rounded-lg flex items-center justify-center">
+            <Bell className="w-[18px] h-[18px] text-white/70" />
           </div>
-        </header>
+          <Avatar className="h-7 w-7 ml-1 ring-2 ring-white/20">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+              U
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      </header>
 
-        {/* Dashboard skeleton content */}
+      <div className="flex flex-1">
+        {/* Sidebar — matches InsightsSidebar */}
+        <aside className="hidden lg:flex w-56 flex-col border-r border-border/60 bg-background shrink-0">
+          <div className="px-4 pt-5 pb-4">
+            <Skeleton className="h-10 w-full rounded-xl" />
+          </div>
+          <nav className="px-3 py-1 space-y-1 flex-1">
+            {[
+              { icon: Home, label: "Home", active: true },
+              { icon: TrendingUp, label: "Top Performers" },
+              { icon: Lightbulb, label: "Opportunities" },
+              { icon: FolderOpen, label: "Ad Library" },
+              { icon: AlertCircle, label: "Needs Review" },
+            ].map(({ icon: Icon, label, active }) => (
+              <div
+                key={label}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium ${
+                  active
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground"
+                }`}
+              >
+                <Icon className="w-[18px] h-[18px]" />
+                {label}
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        {/* Main content area — skeleton */}
         <div className="flex-1 p-6 space-y-6 overflow-hidden">
           {/* Summary cards row */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
