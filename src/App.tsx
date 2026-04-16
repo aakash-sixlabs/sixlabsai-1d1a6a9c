@@ -14,6 +14,7 @@ import CreateAd from "./pages/CreateAd";
 import PdpScrape from "./pages/PdpScrape";
 import Output from "./pages/Output";
 import MetaCallback from "./pages/MetaCallback";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
             <Route path="/pdp-scrape" element={<PdpScrape />} />
             <Route path="/output" element={<Output />} />
             <Route path="/auth/callback" element={<MetaCallback />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
