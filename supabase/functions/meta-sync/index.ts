@@ -351,16 +351,18 @@ Deno.serve(async (req) => {
         { onConflict: "creative_id", ignoreDuplicates: false }
       );
 
-      // Production: creatives table
-      const { data: existingCreative } = await admin
-        .from("creatives")
-        .select("id")
-        .eq("brand_id", brandId)
-        .eq("image_url", primaryImageUrl)
-        .maybeSingle();
-
       // Use first stored image URL for image_url
       const primaryImageUrl = storedImageUrls.length > 0 ? storedImageUrls[0] : null;
+
+      // Production: creatives table
+      const creativeLookupQuery = admin
+        .from("creatives")
+        .select("id")
+        .eq("brand_id", brandId);
+
+      const { data: existingCreative } = primaryImageUrl
+        ? await creativeLookupQuery.eq("image_url", primaryImageUrl).maybeSingle()
+        : await creativeLookupQuery.limit(1).maybeSingle();
 
       if (existingCreative) {
         await admin.from("creatives").update({
