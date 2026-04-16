@@ -1,0 +1,1 @@
+ALTER TABLE public.brands DROP COLUMN IF EXISTS meta_access_token;
