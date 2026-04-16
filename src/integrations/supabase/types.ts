@@ -225,6 +225,8 @@ export type Database = {
           frequency: number | null
           id: number
           impressions: number | null
+          platform: string | null
+          platform_position: string | null
           roas: number | null
           spend: number | null
         }
@@ -238,6 +240,8 @@ export type Database = {
           frequency?: number | null
           id?: never
           impressions?: number | null
+          platform?: string | null
+          platform_position?: string | null
           roas?: number | null
           spend?: number | null
         }
@@ -251,6 +255,8 @@ export type Database = {
           frequency?: number | null
           id?: never
           impressions?: number | null
+          platform?: string | null
+          platform_position?: string | null
           roas?: number | null
           spend?: number | null
         }
@@ -349,23 +355,29 @@ export type Database = {
       brand_competitors: {
         Row: {
           brand_id: number | null
+          competitor_meta_page_id: string | null
+          competitor_meta_page_name: string | null
           competitor_name: string | null
-          competitor_page_id: string | null
           created_at: string
+          foreplay_brand_id: string | null
           id: number
         }
         Insert: {
           brand_id?: number | null
+          competitor_meta_page_id?: string | null
+          competitor_meta_page_name?: string | null
           competitor_name?: string | null
-          competitor_page_id?: string | null
           created_at?: string
+          foreplay_brand_id?: string | null
           id?: never
         }
         Update: {
           brand_id?: number | null
+          competitor_meta_page_id?: string | null
+          competitor_meta_page_name?: string | null
           competitor_name?: string | null
-          competitor_page_id?: string | null
           created_at?: string
+          foreplay_brand_id?: string | null
           id?: never
         }
         Relationships: [
@@ -380,124 +392,157 @@ export type Database = {
       }
       brands: {
         Row: {
+          account_currency: string | null
+          account_timezone: string | null
+          category: string | null
           created_at: string
-          currency: string | null
           id: number
           meta_access_token: string | null
-          meta_ad_account_id: string | null
+          meta_account_id: string | null
           name: string | null
-          timezone: string | null
+          target_languages: string | null
+          target_regions: string | null
           user_id: string
         }
         Insert: {
+          account_currency?: string | null
+          account_timezone?: string | null
+          category?: string | null
           created_at?: string
-          currency?: string | null
           id?: never
           meta_access_token?: string | null
-          meta_ad_account_id?: string | null
+          meta_account_id?: string | null
           name?: string | null
-          timezone?: string | null
+          target_languages?: string | null
+          target_regions?: string | null
           user_id: string
         }
         Update: {
+          account_currency?: string | null
+          account_timezone?: string | null
+          category?: string | null
           created_at?: string
-          currency?: string | null
           id?: never
           meta_access_token?: string | null
-          meta_ad_account_id?: string | null
+          meta_account_id?: string | null
           name?: string | null
-          timezone?: string | null
+          target_languages?: string | null
+          target_regions?: string | null
           user_id?: string
         }
         Relationships: []
       }
       campaign_ad_data: {
         Row: {
+          ad_id: string | null
           ad_name: string | null
           ad_status: string | null
+          adset_id: string | null
           adset_name: string | null
           adset_status: string | null
           brand_id: number | null
+          call_to_action: string | null
+          campaign_id: string | null
           campaign_name: string | null
           campaign_status: string | null
           clicks: number | null
-          conversion_value: number | null
-          conversions: number | null
           cpc: number | null
           cpm: number | null
           created_at: string
-          creative_id: number | null
+          creative_body: string | null
+          creative_id: string | null
+          creative_image_url: string | null
+          creative_thumbnail_url: string | null
+          creative_title: string | null
           ctr: number | null
-          daily_budget: number | null
           date: string | null
+          fatigue_severity: string | null
+          frequency: number | null
           id: number
           impressions: number | null
-          lifetime_budget: number | null
-          meta_ad_id: string | null
-          meta_adset_id: string | null
-          meta_campaign_id: string | null
-          objective: string | null
+          is_fatigued: boolean | null
+          platform: string | null
+          platform_position: string | null
+          purchases: number | null
+          reach: number | null
           roas: number | null
           spend: number | null
-          targeting: Json | null
+          target_countries: string | null
+          target_languages: string | null
         }
         Insert: {
+          ad_id?: string | null
           ad_name?: string | null
           ad_status?: string | null
+          adset_id?: string | null
           adset_name?: string | null
           adset_status?: string | null
           brand_id?: number | null
+          call_to_action?: string | null
+          campaign_id?: string | null
           campaign_name?: string | null
           campaign_status?: string | null
           clicks?: number | null
-          conversion_value?: number | null
-          conversions?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
-          creative_id?: number | null
+          creative_body?: string | null
+          creative_id?: string | null
+          creative_image_url?: string | null
+          creative_thumbnail_url?: string | null
+          creative_title?: string | null
           ctr?: number | null
-          daily_budget?: number | null
           date?: string | null
+          fatigue_severity?: string | null
+          frequency?: number | null
           id?: never
           impressions?: number | null
-          lifetime_budget?: number | null
-          meta_ad_id?: string | null
-          meta_adset_id?: string | null
-          meta_campaign_id?: string | null
-          objective?: string | null
+          is_fatigued?: boolean | null
+          platform?: string | null
+          platform_position?: string | null
+          purchases?: number | null
+          reach?: number | null
           roas?: number | null
           spend?: number | null
-          targeting?: Json | null
+          target_countries?: string | null
+          target_languages?: string | null
         }
         Update: {
+          ad_id?: string | null
           ad_name?: string | null
           ad_status?: string | null
+          adset_id?: string | null
           adset_name?: string | null
           adset_status?: string | null
           brand_id?: number | null
+          call_to_action?: string | null
+          campaign_id?: string | null
           campaign_name?: string | null
           campaign_status?: string | null
           clicks?: number | null
-          conversion_value?: number | null
-          conversions?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
-          creative_id?: number | null
+          creative_body?: string | null
+          creative_id?: string | null
+          creative_image_url?: string | null
+          creative_thumbnail_url?: string | null
+          creative_title?: string | null
           ctr?: number | null
-          daily_budget?: number | null
           date?: string | null
+          fatigue_severity?: string | null
+          frequency?: number | null
           id?: never
           impressions?: number | null
-          lifetime_budget?: number | null
-          meta_ad_id?: string | null
-          meta_adset_id?: string | null
-          meta_campaign_id?: string | null
-          objective?: string | null
+          is_fatigued?: boolean | null
+          platform?: string | null
+          platform_position?: string | null
+          purchases?: number | null
+          reach?: number | null
           roas?: number | null
           spend?: number | null
-          targeting?: Json | null
+          target_countries?: string | null
+          target_languages?: string | null
         }
         Relationships: [
           {
@@ -552,61 +597,91 @@ export type Database = {
       }
       competitor_ads: {
         Row: {
-          ad_archive_id: string | null
-          ad_text: string | null
           brand_id: number | null
-          competitor_page_id: string | null
-          competitor_page_name: string | null
+          competitor_brand_name: string | null
+          copy_body: string | null
+          copy_headline: string | null
           created_at: string
-          detected_tags: string | null
+          cta_title: string | null
+          cta_type: string | null
+          days_running: number | null
+          display_format: string | null
+          emotional_drivers: string | null
+          est_monthly_spend: number | null
+          first_seen_date: string | null
+          foreplay_ad_id: string | null
+          foreplay_brand_id: string | null
+          full_transcription: string | null
           id: number
-          impressions_lower: number | null
-          impressions_upper: number | null
-          media_type: string | null
-          media_url: string | null
+          image_url: string | null
+          is_active: boolean | null
+          last_seen_date: string | null
+          link_url: string | null
+          meta_ad_id: string | null
+          niches: string | null
           platform: string | null
-          spend_lower: number | null
-          spend_upper: number | null
-          started_running: string | null
-          stopped_running: string | null
+          product_category: string | null
+          source: string | null
+          thumbnail_url: string | null
+          video_url: string | null
         }
         Insert: {
-          ad_archive_id?: string | null
-          ad_text?: string | null
           brand_id?: number | null
-          competitor_page_id?: string | null
-          competitor_page_name?: string | null
+          competitor_brand_name?: string | null
+          copy_body?: string | null
+          copy_headline?: string | null
           created_at?: string
-          detected_tags?: string | null
+          cta_title?: string | null
+          cta_type?: string | null
+          days_running?: number | null
+          display_format?: string | null
+          emotional_drivers?: string | null
+          est_monthly_spend?: number | null
+          first_seen_date?: string | null
+          foreplay_ad_id?: string | null
+          foreplay_brand_id?: string | null
+          full_transcription?: string | null
           id?: never
-          impressions_lower?: number | null
-          impressions_upper?: number | null
-          media_type?: string | null
-          media_url?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          last_seen_date?: string | null
+          link_url?: string | null
+          meta_ad_id?: string | null
+          niches?: string | null
           platform?: string | null
-          spend_lower?: number | null
-          spend_upper?: number | null
-          started_running?: string | null
-          stopped_running?: string | null
+          product_category?: string | null
+          source?: string | null
+          thumbnail_url?: string | null
+          video_url?: string | null
         }
         Update: {
-          ad_archive_id?: string | null
-          ad_text?: string | null
           brand_id?: number | null
-          competitor_page_id?: string | null
-          competitor_page_name?: string | null
+          competitor_brand_name?: string | null
+          copy_body?: string | null
+          copy_headline?: string | null
           created_at?: string
-          detected_tags?: string | null
+          cta_title?: string | null
+          cta_type?: string | null
+          days_running?: number | null
+          display_format?: string | null
+          emotional_drivers?: string | null
+          est_monthly_spend?: number | null
+          first_seen_date?: string | null
+          foreplay_ad_id?: string | null
+          foreplay_brand_id?: string | null
+          full_transcription?: string | null
           id?: never
-          impressions_lower?: number | null
-          impressions_upper?: number | null
-          media_type?: string | null
-          media_url?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          last_seen_date?: string | null
+          link_url?: string | null
+          meta_ad_id?: string | null
+          niches?: string | null
           platform?: string | null
-          spend_lower?: number | null
-          spend_upper?: number | null
-          started_running?: string | null
-          stopped_running?: string | null
+          product_category?: string | null
+          source?: string | null
+          thumbnail_url?: string | null
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -620,87 +695,66 @@ export type Database = {
       }
       creative_tags: {
         Row: {
-          confidence: number | null
+          ad_id: number | null
+          brand_id: number | null
           created_at: string
-          creative_id: number | null
           id: number
-          tag_name: string | null
-          tag_source: string | null
+          tags: string | null
         }
         Insert: {
-          confidence?: number | null
+          ad_id?: number | null
+          brand_id?: number | null
           created_at?: string
-          creative_id?: number | null
           id?: never
-          tag_name?: string | null
-          tag_source?: string | null
+          tags?: string | null
         }
         Update: {
-          confidence?: number | null
+          ad_id?: number | null
+          brand_id?: number | null
           created_at?: string
-          creative_id?: number | null
           id?: never
-          tag_name?: string | null
-          tag_source?: string | null
+          tags?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "creative_tags_creative_id_fkey"
-            columns: ["creative_id"]
-            isOneToOne: false
-            referencedRelation: "creatives"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       creatives: {
         Row: {
-          ad_id: number | null
           brand_id: number | null
-          call_to_action: string | null
+          copy_body: string | null
+          copy_cta: string | null
+          copy_headline: string | null
           created_at: string
-          creative_type: string | null
-          destination_url: string | null
-          headline: string | null
           id: number
-          image_urls: string | null
-          primary_text: string | null
-          video_url: string | null
+          image_url: string | null
+          parent_creative_id: number | null
+          platform: string | null
+          source: string | null
         }
         Insert: {
-          ad_id?: number | null
           brand_id?: number | null
-          call_to_action?: string | null
+          copy_body?: string | null
+          copy_cta?: string | null
+          copy_headline?: string | null
           created_at?: string
-          creative_type?: string | null
-          destination_url?: string | null
-          headline?: string | null
           id?: never
-          image_urls?: string | null
-          primary_text?: string | null
-          video_url?: string | null
+          image_url?: string | null
+          parent_creative_id?: number | null
+          platform?: string | null
+          source?: string | null
         }
         Update: {
-          ad_id?: number | null
           brand_id?: number | null
-          call_to_action?: string | null
+          copy_body?: string | null
+          copy_cta?: string | null
+          copy_headline?: string | null
           created_at?: string
-          creative_type?: string | null
-          destination_url?: string | null
-          headline?: string | null
           id?: never
-          image_urls?: string | null
-          primary_text?: string | null
-          video_url?: string | null
+          image_url?: string | null
+          parent_creative_id?: number | null
+          platform?: string | null
+          source?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "creatives_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "prod_ads"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "creatives_brand_id_fkey"
             columns: ["brand_id"]
@@ -715,55 +769,52 @@ export type Database = {
           ad_id: number | null
           adset_id: string | null
           brand_id: number | null
-          created_at: string
+          creative_id: number | null
           ctr_trend_7d: number | null
           current_visual_tags: string | null
-          days_running: number | null
-          diagnosis_date: string | null
+          detected_at: string
           est_daily_waste: number | null
-          fatigue_score: number | null
-          fatigue_stage: string | null
-          frequency_current: number | null
+          fatigued_component: string | null
           id: number
+          is_actioned: boolean | null
           platform: string | null
-          recommended_action: string | null
-          replacement_creative_id: number | null
+          preserve_tags: string | null
+          replace_tags: string | null
+          severity: string | null
         }
         Insert: {
           ad_id?: number | null
           adset_id?: string | null
           brand_id?: number | null
-          created_at?: string
+          creative_id?: number | null
           ctr_trend_7d?: number | null
           current_visual_tags?: string | null
-          days_running?: number | null
-          diagnosis_date?: string | null
+          detected_at?: string
           est_daily_waste?: number | null
-          fatigue_score?: number | null
-          fatigue_stage?: string | null
-          frequency_current?: number | null
+          fatigued_component?: string | null
           id?: never
+          is_actioned?: boolean | null
           platform?: string | null
-          recommended_action?: string | null
-          replacement_creative_id?: number | null
+          preserve_tags?: string | null
+          replace_tags?: string | null
+          severity?: string | null
         }
         Update: {
           ad_id?: number | null
           adset_id?: string | null
           brand_id?: number | null
-          created_at?: string
+          creative_id?: number | null
           ctr_trend_7d?: number | null
           current_visual_tags?: string | null
-          days_running?: number | null
-          diagnosis_date?: string | null
+          detected_at?: string
           est_daily_waste?: number | null
-          fatigue_score?: number | null
-          fatigue_stage?: string | null
-          frequency_current?: number | null
+          fatigued_component?: string | null
           id?: never
+          is_actioned?: boolean | null
           platform?: string | null
-          recommended_action?: string | null
-          replacement_creative_id?: number | null
+          preserve_tags?: string | null
+          replace_tags?: string | null
+          severity?: string | null
         }
         Relationships: [
           {
@@ -817,40 +868,40 @@ export type Database = {
       }
       prod_ads: {
         Row: {
-          ad_name: string | null
+          adset_id: string | null
           brand_id: number | null
           created_at: string
-          format: string | null
+          creative_id: number | null
+          creative_url: string | null
           id: number
           meta_ad_id: string | null
-          meta_adset_id: string | null
-          meta_campaign_id: string | null
+          name: string | null
+          parent_ad_id: number | null
           status: string | null
-          thumbnail_url: string | null
         }
         Insert: {
-          ad_name?: string | null
+          adset_id?: string | null
           brand_id?: number | null
           created_at?: string
-          format?: string | null
+          creative_id?: number | null
+          creative_url?: string | null
           id?: never
           meta_ad_id?: string | null
-          meta_adset_id?: string | null
-          meta_campaign_id?: string | null
+          name?: string | null
+          parent_ad_id?: number | null
           status?: string | null
-          thumbnail_url?: string | null
         }
         Update: {
-          ad_name?: string | null
+          adset_id?: string | null
           brand_id?: number | null
           created_at?: string
-          format?: string | null
+          creative_id?: number | null
+          creative_url?: string | null
           id?: never
           meta_ad_id?: string | null
-          meta_adset_id?: string | null
-          meta_campaign_id?: string | null
+          name?: string | null
+          parent_ad_id?: number | null
           status?: string | null
-          thumbnail_url?: string | null
         }
         Relationships: [
           {
