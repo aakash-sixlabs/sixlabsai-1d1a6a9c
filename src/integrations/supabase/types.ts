@@ -397,7 +397,6 @@ export type Database = {
           category: string | null
           created_at: string
           id: number
-          meta_access_token: string | null
           meta_account_id: string | null
           name: string | null
           target_languages: string | null
@@ -410,7 +409,6 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: never
-          meta_access_token?: string | null
           meta_account_id?: string | null
           name?: string | null
           target_languages?: string | null
@@ -423,7 +421,6 @@ export type Database = {
           category?: string | null
           created_at?: string
           id?: never
-          meta_access_token?: string | null
           meta_account_id?: string | null
           name?: string | null
           target_languages?: string | null
