@@ -356,6 +356,7 @@ Deno.serve(async (req) => {
         .from("creatives")
         .select("id")
         .eq("brand_id", brandId)
+        .eq("image_url", primaryImageUrl)
         .maybeSingle();
 
       // Use first stored image URL for image_url
