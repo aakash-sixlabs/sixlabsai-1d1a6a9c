@@ -15,7 +15,6 @@ async function fetchAllPages(url: string) {
     if (data.error) throw new Error(data.error.message);
     results.push(...(data.data || []));
     nextUrl = data.paging?.next || null;
-    // Safety limit
     if (results.length > 5000) break;
   }
   return results;
@@ -24,30 +23,17 @@ async function fetchAllPages(url: string) {
 function classifyCreative(creative: any): string {
   const objStorySpec = creative.object_story_spec;
   if (!objStorySpec) return "excluded_other";
-
-  // Video
   if (objStorySpec.video_data || creative.video_id) return "excluded_video";
-
-  // Dynamic creative
   if (creative.asset_feed_spec) return "excluded_dynamic";
-
-  // Link ad with image
   if (objStorySpec.link_data) {
     const linkData = objStorySpec.link_data;
-    // Carousel
     if (linkData.child_attachments && linkData.child_attachments.length > 0) {
-      const hasVideo = linkData.child_attachments.some(
-        (c: any) => c.video_id
-      );
+      const hasVideo = linkData.child_attachments.some((c: any) => c.video_id);
       return hasVideo ? "excluded_other" : "static_carousel";
     }
-    // Single image
     if (linkData.image_hash || linkData.picture) return "static_single";
   }
-
-  // Photo post
   if (objStorySpec.photo_data) return "static_single";
-
   return "excluded_other";
 }
 
@@ -107,6 +93,35 @@ Deno.serve(async (req) => {
       ? adAccount.account_id
       : `act_${adAccount.account_id}`;
 
+    // ── Production: Upsert brand ──
+    const { data: existingBrand } = await admin
+      .from("brands")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("meta_ad_account_id", adAccount.account_id)
+      .maybeSingle();
+
+    let brandId: number;
+    if (existingBrand) {
+      brandId = existingBrand.id;
+      await admin.from("brands").update({
+        name: adAccount.account_name,
+        meta_access_token: accessToken,
+        currency: adAccount.currency || "USD",
+        timezone: adAccount.timezone || null,
+      }).eq("id", brandId);
+    } else {
+      const { data: newBrand } = await admin.from("brands").insert({
+        user_id: userId,
+        name: adAccount.account_name,
+        meta_ad_account_id: adAccount.account_id,
+        meta_access_token: accessToken,
+        currency: adAccount.currency || "USD",
+        timezone: adAccount.timezone || null,
+      }).select("id").single();
+      brandId = newBrand!.id;
+    }
+
     // Create sync job
     const dateEnd = new Date();
     const dateStart = new Date();
@@ -139,6 +154,7 @@ Deno.serve(async (req) => {
       `https://graph.facebook.com/v21.0/${actId}/campaigns?fields=id,name,status,objective&limit=500&access_token=${accessToken}`
     );
 
+    // Legacy write
     const campaignRecords = campaigns.map((c: any) => ({
       ad_account_id: adAccountId,
       user_id: userId,
@@ -147,7 +163,6 @@ Deno.serve(async (req) => {
       status: c.status,
       objective: c.objective,
     }));
-
     if (campaignRecords.length > 0) {
       await admin.from("campaigns").upsert(campaignRecords, {
         onConflict: "campaign_id",
@@ -155,7 +170,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch stored campaigns to get UUIDs
+    // Build campaign lookup (Meta ID → name/status/objective)
+    const campaignLookup = new Map<string, any>();
+    campaigns.forEach((c: any) => campaignLookup.set(c.id, c));
+
     const { data: storedCampaigns } = await admin
       .from("campaigns")
       .select("id, campaign_id")
@@ -166,9 +184,10 @@ Deno.serve(async (req) => {
 
     // 2. Fetch ad sets
     const adsets = await fetchAllPages(
-      `https://graph.facebook.com/v21.0/${actId}/adsets?fields=id,name,status,campaign_id,targeting&limit=500&access_token=${accessToken}`
+      `https://graph.facebook.com/v21.0/${actId}/adsets?fields=id,name,status,campaign_id,targeting,daily_budget,lifetime_budget&limit=500&access_token=${accessToken}`
     );
 
+    // Legacy write
     const adsetRecords = adsets
       .filter((as: any) => campaignMap.has(as.campaign_id))
       .map((as: any) => ({
@@ -179,13 +198,16 @@ Deno.serve(async (req) => {
         status: as.status,
         targeting: as.targeting || null,
       }));
-
     if (adsetRecords.length > 0) {
       await admin.from("ad_sets").upsert(adsetRecords, {
         onConflict: "adset_id",
         ignoreDuplicates: true,
       });
     }
+
+    // Build adset lookup (Meta ID → adset data)
+    const adsetLookup = new Map<string, any>();
+    adsets.forEach((as: any) => adsetLookup.set(as.id, as));
 
     const { data: storedAdsets } = await admin
       .from("ad_sets")
@@ -205,11 +227,14 @@ Deno.serve(async (req) => {
     let supportedAds = 0;
     let unsupportedAds = 0;
 
+    // Map from Meta ad ID → prod_ads.id
+    const prodAdIdMap = new Map<string, number>();
+
     for (const ad of ads) {
       if (!adsetMap.has(ad.adset_id)) continue;
       totalAds++;
 
-      // Insert ad
+      // Legacy: insert ad
       const { data: storedAd } = await admin
         .from("ads")
         .upsert(
@@ -228,14 +253,45 @@ Deno.serve(async (req) => {
 
       if (!storedAd) continue;
 
+      // Production: insert into prod_ads
+      const { data: existingProdAd } = await admin
+        .from("prod_ads")
+        .select("id")
+        .eq("meta_ad_id", ad.id)
+        .eq("brand_id", brandId)
+        .maybeSingle();
+
+      let prodAdId: number;
+      if (existingProdAd) {
+        prodAdId = existingProdAd.id;
+        await admin.from("prod_ads").update({
+          ad_name: ad.name || "",
+          status: ad.status,
+          meta_campaign_id: ad.campaign_id || adsetLookup.get(ad.adset_id)?.campaign_id || null,
+          meta_adset_id: ad.adset_id,
+          format: classifyCreative(ad.creative || {}),
+          thumbnail_url: ad.creative?.thumbnail_url || null,
+        }).eq("id", prodAdId);
+      } else {
+        const { data: newProdAd } = await admin.from("prod_ads").insert({
+          brand_id: brandId,
+          meta_ad_id: ad.id,
+          meta_campaign_id: adsetLookup.get(ad.adset_id)?.campaign_id || null,
+          meta_adset_id: ad.adset_id,
+          ad_name: ad.name || "",
+          status: ad.status,
+          format: classifyCreative(ad.creative || {}),
+          thumbnail_url: ad.creative?.thumbnail_url || null,
+        }).select("id").single();
+        prodAdId = newProdAd!.id;
+      }
+      prodAdIdMap.set(ad.id, prodAdId);
+
       // Classify and store creative
       const creative = ad.creative || {};
       const creativeType = classifyCreative(creative);
 
-      if (
-        creativeType === "static_single" ||
-        creativeType === "static_carousel"
-      ) {
+      if (creativeType === "static_single" || creativeType === "static_carousel") {
         supportedAds++;
       } else {
         unsupportedAds++;
@@ -255,10 +311,7 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Deduplicate URLs
       const uniqueFbUrls = [...new Set(fbImageUrls)];
-
-      // Download images from Facebook CDN and upload to Supabase Storage
       const storedImageUrls: string[] = [];
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 
@@ -266,29 +319,23 @@ Deno.serve(async (req) => {
         try {
           const imgRes = await fetch(uniqueFbUrls[imgIdx]);
           if (!imgRes.ok) continue;
-
           const contentType = imgRes.headers.get("content-type") || "image/jpeg";
           const imgBuffer = await imgRes.arrayBuffer();
           const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
           const storagePath = `${userId}/${storedAd.id}_${imgIdx}.${ext}`;
-
           const { error: uploadError } = await admin.storage
             .from("ad-creatives")
-            .upload(storagePath, imgBuffer, {
-              contentType,
-              upsert: true,
-            });
-
+            .upload(storagePath, imgBuffer, { contentType, upsert: true });
           if (!uploadError) {
             const publicUrl = `${supabaseUrl}/storage/v1/object/public/ad-creatives/${storagePath}`;
             storedImageUrls.push(publicUrl);
           }
         } catch (imgErr) {
-          // Skip failed downloads silently
           console.error(`Failed to download image ${imgIdx} for ad ${ad.id}:`, imgErr);
         }
       }
 
+      // Legacy: ad_creatives
       await admin.from("ad_creatives").upsert(
         {
           ad_id: storedAd.id,
@@ -305,16 +352,48 @@ Deno.serve(async (req) => {
         },
         { onConflict: "creative_id", ignoreDuplicates: false }
       );
+
+      // Production: creatives table
+      const { data: existingCreative } = await admin
+        .from("creatives")
+        .select("id")
+        .eq("ad_id", prodAdId)
+        .eq("brand_id", brandId)
+        .maybeSingle();
+
+      if (existingCreative) {
+        await admin.from("creatives").update({
+          creative_type: creativeType,
+          headline: linkData.title || linkData.name || null,
+          primary_text: linkData.message || objStory.photo_data?.message || null,
+          call_to_action: linkData.call_to_action?.type || null,
+          image_urls: storedImageUrls.join(","),
+          video_url: null,
+          destination_url: linkData.link || null,
+        }).eq("id", existingCreative.id);
+      } else {
+        await admin.from("creatives").insert({
+          brand_id: brandId,
+          ad_id: prodAdId,
+          creative_type: creativeType,
+          headline: linkData.title || linkData.name || null,
+          primary_text: linkData.message || objStory.photo_data?.message || null,
+          call_to_action: linkData.call_to_action?.type || null,
+          image_urls: storedImageUrls.join(","),
+          video_url: null,
+          destination_url: linkData.link || null,
+        });
+      }
     }
 
-    // 4. Fetch insights
+    // 4. Fetch insights — daily granularity
     await updateStep("Pulling ad performance");
     const timeRange = `{"since":"${dateStart.toISOString().split("T")[0]}","until":"${dateEnd.toISOString().split("T")[0]}"}`;
     const insights = await fetchAllPages(
-      `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values&level=ad&time_range=${encodeURIComponent(timeRange)}&limit=500&access_token=${accessToken}`
+      `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency&level=ad&time_increment=1&time_range=${encodeURIComponent(timeRange)}&limit=500&access_token=${accessToken}`
     );
 
-    // Get stored ads map
+    // Legacy: get stored ads map
     const { data: allStoredAds } = await admin
       .from("ads")
       .select("id, ad_id")
@@ -325,25 +404,128 @@ Deno.serve(async (req) => {
 
     await updateStep("Filtering supported formats");
 
+    // Aggregate legacy insights (sum across days for the old table)
+    const legacyAgg = new Map<string, any>();
+
     for (const insight of insights) {
       const storedAdId = adMap.get(insight.ad_id);
-      if (!storedAdId) continue;
+      const prodAdId = prodAdIdMap.get(insight.ad_id);
 
-      const conversions =
-        insight.actions?.find(
-          (a: any) =>
-            a.action_type === "offsite_conversion" ||
-            a.action_type === "purchase"
-        )?.value || 0;
-      const convValue =
-        insight.action_values?.find(
-          (a: any) =>
-            a.action_type === "offsite_conversion" ||
-            a.action_type === "purchase"
-        )?.value || 0;
+      const conversions = insight.actions?.find(
+        (a: any) => a.action_type === "offsite_conversion" || a.action_type === "purchase"
+      )?.value || 0;
+      const convValue = insight.action_values?.find(
+        (a: any) => a.action_type === "offsite_conversion" || a.action_type === "purchase"
+      )?.value || 0;
 
       const spend = parseFloat(insight.spend || "0");
+      const impressions = parseInt(insight.impressions || "0");
+      const clicks = parseInt(insight.clicks || "0");
+      const ctr = parseFloat(insight.ctr || "0");
+      const cpc = parseFloat(insight.cpc || "0");
+      const cpm = parseFloat(insight.cpm || "0");
+      const frequency = parseFloat(insight.frequency || "0");
       const roas = spend > 0 ? parseFloat(convValue) / spend : 0;
+      const insightDate = insight.date_start;
+
+      // Production: ad_performance_daily (one row per ad per day)
+      if (prodAdId) {
+        // Get the creative_id for this prod ad
+        const { data: prodCreative } = await admin
+          .from("creatives")
+          .select("id")
+          .eq("ad_id", prodAdId)
+          .maybeSingle();
+
+        const { data: existingPerf } = await admin
+          .from("ad_performance_daily")
+          .select("id")
+          .eq("ad_id", prodAdId)
+          .eq("date", insightDate)
+          .maybeSingle();
+
+        if (existingPerf) {
+          await admin.from("ad_performance_daily").update({
+            impressions, clicks, spend, ctr, frequency, roas,
+            creative_id: prodCreative?.id || null,
+          }).eq("id", existingPerf.id);
+        } else {
+          await admin.from("ad_performance_daily").insert({
+            ad_id: prodAdId,
+            date: insightDate,
+            impressions, clicks, spend, ctr, frequency, roas,
+            creative_id: prodCreative?.id || null,
+          });
+        }
+
+        // Production: campaign_ad_data (flattened row per ad per day)
+        const adsetData = adsetLookup.get(
+          // find meta_adset_id for this prod ad
+          [...prodAdIdMap.entries()].find(([_, v]) => v === prodAdId)?.[0]
+            ? undefined : undefined
+        );
+        // Lookup the original ad to get adset_id
+        const origAd = ads.find((a: any) => a.id === insight.ad_id);
+        const origAdset = origAd ? adsetLookup.get(origAd.adset_id) : undefined;
+        const origCampaign = origAdset ? campaignLookup.get(origAdset.campaign_id) : undefined;
+
+        const { data: existingCad } = await admin
+          .from("campaign_ad_data")
+          .select("id")
+          .eq("brand_id", brandId)
+          .eq("meta_ad_id", insight.ad_id)
+          .eq("date", insightDate)
+          .maybeSingle();
+
+        const cadRow = {
+          brand_id: brandId,
+          meta_campaign_id: origCampaign?.id || null,
+          campaign_name: origCampaign?.name || null,
+          campaign_status: origCampaign?.status || null,
+          objective: origCampaign?.objective || null,
+          meta_adset_id: origAdset?.id || null,
+          adset_name: origAdset?.name || null,
+          adset_status: origAdset?.status || null,
+          daily_budget: origAdset?.daily_budget ? parseFloat(origAdset.daily_budget) / 100 : null,
+          lifetime_budget: origAdset?.lifetime_budget ? parseFloat(origAdset.lifetime_budget) / 100 : null,
+          targeting: origAdset?.targeting || null,
+          meta_ad_id: insight.ad_id,
+          ad_name: origAd?.name || null,
+          ad_status: origAd?.status || null,
+          creative_id: prodCreative?.id || null,
+          date: insightDate,
+          impressions, clicks, spend, ctr, cpc, cpm, roas,
+          conversions: parseInt(conversions),
+          conversion_value: parseFloat(convValue),
+        };
+
+        if (existingCad) {
+          await admin.from("campaign_ad_data").update(cadRow).eq("id", existingCad.id);
+        } else {
+          await admin.from("campaign_ad_data").insert(cadRow);
+        }
+      }
+
+      // Legacy: aggregate for ad_insights (single row per ad)
+      if (storedAdId) {
+        if (!legacyAgg.has(storedAdId)) {
+          legacyAgg.set(storedAdId, { spend: 0, impressions: 0, clicks: 0, conversions: 0, convValue: 0 });
+        }
+        const agg = legacyAgg.get(storedAdId)!;
+        agg.spend += spend;
+        agg.impressions += impressions;
+        agg.clicks += clicks;
+        agg.conversions += parseInt(conversions);
+        agg.convValue += parseFloat(convValue);
+      }
+    }
+
+    // Legacy: write aggregated ad_insights
+    for (const [storedAdId, agg] of legacyAgg) {
+      const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
+      const cpc = agg.clicks > 0 ? agg.spend / agg.clicks : 0;
+      const cpm = agg.impressions > 0 ? (agg.spend / agg.impressions) * 1000 : 0;
+      const roas = agg.spend > 0 ? agg.convValue / agg.spend : 0;
 
       await admin.from("ad_insights").upsert(
         {
@@ -351,15 +533,12 @@ Deno.serve(async (req) => {
           user_id: userId,
           date_start: dateStart.toISOString().split("T")[0],
           date_stop: dateEnd.toISOString().split("T")[0],
-          spend,
-          impressions: parseInt(insight.impressions || "0"),
-          clicks: parseInt(insight.clicks || "0"),
-          ctr: parseFloat(insight.ctr || "0"),
-          cpc: parseFloat(insight.cpc || "0"),
-          cpm: parseFloat(insight.cpm || "0"),
-          conversions: parseInt(conversions),
-          conversion_value: parseFloat(convValue),
-          roas,
+          spend: agg.spend,
+          impressions: agg.impressions,
+          clicks: agg.clicks,
+          ctr, cpc, cpm, roas,
+          conversions: agg.conversions,
+          conversion_value: agg.convValue,
         },
         { onConflict: "ad_id", ignoreDuplicates: false }
       );
