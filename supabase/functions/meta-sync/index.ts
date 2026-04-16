@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
       .from("brands")
       .select("id")
       .eq("user_id", userId)
-      .eq("meta_ad_account_id", adAccount.account_id)
+      .eq("meta_account_id", adAccount.account_id)
       .maybeSingle();
 
     let brandId: number;
@@ -107,17 +107,17 @@ Deno.serve(async (req) => {
       await admin.from("brands").update({
         name: adAccount.account_name,
         meta_access_token: accessToken,
-        currency: adAccount.currency || "USD",
-        timezone: adAccount.timezone || null,
+        account_currency: adAccount.currency || "USD",
+        account_timezone: adAccount.timezone || null,
       }).eq("id", brandId);
     } else {
       const { data: newBrand } = await admin.from("brands").insert({
         user_id: userId,
         name: adAccount.account_name,
-        meta_ad_account_id: adAccount.account_id,
+        meta_account_id: adAccount.account_id,
         meta_access_token: accessToken,
-        currency: adAccount.currency || "USD",
-        timezone: adAccount.timezone || null,
+        account_currency: adAccount.currency || "USD",
+        account_timezone: adAccount.timezone || null,
       }).select("id").single();
       brandId = newBrand!.id;
     }
@@ -262,15 +262,16 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       let prodAdId: number;
+      const creativeType = classifyCreative(ad.creative || {});
       if (existingProdAd) {
         prodAdId = existingProdAd.id;
         await admin.from("prod_ads").update({
-          ad_name: ad.name || "",
+          name: ad.name || "",
           status: ad.status,
-          meta_campaign_id: ad.campaign_id || adsetLookup.get(ad.adset_id)?.campaign_id || null,
+          meta_campaign_id: adsetLookup.get(ad.adset_id)?.campaign_id || null,
           meta_adset_id: ad.adset_id,
-          format: classifyCreative(ad.creative || {}),
-          thumbnail_url: ad.creative?.thumbnail_url || null,
+          adset_id: ad.adset_id,
+          creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
         }).eq("id", prodAdId);
       } else {
         const { data: newProdAd } = await admin.from("prod_ads").insert({
@@ -278,10 +279,10 @@ Deno.serve(async (req) => {
           meta_ad_id: ad.id,
           meta_campaign_id: adsetLookup.get(ad.adset_id)?.campaign_id || null,
           meta_adset_id: ad.adset_id,
-          ad_name: ad.name || "",
+          adset_id: ad.adset_id,
+          name: ad.name || "",
           status: ad.status,
-          format: classifyCreative(ad.creative || {}),
-          thumbnail_url: ad.creative?.thumbnail_url || null,
+          creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
         }).select("id").single();
         prodAdId = newProdAd!.id;
       }
@@ -289,7 +290,6 @@ Deno.serve(async (req) => {
 
       // Classify and store creative
       const creative = ad.creative || {};
-      const creativeType = classifyCreative(creative);
 
       if (creativeType === "static_single" || creativeType === "static_carousel") {
         supportedAds++;
@@ -357,31 +357,30 @@ Deno.serve(async (req) => {
       const { data: existingCreative } = await admin
         .from("creatives")
         .select("id")
-        .eq("ad_id", prodAdId)
         .eq("brand_id", brandId)
         .maybeSingle();
 
+      // Use first stored image URL for image_url
+      const primaryImageUrl = storedImageUrls.length > 0 ? storedImageUrls[0] : null;
+
       if (existingCreative) {
         await admin.from("creatives").update({
-          creative_type: creativeType,
-          headline: linkData.title || linkData.name || null,
-          primary_text: linkData.message || objStory.photo_data?.message || null,
-          call_to_action: linkData.call_to_action?.type || null,
-          image_urls: storedImageUrls.join(","),
-          video_url: null,
-          destination_url: linkData.link || null,
+          image_url: primaryImageUrl,
+          copy_headline: linkData.title || linkData.name || null,
+          copy_body: linkData.message || objStory.photo_data?.message || null,
+          copy_cta: linkData.call_to_action?.type || null,
+          source: "meta",
+          platform: "facebook",
         }).eq("id", existingCreative.id);
       } else {
         await admin.from("creatives").insert({
           brand_id: brandId,
-          ad_id: prodAdId,
-          creative_type: creativeType,
-          headline: linkData.title || linkData.name || null,
-          primary_text: linkData.message || objStory.photo_data?.message || null,
-          call_to_action: linkData.call_to_action?.type || null,
-          image_urls: storedImageUrls.join(","),
-          video_url: null,
-          destination_url: linkData.link || null,
+          image_url: primaryImageUrl,
+          copy_headline: linkData.title || linkData.name || null,
+          copy_body: linkData.message || objStory.photo_data?.message || null,
+          copy_cta: linkData.call_to_action?.type || null,
+          source: "meta",
+          platform: "facebook",
         });
       }
     }
@@ -390,7 +389,7 @@ Deno.serve(async (req) => {
     await updateStep("Pulling ad performance");
     const timeRange = `{"since":"${dateStart.toISOString().split("T")[0]}","until":"${dateEnd.toISOString().split("T")[0]}"}`;
     const insights = await fetchAllPages(
-      `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency&level=ad&time_increment=1&time_range=${encodeURIComponent(timeRange)}&limit=500&access_token=${accessToken}`
+      `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency,reach&level=ad&time_increment=1&time_range=${encodeURIComponent(timeRange)}&limit=500&access_token=${accessToken}`
     );
 
     // Legacy: get stored ads map
@@ -411,7 +410,7 @@ Deno.serve(async (req) => {
       const storedAdId = adMap.get(insight.ad_id);
       const prodAdId = prodAdIdMap.get(insight.ad_id);
 
-      const conversions = insight.actions?.find(
+      const purchases = insight.actions?.find(
         (a: any) => a.action_type === "offsite_conversion" || a.action_type === "purchase"
       )?.value || 0;
       const convValue = insight.action_values?.find(
@@ -425,18 +424,12 @@ Deno.serve(async (req) => {
       const cpc = parseFloat(insight.cpc || "0");
       const cpm = parseFloat(insight.cpm || "0");
       const frequency = parseFloat(insight.frequency || "0");
+      const reach = parseInt(insight.reach || "0");
       const roas = spend > 0 ? parseFloat(convValue) / spend : 0;
       const insightDate = insight.date_start;
 
       // Production: ad_performance_daily (one row per ad per day)
       if (prodAdId) {
-        // Get the creative_id for this prod ad
-        const { data: prodCreative } = await admin
-          .from("creatives")
-          .select("id")
-          .eq("ad_id", prodAdId)
-          .maybeSingle();
-
         const { data: existingPerf } = await admin
           .from("ad_performance_daily")
           .select("id")
@@ -447,56 +440,56 @@ Deno.serve(async (req) => {
         if (existingPerf) {
           await admin.from("ad_performance_daily").update({
             impressions, clicks, spend, ctr, frequency, roas,
-            creative_id: prodCreative?.id || null,
+            platform: "facebook",
           }).eq("id", existingPerf.id);
         } else {
           await admin.from("ad_performance_daily").insert({
             ad_id: prodAdId,
             date: insightDate,
             impressions, clicks, spend, ctr, frequency, roas,
-            creative_id: prodCreative?.id || null,
+            platform: "facebook",
           });
         }
 
         // Production: campaign_ad_data (flattened row per ad per day)
-        const adsetData = adsetLookup.get(
-          // find meta_adset_id for this prod ad
-          [...prodAdIdMap.entries()].find(([_, v]) => v === prodAdId)?.[0]
-            ? undefined : undefined
-        );
-        // Lookup the original ad to get adset_id
         const origAd = ads.find((a: any) => a.id === insight.ad_id);
         const origAdset = origAd ? adsetLookup.get(origAd.adset_id) : undefined;
         const origCampaign = origAdset ? campaignLookup.get(origAdset.campaign_id) : undefined;
+
+        // Get creative info
+        const creative = origAd?.creative || {};
+        const objStory = creative.object_story_spec || {};
+        const linkData = objStory.link_data || {};
 
         const { data: existingCad } = await admin
           .from("campaign_ad_data")
           .select("id")
           .eq("brand_id", brandId)
-          .eq("meta_ad_id", insight.ad_id)
+          .eq("ad_id", insight.ad_id)
           .eq("date", insightDate)
           .maybeSingle();
 
         const cadRow = {
           brand_id: brandId,
-          meta_campaign_id: origCampaign?.id || null,
+          campaign_id: origCampaign?.id || null,
           campaign_name: origCampaign?.name || null,
           campaign_status: origCampaign?.status || null,
-          objective: origCampaign?.objective || null,
-          meta_adset_id: origAdset?.id || null,
+          adset_id: origAdset?.id || null,
           adset_name: origAdset?.name || null,
           adset_status: origAdset?.status || null,
-          daily_budget: origAdset?.daily_budget ? parseFloat(origAdset.daily_budget) / 100 : null,
-          lifetime_budget: origAdset?.lifetime_budget ? parseFloat(origAdset.lifetime_budget) / 100 : null,
-          targeting: origAdset?.targeting || null,
-          meta_ad_id: insight.ad_id,
+          ad_id: insight.ad_id,
           ad_name: origAd?.name || null,
           ad_status: origAd?.status || null,
-          creative_id: prodCreative?.id || null,
+          creative_id: creative.id || null,
+          creative_title: linkData.title || linkData.name || null,
+          creative_body: linkData.message || objStory.photo_data?.message || null,
+          creative_image_url: creative.image_url || creative.thumbnail_url || null,
+          creative_thumbnail_url: creative.thumbnail_url || null,
+          call_to_action: linkData.call_to_action?.type || null,
           date: insightDate,
-          impressions, clicks, spend, ctr, cpc, cpm, roas,
-          conversions: parseInt(conversions),
-          conversion_value: parseFloat(convValue),
+          impressions, clicks, spend, reach, ctr, cpc, cpm, frequency, roas,
+          purchases: parseInt(purchases),
+          platform: "facebook",
         };
 
         if (existingCad) {
@@ -515,7 +508,7 @@ Deno.serve(async (req) => {
         agg.spend += spend;
         agg.impressions += impressions;
         agg.clicks += clicks;
-        agg.conversions += parseInt(conversions);
+        agg.conversions += parseInt(purchases);
         agg.convValue += parseFloat(convValue);
       }
     }
@@ -569,6 +562,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
+    console.error("meta-sync error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: corsHeaders,
