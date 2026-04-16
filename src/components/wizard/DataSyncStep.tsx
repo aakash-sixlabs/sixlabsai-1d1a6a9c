@@ -45,11 +45,6 @@ export const DataSyncStep = ({
     }
   };
 
-  useEffect(() => {
-    if (syncStarted) return;
-    setSyncStarted(true);
-
-    // Dev mode: simulate sync with delays
   // Smoothly advance simulated progress through steps so the UI doesn't sit still.
   // Stops one step before the end — only real completion fills the final tick.
   useEffect(() => {
