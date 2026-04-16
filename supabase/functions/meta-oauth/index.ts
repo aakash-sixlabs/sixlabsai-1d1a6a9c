@@ -20,6 +20,7 @@ Deno.serve(async (req) => {
     // Step 1: Generate OAuth URL (public — no auth needed)
     if (action === "get-auth-url") {
       const { redirectUri } = await req.json();
+      console.log("[meta-oauth] get-auth-url redirectUri:", redirectUri);
       const state = crypto.randomUUID();
       const authUrl =
         `https://www.facebook.com/v21.0/dialog/oauth?` +
@@ -37,6 +38,7 @@ Deno.serve(async (req) => {
     // Step 2: Exchange code for token + create/find user + return session token
     if (action === "exchange-token") {
       const { code, redirectUri } = await req.json();
+      console.log("[meta-oauth] exchange-token redirectUri:", redirectUri);
       const META_APP_SECRET = Deno.env.get("META_APP_SECRET")!;
 
       const adminClient = createClient(
@@ -45,16 +47,20 @@ Deno.serve(async (req) => {
       );
 
       // Exchange code for short-lived token
-      const tokenRes = await fetch(
+      const tokenUrl =
         `https://graph.facebook.com/v21.0/oauth/access_token?` +
-          `client_id=${META_APP_ID}` +
-          `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-          `&client_secret=${META_APP_SECRET}` +
-          `&code=${code}`
-      );
+        `client_id=${META_APP_ID}` +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&client_secret=${META_APP_SECRET}` +
+        `&code=${code}`;
+      console.log("[meta-oauth] token exchange URL (sans secret):", tokenUrl.replace(META_APP_SECRET, "***"));
+
+      const tokenRes = await fetch(tokenUrl);
       const tokenData = await tokenRes.json();
+      console.log("[meta-oauth] token exchange response:", JSON.stringify(tokenData).substring(0, 200));
 
       if (tokenData.error) {
+        console.error("[meta-oauth] token exchange error:", tokenData.error);
         return new Response(
           JSON.stringify({ error: tokenData.error.message }),
           { status: 400, headers: corsHeaders }
@@ -70,6 +76,7 @@ Deno.serve(async (req) => {
           `&fb_exchange_token=${tokenData.access_token}`
       );
       const longTokenData = await longTokenRes.json();
+      console.log("[meta-oauth] long-lived token response status:", longTokenRes.status);
       const accessToken = longTokenData.access_token || tokenData.access_token;
       const expiresIn = longTokenData.expires_in || 3600;
 
@@ -78,6 +85,7 @@ Deno.serve(async (req) => {
         `https://graph.facebook.com/v21.0/me?fields=id,name,email&access_token=${accessToken}`
       );
       const meData = await meRes.json();
+      console.log("[meta-oauth] me data:", JSON.stringify({ id: meData.id, name: meData.name, email: meData.email }));
 
       // Use Meta User ID as the primary identity
       const placeholderEmail = `meta_${meData.id}@users.noreply`;
@@ -85,7 +93,6 @@ Deno.serve(async (req) => {
       // Create or find Supabase auth user
       let userId: string;
 
-      // First, search for existing user by meta_user_id in metadata
       const { data: listData } = await adminClient.auth.admin.listUsers();
       const existingUser = listData?.users?.find(
         (u: any) => u.user_metadata?.meta_user_id === meData.id
@@ -93,6 +100,7 @@ Deno.serve(async (req) => {
 
       if (existingUser) {
         userId = existingUser.id;
+        console.log("[meta-oauth] found existing user:", userId);
       } else {
         const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
           email: placeholderEmail,
@@ -104,12 +112,14 @@ Deno.serve(async (req) => {
         });
 
         if (createError) {
+          console.error("[meta-oauth] create user error:", createError);
           return new Response(
             JSON.stringify({ error: "Failed to create user account." }),
             { status: 500, headers: corsHeaders }
           );
         }
         userId = createData.user.id;
+        console.log("[meta-oauth] created new user:", userId);
       }
 
       // Generate magic link token for session
@@ -119,13 +129,13 @@ Deno.serve(async (req) => {
       });
 
       if (linkError || !linkData) {
+        console.error("[meta-oauth] generate link error:", linkError);
         return new Response(
           JSON.stringify({ error: "Failed to generate session link." }),
           { status: 500, headers: corsHeaders }
         );
       }
 
-      // Extract token_hash from the link properties
       const tokenHash = linkData.properties?.hashed_token;
 
       // Store Meta connection
@@ -147,13 +157,14 @@ Deno.serve(async (req) => {
         .single();
 
       if (insertError) {
+        console.error("[meta-oauth] insert connection error:", insertError);
         return new Response(JSON.stringify({ error: insertError.message }), {
           status: 500,
           headers: corsHeaders,
         });
       }
 
-      // Update profile with meta_user_id and real email if available
+      // Update profile
       await adminClient
         .from("profiles")
         .upsert({
@@ -168,6 +179,7 @@ Deno.serve(async (req) => {
         `https://graph.facebook.com/v21.0/me/adaccounts?fields=name,account_id,currency,timezone_name,amount_spent&access_token=${accessToken}`
       );
       const accountsData = await accountsRes.json();
+      console.log("[meta-oauth] ad accounts count:", (accountsData.data || []).length);
 
       const accounts = (accountsData.data || []).map((acc: any) => ({
         connection_id: connection.id,
@@ -179,23 +191,20 @@ Deno.serve(async (req) => {
       }));
 
       if (accounts.length > 0) {
-        // Delete old accounts for this user first, then insert fresh
         await adminClient.from("ad_accounts").delete().eq("user_id", userId);
         await adminClient.from("ad_accounts").upsert(accounts, {
           onConflict: "account_id",
         });
       }
 
-      // Fetch Facebook pages for industry/category data
+      // Fetch Facebook pages
       const pagesRes = await fetch(
         `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,category&access_token=${accessToken}`
       );
       const pagesData = await pagesRes.json();
 
-      // Determine if new or returning user
       const isNewUser = !existingUser;
 
-      // Check for default ad account
       let defaultAdAccountId = null;
       let defaultAdAccountName = null;
       let defaultMetaAccountId = null;
@@ -218,6 +227,8 @@ Deno.serve(async (req) => {
           }
         }
       }
+
+      console.log("[meta-oauth] exchange-token complete, isNewUser:", isNewUser);
 
       return new Response(
         JSON.stringify({
@@ -244,6 +255,7 @@ Deno.serve(async (req) => {
       headers: corsHeaders,
     });
   } catch (err) {
+    console.error("[meta-oauth] unhandled error:", err);
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
       headers: corsHeaders,

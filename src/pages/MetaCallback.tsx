@@ -23,7 +23,7 @@ const MetaCallback = () => {
       }
 
       try {
-        const redirectUri = `${window.location.origin}/auth/callback`;
+        const redirectUri = "https://preview--intelligent-pdf-creator.lovable.app/auth/callback";
         const { data, error: fnError } = await supabase.functions.invoke("meta-oauth?action=exchange-token", { body: { code, redirectUri } });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
