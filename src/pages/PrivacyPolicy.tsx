@@ -46,9 +46,9 @@ const PrivacyPolicy = () => {
                 advertising channels.
               </p>
               <p>
-                Our platform connects to third-party services — including Meta Ads Manager, Shopify,
-                and Foreplay — on behalf of our business clients to retrieve advertising data, generate
-                new creative variants, and publish approved creatives back to advertising platforms.
+                Our platform connects to third-party services — including Meta Ads Manager and Shopify
+                — on behalf of our business clients to retrieve advertising data, generate new creative
+                variants, and publish approved creatives back to advertising platforms.
               </p>
             </Section>
 
@@ -88,11 +88,6 @@ const PrivacyPolicy = () => {
                   <strong>Shopify product data:</strong> Product titles, descriptions, and product
                   image URLs retrieved from your Shopify store via the Shopify Storefront API when you
                   provide a product page URL.
-                </li>
-                <li>
-                  <strong>Competitor advertising data:</strong> Publicly available competitor ad
-                  information retrieved from Foreplay's database on your behalf, used solely to inform
-                  creative optimization recommendations for your account.
                 </li>
               </ul>
               <p>
@@ -143,11 +138,10 @@ const PrivacyPolicy = () => {
               </ul>
               <p>
                 Our application requests the following Meta permissions:{" "}
-                <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">ads_read</code>,{" "}
-                <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">business_management</code>, and{" "}
-                <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">email</code>. These are used
-                exclusively to read campaign performance data and manage advertising assets on behalf of
-                authorized Clients.
+                <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">ads_read</code> and{" "}
+                <code className="bg-secondary px-1.5 py-0.5 rounded text-xs">ads_management</code>.
+                These are used exclusively to read campaign performance data and publish approved ad
+                creatives on behalf of authorized Clients.
               </p>
             </Section>
 
