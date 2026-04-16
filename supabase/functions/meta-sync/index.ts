@@ -106,7 +106,6 @@ Deno.serve(async (req) => {
       brandId = existingBrand.id;
       await admin.from("brands").update({
         name: adAccount.account_name,
-        meta_access_token: accessToken,
         account_currency: adAccount.currency || "USD",
         account_timezone: adAccount.timezone || null,
       }).eq("id", brandId);
@@ -115,7 +114,6 @@ Deno.serve(async (req) => {
         user_id: userId,
         name: adAccount.account_name,
         meta_account_id: adAccount.account_id,
-        meta_access_token: accessToken,
         account_currency: adAccount.currency || "USD",
         account_timezone: adAccount.timezone || null,
       }).select("id").single();
