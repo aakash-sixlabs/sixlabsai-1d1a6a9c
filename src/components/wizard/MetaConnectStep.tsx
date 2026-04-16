@@ -23,7 +23,7 @@ export const MetaConnectStep = () => {
       }
 
       // Get the OAuth URL from edge function
-      const redirectUri = `${window.location.origin}/meta-callback`;
+      const redirectUri = `${window.location.origin}/auth/callback`;
       const { data, error } = await supabase.functions.invoke(
         "meta-oauth?action=get-auth-url",
         { body: { redirectUri } }

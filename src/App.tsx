@@ -35,7 +35,7 @@ const App = () => (
             <Route path="/create-ad" element={<CreateAd />} />
             <Route path="/pdp-scrape" element={<PdpScrape />} />
             <Route path="/output" element={<Output />} />
-            <Route path="/meta-callback" element={<MetaCallback />} />
+            <Route path="/auth/callback" element={<MetaCallback />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
