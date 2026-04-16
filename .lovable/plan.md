@@ -1,37 +1,55 @@
 
 
-## Problem
+# Create Production Tables in Lovable Cloud & Update Meta Sync
 
-The MetaCallback page is stuck spinning because of a **redirect URI mismatch**:
-1. OAuth initiated from `81f9a4c1-...lovableproject.com` → sends that as `redirect_uri` to Facebook
-2. Facebook redirects back to `preview--intelligent-pdf-creator.lovable.app/auth/callback` (configured in Meta App dashboard)
-3. MetaCallback calls `exchange-token` with `redirect_uri = preview--intelligent-pdf-creator.lovable.app/auth/callback`
-4. Facebook rejects because the redirect_uri doesn't match step 1
+## Summary
+Create the 10 production tables in this project's database (alongside the existing ones), then update the `meta-sync` edge function to write to the new production schema. Old tables stay untouched for now.
 
-Additionally, the edge function has no `console.log` statements, making debugging invisible.
+## Naming conflict
+The production schema has an `ads` table, but so does the current database. To avoid collisions, I'll name the production version `prod_ads` (or we can drop/rename the old one — your call). Same applies if any other names clash. **Alternative**: since we're keeping old tables temporarily, I can prefix all production tables with `prod_` or keep the exact names and rename the old tables to `legacy_*`.
 
-## Fix
+## Step 1 — Create production tables via migration
 
-### 1. Add logging to `meta-oauth` edge function
-Add `console.log` statements at key points (token exchange request, response, errors) so failures are visible in logs.
+Create these 10 tables with the exact schema you provided:
+- `brands` (+ add `user_id uuid` column for RLS)
+- `prod_ads` (to avoid collision with existing `ads`)
+- `ad_performance_daily`
+- `campaign_ad_data`
+- `creatives`
+- `creative_tags`
+- `products`
+- `competitor_ads`
+- `brand_competitors`
+- `fatigue_diagnoses`
 
-### 2. Ensure consistent redirect URI
-The redirect URI must be the **same** in both the `get-auth-url` step and the `exchange-token` step. Two options:
+All use `bigint GENERATED ALWAYS AS IDENTITY` as primary keys per your schema. Add foreign keys where logical (e.g., `prod_ads.brand_id → brands.id`).
 
-**Option A (recommended)**: Store the redirect URI used during `get-auth-url` and pass it back during `exchange-token`. The MetaCallback already does `const redirectUri = window.location.origin + '/auth/callback'` — the issue is that the origin differs between where OAuth starts and where the callback lands.
+## Step 2 — Add RLS policies
 
-**Option B**: Configure Meta App to redirect to the same domain the OAuth is initiated from. In your Meta App dashboard, add BOTH domains as valid redirect URIs:
-- `https://81f9a4c1-f0ff-4d4a-9275-2d7778caabb8.lovableproject.com/auth/callback`
-- `https://preview--intelligent-pdf-creator.lovable.app/auth/callback`
+Enable RLS on all new tables. Access checks go through `brands.user_id`:
+- `brands`: `auth.uid() = user_id`
+- All others: subquery join on `brand_id` to verify ownership
 
-Then update the `get-auth-url` action to use a **hardcoded canonical redirect URI** (or accept it from the client and store it for exchange).
+## Step 3 — Update `meta-sync` edge function
 
-### 3. Update MetaConnectStep and LandingStep
-Use a consistent, canonical redirect URI rather than `window.location.origin` so it always matches regardless of which preview domain the user is on.
+Rewrite `supabase/functions/meta-sync/index.ts` to:
+1. Upsert a `brands` row using the ad account's Meta credentials (name, account ID, token, currency, timezone)
+2. Fetch campaigns, adsets, ads, creatives, and daily insights (`time_increment=1`) from Meta API
+3. Write flattened rows into `campaign_ad_data` (one row per ad per day)
+4. Write daily metrics into `ad_performance_daily`
+5. Write ads into `prod_ads` and creatives into `creatives`
+6. Continue downloading images to `ad-creatives` storage bucket
+7. Keep writing to old tables as well (dual-write) so nothing breaks during transition
 
-### Files to change
-- `supabase/functions/meta-oauth/index.ts` — add logging + optionally enforce a canonical redirect URI
-- `src/components/wizard/MetaConnectStep.tsx` — use canonical redirect URI
-- `src/components/wizard/LandingStep.tsx` — use canonical redirect URI  
-- `src/pages/MetaCallback.tsx` — use same canonical redirect URI for exchange
+## Step 4 — Update frontend queries
+
+Update Insights, DataReview, and Home dashboard components to read from the new production tables (`campaign_ad_data`, `ad_performance_daily`, `creatives`) instead of the old normalized chain.
+
+## What stays the same
+- Auth flow, onboarding, Meta OAuth — unchanged
+- Old tables (`campaigns`, `ad_sets`, `ads`, `ad_insights`, `ad_creatives`) remain but are deprecated
+- `meta_connections`, `ad_accounts`, `profiles`, `sync_jobs` — unchanged
+
+## Open question
+Should I use exact table names from your production schema (renaming old `ads` to `legacy_ads`) or prefix the new ones as `prod_ads`?
 
