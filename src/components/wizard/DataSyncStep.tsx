@@ -30,8 +30,12 @@ export const DataSyncStep = ({
   const [currentStep, setCurrentStep] = useState("Connecting to Meta");
   const [error, setError] = useState<string | null>(null);
   const [syncStarted, setSyncStarted] = useState(false);
+  const [simulatedIdx, setSimulatedIdx] = useState(0);
+  const [isComplete, setIsComplete] = useState(false);
 
-  const currentIdx = SYNC_STEPS.indexOf(currentStep);
+  const realIdx = SYNC_STEPS.indexOf(currentStep);
+  // Use whichever is further along: real backend progress or simulated progress
+  const currentIdx = isComplete ? SYNC_STEPS.length - 1 : Math.max(realIdx, simulatedIdx);
 
   const handleComplete = () => {
     if (onComplete) {
@@ -40,6 +44,17 @@ export const DataSyncStep = ({
       navigate("/home");
     }
   };
+
+  // Smoothly advance simulated progress through steps so the UI doesn't sit still.
+  // Stops one step before the end — only real completion fills the final tick.
+  useEffect(() => {
+    if (error || isComplete) return;
+    if (simulatedIdx >= SYNC_STEPS.length - 1) return;
+    const timeout = setTimeout(() => {
+      setSimulatedIdx((i) => Math.min(i + 1, SYNC_STEPS.length - 1));
+    }, 1400);
+    return () => clearTimeout(timeout);
+  }, [simulatedIdx, error, isComplete]);
 
   useEffect(() => {
     if (syncStarted) return;
@@ -54,6 +69,7 @@ export const DataSyncStep = ({
           setCurrentStep(SYNC_STEPS[i]);
         } else {
           clearInterval(interval);
+          setIsComplete(true);
           updateState({ syncComplete: true });
           setTimeout(() => handleComplete(), 500);
         }
@@ -68,6 +84,7 @@ export const DataSyncStep = ({
         });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
+        setIsComplete(true);
         updateState({ syncComplete: true });
         setCurrentStep("Preparing insights");
         setTimeout(() => handleComplete(), 1000);
@@ -83,6 +100,7 @@ export const DataSyncStep = ({
         const job = payload.new as any;
         if (job.current_step) setCurrentStep(job.current_step);
         if (job.status === "complete") {
+          setIsComplete(true);
           updateState({ syncComplete: true });
           setTimeout(() => handleComplete(), 1000);
         }
