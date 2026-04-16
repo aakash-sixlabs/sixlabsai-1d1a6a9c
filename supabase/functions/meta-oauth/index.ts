@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
         `client_id=${META_APP_ID}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&state=${state}` +
-        `&scope=ads_read,business_management` +
+        `&scope=ads_read,business_management,email` +
         `&response_type=code`;
 
       return new Response(JSON.stringify({ authUrl, state }), {
