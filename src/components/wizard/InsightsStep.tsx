@@ -216,24 +216,75 @@ export const InsightsStep = () => {
       if (!selectedAccountId) setSelectedAccountId(fetchedAccounts[0].id);
     }
 
-    const [adsRes, creativesRes, insightsRes, adSetsRes, campaignsRes] = await Promise.all([
-      supabase.from("ads").select("*"),
-      supabase.from("ad_creatives").select("*"),
-      supabase.from("ad_insights").select("*"),
-      supabase.from("ad_sets").select("*"),
-      supabase.from("campaigns").select("*"),
-    ]);
+    // Try production tables first (campaign_ad_data is the flattened source)
+    const { data: cadData } = await supabase.from("campaign_ad_data").select("*");
+    const cadRows = cadData || [];
 
-    const dbAds = adsRes.data || [];
-    const creatives = creativesRes.data || [];
-    const insights = insightsRes.data || [];
-    const adSetsData = adSetsRes.data || [];
-    const campaignsData = campaignsRes.data || [];
+    if (cadRows.length > 0) {
+      // Build enriched ads from production data — aggregate daily rows per ad
+      const adAgg = new Map<string, any>();
+      cadRows.forEach((row: any) => {
+        const key = row.ad_id || row.id;
+        if (!adAgg.has(key)) {
+          adAgg.set(key, {
+            id: key,
+            adName: row.ad_name || "Unknown",
+            campaignName: row.campaign_name || "Unknown Campaign",
+            campaignId: row.campaign_id || "",
+            imageUrl: row.creative_image_url || row.creative_thumbnail_url || null,
+            creativeType: "static_single",
+            spend: 0, impressions: 0, clicks: 0, ctrSum: 0, roasSum: 0, days: 0,
+          });
+        }
+        const agg = adAgg.get(key)!;
+        agg.spend += (row.spend || 0);
+        agg.impressions += (row.impressions || 0);
+        agg.clicks += (row.clicks || 0);
+        agg.roasSum += (row.roas || 0);
+        agg.days += 1;
+      });
 
-    if (creatives.length === 0) {
-      setAds(generateMockData());
+      const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
+        const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
+        const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
+        return {
+          id: agg.id,
+          adName: agg.adName,
+          campaignName: agg.campaignName,
+          campaignId: agg.campaignId,
+          imageUrl: agg.imageUrl,
+          creativeType: agg.creativeType,
+          score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
+          decayScore: roas < 1 ? 80 : roas < 2 ? 50 : roas < 4 ? 25 : 10,
+          spend: agg.spend,
+          roas: roas,
+          ctr: ctr,
+          impressions: agg.impressions,
+        };
+      });
+      enriched.sort((a, b) => b.score - a.score);
+      setAds(enriched);
     } else {
-      setAds(enrichAndSet(dbAds as any, creatives as any, insights as any, adSetsData as any, campaignsData as any));
+      // Fallback to legacy tables
+      const [adsRes, creativesRes, insightsRes, adSetsRes, campaignsRes] = await Promise.all([
+        supabase.from("ads").select("*"),
+        supabase.from("ad_creatives").select("*"),
+        supabase.from("ad_insights").select("*"),
+        supabase.from("ad_sets").select("*"),
+        supabase.from("campaigns").select("*"),
+      ]);
+
+      const dbAds = adsRes.data || [];
+      const creatives = creativesRes.data || [];
+      const insights = insightsRes.data || [];
+      const adSetsData = adSetsRes.data || [];
+      const campaignsData = campaignsRes.data || [];
+
+      if (creatives.length === 0) {
+        setAds(generateMockData());
+      } else {
+        setAds(enrichAndSet(dbAds as any, creatives as any, insights as any, adSetsData as any, campaignsData as any));
+      }
     }
     setLoading(false);
   }, [enrichAndSet, selectedAccountId]);
