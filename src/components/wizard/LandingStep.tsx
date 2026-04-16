@@ -212,7 +212,7 @@ export const LandingStep = () => {
             Dev Mode — Test New User Flow
           </Button>
 
-          <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="#" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
+          <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="/privacy" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
           {easterEgg && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center mt-3 space-y-1.5">
               <button
