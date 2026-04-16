@@ -268,21 +268,19 @@ Deno.serve(async (req) => {
         await admin.from("prod_ads").update({
           name: ad.name || "",
           status: ad.status,
-          meta_campaign_id: adsetLookup.get(ad.adset_id)?.campaign_id || null,
-          meta_adset_id: ad.adset_id,
           adset_id: ad.adset_id,
           creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
+          parent_ad_id: null,
         }).eq("id", prodAdId);
       } else {
         const { data: newProdAd } = await admin.from("prod_ads").insert({
           brand_id: brandId,
           meta_ad_id: ad.id,
-          meta_campaign_id: adsetLookup.get(ad.adset_id)?.campaign_id || null,
-          meta_adset_id: ad.adset_id,
           adset_id: ad.adset_id,
           name: ad.name || "",
           status: ad.status,
           creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
+          parent_ad_id: null,
         }).select("id").single();
         prodAdId = newProdAd!.id;
       }
