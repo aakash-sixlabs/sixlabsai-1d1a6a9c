@@ -724,10 +724,12 @@ export type Database = {
           ad_account_id: string
           created_at: string
           current_step: string | null
+          cursor_date: string | null
           date_range_end: string | null
           date_range_start: string | null
           error_message: string | null
           id: string
+          phase: string | null
           status: string
           supported_ads: number | null
           total_ads: number | null
@@ -739,10 +741,12 @@ export type Database = {
           ad_account_id: string
           created_at?: string
           current_step?: string | null
+          cursor_date?: string | null
           date_range_end?: string | null
           date_range_start?: string | null
           error_message?: string | null
           id?: string
+          phase?: string | null
           status?: string
           supported_ads?: number | null
           total_ads?: number | null
@@ -754,10 +758,12 @@ export type Database = {
           ad_account_id?: string
           created_at?: string
           current_step?: string | null
+          cursor_date?: string | null
           date_range_end?: string | null
           date_range_start?: string | null
           error_message?: string | null
           id?: string
+          phase?: string | null
           status?: string
           supported_ads?: number | null
           total_ads?: number | null

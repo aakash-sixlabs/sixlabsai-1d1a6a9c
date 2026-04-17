@@ -171,11 +171,11 @@ const OnboardingV2 = () => {
 
     try {
       const { data, error: fnError } = await supabase.functions.invoke(
-        "meta-sync",
+        "meta-sync-accounts",
         {
           body: {
             adAccountId: account.id,
-            dateRangeDays: "90",
+            dateRangeDays: "30",
           },
         }
       );
