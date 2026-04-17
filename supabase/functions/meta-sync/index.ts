@@ -401,44 +401,32 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4. Fetch insights — daily granularity, chunked into 7-day windows
-    // to stay under Meta's per-request data cap on large accounts.
+    // 4. Fetch insights — day-by-day to stay well under Meta's per-request
+    // data cap. Account-level insights with level=ad for many ads can blow
+    // past the cap even on a 7-day window, so we always go one day at a time.
     await updateStep("Pulling ad performance");
     const insights: any[] = [];
-    const CHUNK_DAYS = 7;
     const msPerDay = 86400000;
     const totalMs = dateEnd.getTime() - dateStart.getTime();
     const totalDays = Math.max(1, Math.ceil(totalMs / msPerDay));
-    for (let offset = 0; offset < totalDays; offset += CHUNK_DAYS) {
-      const chunkStart = new Date(dateStart.getTime() + offset * msPerDay);
-      const chunkEndTs = Math.min(
-        dateStart.getTime() + (offset + CHUNK_DAYS - 1) * msPerDay,
-        dateEnd.getTime()
-      );
-      const chunkEnd = new Date(chunkEndTs);
-      const since = chunkStart.toISOString().split("T")[0];
-      const until = chunkEnd.toISOString().split("T")[0];
-      const timeRange = `{"since":"${since}","until":"${until}"}`;
+    let daysDone = 0;
+    for (let offset = 0; offset < totalDays; offset++) {
+      const dayDate = new Date(dateStart.getTime() + offset * msPerDay);
+      if (dayDate.getTime() > dateEnd.getTime()) break;
+      const day = dayDate.toISOString().split("T")[0];
+      const dayRange = `{"since":"${day}","until":"${day}"}`;
       try {
-        const chunk = await fetchAllPages(
-          `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency,reach&level=ad&time_increment=1&time_range=${encodeURIComponent(timeRange)}&limit=500&access_token=${accessToken}`
+        const daily = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency,reach&level=ad&time_range=${encodeURIComponent(dayRange)}&limit=500&access_token=${accessToken}`
         );
-        insights.push(...chunk);
-      } catch (chunkErr: any) {
-        // If a single chunk is still too large, fall back to day-by-day for that window.
-        const msg = chunkErr?.message || "";
-        if (msg.includes("reduce the amount") || msg.includes("too much data")) {
-          for (let d = chunkStart.getTime(); d <= chunkEnd.getTime(); d += msPerDay) {
-            const day = new Date(d).toISOString().split("T")[0];
-            const dayRange = `{"since":"${day}","until":"${day}"}`;
-            const daily = await fetchAllPages(
-              `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency,reach&level=ad&time_increment=1&time_range=${encodeURIComponent(dayRange)}&limit=500&access_token=${accessToken}`
-            );
-            insights.push(...daily);
-          }
-        } else {
-          throw chunkErr;
-        }
+        insights.push(...daily);
+      } catch (dayErr: any) {
+        console.error(`Insights fetch failed for ${day}:`, dayErr?.message || dayErr);
+        // Skip the day rather than failing the whole sync.
+      }
+      daysDone++;
+      if (daysDone % 10 === 0) {
+        await updateStep(`Pulling ad performance (${daysDone}/${totalDays} days)`);
       }
     }
 
