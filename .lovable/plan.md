@@ -1,42 +1,30 @@
 
-User asking about token security before approving the manual-token workaround. This is a research question — short, direct answer, no plan needed beyond restating the security model.
 
-## Is your access token safe? — Short answer: **Yes, with caveats.**
+## Fix: Lightweight ads fetch + batched creative details
 
-### How it's protected
+Apply the user's prescribed fix in `supabase/functions/meta-sync/index.ts` around line 237.
 
-**At rest (database)**
-- Stored in `meta_connections.access_token` (Postgres column)
-- RLS policy: `auth.uid() = user_id` → only the row's owner can SELECT/UPDATE it
-- No other user (even other authenticated users) can read it
-- Service role can read it, but service role only runs inside edge functions you control
+### Changes
 
-**In transit**
-- Pasted over HTTPS to the edge function
-- Edge function → Meta API over HTTPS
+1. **Replace the heavy ads fetch (line 237-239)** with a minimal `creative{id}` query at `limit=100`.
 
-**Who can see it**
-- You (the row owner), via your session
-- Edge functions running with service role (`meta-sync`, `meta-token-connect`)
-- Lovable/Supabase platform admins (same as any DB column)
-- **Not** other app users, not the frontend of other sessions, not exposed in any API response
+2. **Add a helper `fetchCreativesInBatches`** (placed near `fetchAllPages`, above the main handler) that:
+   - Batches creative IDs in groups of 50
+   - Calls `GET https://graph.facebook.com/v21.0/?ids=...&fields=id,name,image_url,image_hash,thumbnail_url,title,body,object_story_spec`
+   - Skips failed batches with a console error (no abort)
+   - Sleeps 200ms between batches
+   - Returns `Record<string, creative>`
 
-### Caveats / things to know
+3. **Between the ads fetch and the `for (const ad of ads)` loop**, extract unique creative IDs, fetch the creative map, and build `adsWithCreatives` by attaching `creativeDetails`.
 
-1. **Plaintext in DB** — the column is not encrypted at the application layer. Same as how OAuth-issued tokens are stored today. Postgres encrypts at-rest at the disk level but anyone with DB-level access (service role key, DB admin) can read it. This matches the existing OAuth flow's security posture exactly.
+4. **Swap the loop** to iterate `adsWithCreatives` and read heavy fields from `ad.creativeDetails` instead of `ad.creative`:
+   - `ad.creative?.id` stays as-is (already on lightweight object)
+   - `ad.creative?.image_url`, `ad.creative?.thumbnail_url`, `object_story_spec`, `name`, etc. → read from `ad.creativeDetails`
+   - `classifyCreative(ad.creative || {})` → `classifyCreative(ad.creativeDetails || ad.creative || {})`
+   - `const creative = ad.creative || {}` → `const creative = ad.creativeDetails || {}`
 
-2. **Browser exposure during paste** — the token sits in React state and the network request body for ~1 second during submit. Standard for any credential paste flow (passwords, API keys). Mitigations: don't log it, don't put it in a GET querystring, clear the input after submit.
+5. **Remove `asset_feed_spec`** — only referenced in the old URL; gone after the replacement. Will grep the rest of the file to confirm no other references remain.
 
-3. **Token capability** — a Meta user/system token with `ads_read`+`ads_management` can read all ad data and *modify* campaigns. If leaked, an attacker could pause/edit ads. Use a **System User token scoped to specific ad accounts** to limit blast radius — that's the recommended pattern for client tokens anyway.
+### Out of scope (not touched)
+- `fetchAllPages`, `sync_jobs` updates, realtime, image download logic, error handling, day-by-day insights loop.
 
-4. **No expiry tracking** — `token_expires_at` would be `null` for pasted tokens (we don't know when it expires). If a client gives you a short-lived token, sync will silently 401 later. System User tokens don't expire, so this is a non-issue if clients use those.
-
-### Optional hardening (say the word and I'll add to the plan)
-- Encrypt `access_token` at the application layer using `pgsodium` / a vault secret before storing
-- Add an audit log row whenever a token is read by an edge function
-- Mask the token in any admin UI (show `EAAB…last4`)
-
-### Recommendation
-Ship the workaround as-is — security parity with the existing OAuth flow. If you want defense-in-depth (encryption-at-rest at the app layer), I can layer that on as a follow-up without changing the user flow.
-
-No code changes proposed in this message — awaiting your go-ahead on the original workaround plan (and whether to add encryption).
