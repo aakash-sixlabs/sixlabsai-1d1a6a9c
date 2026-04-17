@@ -20,23 +20,44 @@ async function fetchCreativesInBatches(
   for (let i = 0; i < creativeIds.length; i += BATCH_SIZE) {
     const batch = creativeIds.slice(i, i + BATCH_SIZE);
     const ids = batch.join(",");
+    const url =
+      `https://graph.facebook.com/v21.0/` +
+      `?ids=${ids}` +
+      `&fields=id,name,image_url,image_hash,thumbnail_url,title,body,object_story_spec` +
+      `&access_token=${accessToken}`;
 
-    try {
-      const response = await fetch(
-        `https://graph.facebook.com/v21.0/` +
-          `?ids=${ids}` +
-          `&fields=id,name,image_url,image_hash,thumbnail_url,title,body,object_story_spec` +
-          `&access_token=${accessToken}`,
-      );
-      const data = await response.json();
-      if (data.error) {
-        console.error(`Creative batch ${Math.floor(i / BATCH_SIZE)} failed:`, data.error);
-        continue;
+    let attempt = 0;
+    while (true) {
+      try {
+        const response = await fetch(url);
+        const data = await response.json().catch(() => ({}));
+        const err = data?.error;
+        const isRateLimited =
+          response.status === 429 ||
+          [4, 17, 32, 613].includes(err?.code) ||
+          err?.code_subcode === 2446079 ||
+          err?.error_subcode === 2446079 ||
+          /rate limit|too many calls|user request limit/i.test(err?.message || "");
+        if (isRateLimited && attempt < 5) {
+          const waitMs = 10_000 * Math.pow(2, attempt);
+          console.warn(`Creative batch rate limited (attempt ${attempt + 1}), waiting ${waitMs}ms`);
+          await new Promise((r) => setTimeout(r, waitMs));
+          attempt++;
+          continue;
+        }
+        if (err) {
+          console.error(`Creative batch ${Math.floor(i / BATCH_SIZE)} failed:`, err);
+          break;
+        }
+        Object.assign(results, data);
+        break;
+      } catch (fetchErr) {
+        console.error(`Creative batch ${Math.floor(i / BATCH_SIZE)} threw:`, fetchErr);
+        break;
       }
-      Object.assign(results, data);
-    } catch (err) {
-      console.error(`Creative batch ${Math.floor(i / BATCH_SIZE)} threw:`, err);
     }
+    // Polite gap between batches
+    await new Promise((r) => setTimeout(r, 500));
   }
   return results;
 }

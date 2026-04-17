@@ -18,15 +18,46 @@ async function fetchAllPages(url: string) {
   const results: any[] = [];
   let nextUrl: string | null = url;
   while (nextUrl) {
-    const res = await fetch(nextUrl);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    let attempt = 0;
+    let data: any;
+    // Retry loop for rate limits (HTTP 429 or Meta error codes 4/17/32/613, subcode 2446079)
+    while (true) {
+      const res = await fetch(nextUrl);
+      data = await res.json().catch(() => ({}));
+      const err = data?.error;
+      const isRateLimited =
+        res.status === 429 ||
+        [4, 17, 32, 613].includes(err?.code) ||
+        err?.code_subcode === 2446079 ||
+        err?.error_subcode === 2446079 ||
+        /rate limit|too many calls|user request limit/i.test(err?.message || "");
+
+      if (!isRateLimited) break;
+      if (attempt >= 5) {
+        throw new Error(
+          `Meta rate limit hit after ${attempt} retries: ${err?.message || res.status}`,
+        );
+      }
+      // Exponential backoff: 10s, 20s, 40s, 80s, 160s
+      const waitMs = 10_000 * Math.pow(2, attempt);
+      console.warn(`Rate limited by Meta (attempt ${attempt + 1}), waiting ${waitMs}ms`);
+      await new Promise((r) => setTimeout(r, waitMs));
+      attempt++;
+    }
+
+    if (data?.error) throw new Error(data.error.message);
     results.push(...(data.data || []));
     nextUrl = data.paging?.next || null;
     if (results.length > 5000) break;
+    // Small inter-page delay to be polite
+    if (nextUrl) await new Promise((r) => setTimeout(r, 250));
   }
   return results;
 }
+
+// Gentle delay between per-day insights requests to stay under Meta's ads rate limit.
+const PER_DAY_DELAY_MS = 1500;
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -274,6 +305,9 @@ Deno.serve(async (req) => {
           }
 
           current = new Date(current.getTime() + msPerDay);
+          if (current.getTime() <= dateEnd.getTime()) {
+            await new Promise((r) => setTimeout(r, PER_DAY_DELAY_MS));
+          }
         }
 
         // Done

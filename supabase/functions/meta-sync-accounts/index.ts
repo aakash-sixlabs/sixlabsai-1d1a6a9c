@@ -13,12 +13,32 @@ async function fetchAllPages(url: string) {
   const results: any[] = [];
   let nextUrl: string | null = url;
   while (nextUrl) {
-    const res = await fetch(nextUrl);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    let attempt = 0;
+    let data: any;
+    while (true) {
+      const res = await fetch(nextUrl);
+      data = await res.json().catch(() => ({}));
+      const err = data?.error;
+      const isRateLimited =
+        res.status === 429 ||
+        [4, 17, 32, 613].includes(err?.code) ||
+        err?.code_subcode === 2446079 ||
+        err?.error_subcode === 2446079 ||
+        /rate limit|too many calls|user request limit/i.test(err?.message || "");
+      if (!isRateLimited) break;
+      if (attempt >= 5) {
+        throw new Error(`Meta rate limit hit after ${attempt} retries: ${err?.message || res.status}`);
+      }
+      const waitMs = 10_000 * Math.pow(2, attempt);
+      console.warn(`Rate limited by Meta (attempt ${attempt + 1}), waiting ${waitMs}ms`);
+      await new Promise((r) => setTimeout(r, waitMs));
+      attempt++;
+    }
+    if (data?.error) throw new Error(data.error.message);
     results.push(...(data.data || []));
     nextUrl = data.paging?.next || null;
     if (results.length > 5000) break;
+    if (nextUrl) await new Promise((r) => setTimeout(r, 250));
   }
   return results;
 }
