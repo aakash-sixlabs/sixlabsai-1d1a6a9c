@@ -601,19 +601,28 @@ Deno.serve(async (req) => {
       })
       .eq("id", syncId);
 
+    } catch (err: any) {
+      console.error("meta-sync background error:", err);
+      await failJob(err?.message || "Sync failed");
+    }
+    }; // end runSync
+
+    // Fire-and-forget: keep running after response returns.
+    // @ts-ignore - EdgeRuntime is available in Supabase Edge Functions
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(runSync());
+    } else {
+      runSync();
+    }
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        syncJobId: syncId,
-        totalAds,
-        supportedAds,
-        unsupportedAds,
-      }),
+      JSON.stringify({ success: true, syncJobId: syncId, started: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err) {
+  } catch (err: any) {
     console.error("meta-sync error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: err?.message || "Unknown error" }), {
       status: 500,
       headers: corsHeaders,
     });
