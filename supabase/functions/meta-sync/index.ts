@@ -145,7 +145,24 @@ Deno.serve(async (req) => {
         .update({ current_step: step, updated_at: new Date().toISOString() })
         .eq("id", syncId);
     };
+    const failJob = async (message: string) => {
+      await admin
+        .from("sync_jobs")
+        .update({
+          status: "error",
+          error_message: message,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", syncId);
+    };
 
+    // ============================================================
+    // Heavy work runs in the background so the HTTP request can
+    // return immediately. The client subscribes to sync_jobs via
+    // realtime to track progress.
+    // ============================================================
+    const runSync = async () => {
+    try {
     // 1. Fetch campaigns
     await updateStep("Pulling campaigns and ad sets");
     const campaigns = await fetchAllPages(
