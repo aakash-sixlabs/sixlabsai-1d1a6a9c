@@ -236,13 +236,16 @@ Deno.serve(async (req) => {
 
         // 3. Ads (lightweight skeleton)
         await updateStep("Pulling ads");
-        const rawAds = await fetchAllPages(
+        const allRawAds = await fetchAllPages(
           `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,adset_id,creative{id}&limit=100&access_token=${accessToken}`,
         );
+        const rawAds = allRawAds
+          .filter((ad: any) => adsetMap.has(ad.adset_id))
+          .slice(0, TEST_MODE_LIMIT);
+        console.log(`TEST MODE: ${allRawAds.length} ads → using ${rawAds.length}`);
 
         let totalAds = 0;
         for (const ad of rawAds) {
-          if (!adsetMap.has(ad.adset_id)) continue;
           totalAds++;
 
           const { data: storedAd } = await admin
