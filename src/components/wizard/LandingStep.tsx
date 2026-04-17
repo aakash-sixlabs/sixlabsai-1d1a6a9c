@@ -376,19 +376,34 @@ export const LandingStep = () => {
               <code className="mx-1">ads_management</code> scopes.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Textarea
-              value={tokenInput}
-              onChange={(e) => setTokenInput(e.target.value)}
-              placeholder="EAAB..."
-              className="font-mono text-xs h-28 resize-none"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <p className="text-xs text-muted-foreground">
-              We'll create an account tied to this Meta user and pull the same
-              data the OAuth flow would.
-            </p>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Access Token</Label>
+              <Textarea
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                placeholder="EAAB..."
+                className="font-mono text-xs h-24 resize-none"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">
+                Ad Account ID <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                value={adAccountInput}
+                onChange={(e) => setAdAccountInput(e.target.value)}
+                placeholder="act_123456789 or 123456789"
+                className="font-mono text-xs"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Pull data only for this account. Leave empty to list all accessible accounts.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button
