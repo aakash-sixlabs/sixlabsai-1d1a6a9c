@@ -79,6 +79,7 @@ export const LandingStep = () => {
   const [easterEgg, setEasterEgg] = useState(false);
   const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState("");
+  const [adAccountInput, setAdAccountInput] = useState("");
   const [submittingToken, setSubmittingToken] = useState(false);
   const navigate = useNavigate();
   const { updateState } = useWizard();
@@ -123,7 +124,12 @@ export const LandingStep = () => {
 
       const { data, error } = await supabase.functions.invoke(
         "meta-token-connect",
-        { body: { accessToken: token } }
+        {
+          body: {
+            accessToken: token,
+            adAccountId: adAccountInput.trim() || undefined,
+          },
+        }
       );
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -133,8 +139,16 @@ export const LandingStep = () => {
         userName: data.userName,
         accounts: data.accounts,
       }));
+      // If user specified an ad account, pre-select it so onboarding skips selection
+      if (adAccountInput.trim() && data.accounts?.[0]) {
+        sessionStorage.setItem(
+          "preselected_ad_account_id",
+          data.accounts[0].id
+        );
+      }
       updateState({ metaConnected: true });
       setTokenInput("");
+      setAdAccountInput("");
       setTokenDialogOpen(false);
       toast.success(`Connected as ${data.userName}`);
       navigate("/onboarding-v2?meta=connected");
