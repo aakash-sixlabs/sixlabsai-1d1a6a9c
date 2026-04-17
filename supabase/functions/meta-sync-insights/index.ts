@@ -305,6 +305,9 @@ Deno.serve(async (req) => {
           }
 
           current = new Date(current.getTime() + msPerDay);
+          if (current.getTime() <= dateEnd.getTime()) {
+            await new Promise((r) => setTimeout(r, PER_DAY_DELAY_MS));
+          }
         }
 
         // Done
