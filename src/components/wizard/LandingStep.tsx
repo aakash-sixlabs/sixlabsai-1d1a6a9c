@@ -345,6 +345,53 @@ export const LandingStep = () => {
           )}
         </motion.div>
       </div>
+
+      <Dialog open={tokenDialogOpen} onOpenChange={setTokenDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" />
+              Connect with Access Token
+            </DialogTitle>
+            <DialogDescription>
+              Paste a Meta access token to connect without OAuth. Use a long-lived
+              <strong> System User token</strong> from Business Settings with
+              <code className="mx-1">ads_read</code> +
+              <code className="mx-1">ads_management</code> scopes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Textarea
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="EAAB..."
+              className="font-mono text-xs h-28 resize-none"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="text-xs text-muted-foreground">
+              We'll create an account tied to this Meta user and pull the same
+              data the OAuth flow would.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setTokenInput("");
+                setTokenDialogOpen(false);
+              }}
+              disabled={submittingToken}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleTokenSubmit} disabled={submittingToken}>
+              {submittingToken && <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />}
+              {submittingToken ? "Validating…" : "Connect"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
