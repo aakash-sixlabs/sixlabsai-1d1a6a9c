@@ -20,6 +20,49 @@ async function fetchAllPages(url: string) {
   return results;
 }
 
+async function fetchCreativesInBatches(
+  creativeIds: string[],
+  accessToken: string,
+): Promise<Record<string, any>> {
+  const BATCH_SIZE = 50;
+  const results: Record<string, any> = {};
+
+  for (let i = 0; i < creativeIds.length; i += BATCH_SIZE) {
+    const batch = creativeIds.slice(i, i + BATCH_SIZE);
+    const ids = batch.join(",");
+
+    try {
+      const response = await fetch(
+        `https://graph.facebook.com/v21.0/` +
+          `?ids=${ids}` +
+          `&fields=id,name,image_url,image_hash,thumbnail_url,title,body,object_story_spec` +
+          `&access_token=${accessToken}`,
+      );
+
+      const data = await response.json();
+
+      if (data.error) {
+        console.error(
+          `Creative batch ${Math.floor(i / BATCH_SIZE)} failed:`,
+          data.error,
+        );
+        continue;
+      }
+
+      Object.assign(results, data);
+    } catch (err) {
+      console.error(
+        `Creative batch ${Math.floor(i / BATCH_SIZE)} threw:`,
+        err,
+      );
+    }
+
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
+  return results;
+}
+
 function classifyCreative(creative: any): string {
   const objStorySpec = creative.object_story_spec;
   if (!objStorySpec) return "excluded_other";
@@ -232,11 +275,26 @@ Deno.serve(async (req) => {
       (storedAdsets || []).map((a: any) => [a.adset_id, a.id])
     );
 
-    // 3. Fetch ads with creatives
+    // 3. Fetch ads (lightweight) then batch-fetch creative details
     await updateStep("Pulling ads, creatives & downloading images");
-    const ads = await fetchAllPages(
-      `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,adset_id,creative{id,name,object_story_spec,asset_feed_spec,image_url,image_hash,video_id,thumbnail_url}&limit=500&access_token=${accessToken}`
+    const rawAds = await fetchAllPages(
+      `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,adset_id,creative{id}&limit=100&access_token=${accessToken}`
     );
+
+    const creativeIds = [
+      ...new Set(
+        rawAds
+          .map((ad: any) => ad.creative?.id)
+          .filter(Boolean) as string[],
+      ),
+    ];
+
+    const creativeMap = await fetchCreativesInBatches(creativeIds, accessToken);
+
+    const ads = rawAds.map((ad: any) => ({
+      ...ad,
+      creativeDetails: ad.creative?.id ? creativeMap[ad.creative.id] || null : null,
+    }));
 
     let totalAds = 0;
     let supportedAds = 0;
@@ -277,14 +335,14 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       let prodAdId: number;
-      const creativeType = classifyCreative(ad.creative || {});
+      const creativeType = classifyCreative(ad.creativeDetails || ad.creative || {});
       if (existingProdAd) {
         prodAdId = existingProdAd.id;
         await admin.from("prod_ads").update({
           name: ad.name || "",
           status: ad.status,
           adset_id: ad.adset_id,
-          creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
+          creative_url: ad.creativeDetails?.image_url || ad.creativeDetails?.thumbnail_url || null,
           parent_ad_id: null,
         }).eq("id", prodAdId);
       } else {
@@ -294,7 +352,7 @@ Deno.serve(async (req) => {
           adset_id: ad.adset_id,
           name: ad.name || "",
           status: ad.status,
-          creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
+          creative_url: ad.creativeDetails?.image_url || ad.creativeDetails?.thumbnail_url || null,
           parent_ad_id: null,
         }).select("id").single();
         prodAdId = newProdAd!.id;
@@ -302,7 +360,7 @@ Deno.serve(async (req) => {
       prodAdIdMap.set(ad.id, prodAdId);
 
       // Classify and store creative
-      const creative = ad.creative || {};
+      const creative = ad.creativeDetails || {};
 
       if (creativeType === "static_single" || creativeType === "static_carousel") {
         supportedAds++;
@@ -495,7 +553,7 @@ Deno.serve(async (req) => {
         const origCampaign = origAdset ? campaignLookup.get(origAdset.campaign_id) : undefined;
 
         // Get creative info
-        const creative = origAd?.creative || {};
+        const creative = origAd?.creativeDetails || {};
         const objStory = creative.object_story_spec || {};
         const linkData = objStory.link_data || {};
 
