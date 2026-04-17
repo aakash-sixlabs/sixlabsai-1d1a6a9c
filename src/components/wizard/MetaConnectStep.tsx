@@ -168,6 +168,54 @@ export const MetaConnectStep = () => {
           Your data is encrypted and never shared
         </div>
       </motion.div>
+
+      <Dialog open={tokenDialogOpen} onOpenChange={setTokenDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" />
+              Connect with Access Token
+            </DialogTitle>
+            <DialogDescription>
+              Paste a Meta access token to connect without OAuth. We recommend a
+              long-lived <strong>System User token</strong> from Business
+              Settings with <code>ads_read</code> + <code>ads_management</code> scopes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Textarea
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="EAAB..."
+              className="font-mono text-xs h-28 resize-none"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="text-xs text-muted-foreground">
+              Your token is stored securely under your account and used only to
+              fetch your ad data.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setTokenInput("");
+                setTokenDialogOpen(false);
+              }}
+              disabled={submittingToken}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleTokenSubmit} disabled={submittingToken}>
+              {submittingToken && (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              )}
+              {submittingToken ? "Validating…" : "Connect"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
