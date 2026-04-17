@@ -1,14 +1,59 @@
 import { motion } from "framer-motion";
 import { useWizard } from "@/context/WizardContext";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Shield, CheckCircle2, Loader2 } from "lucide-react";
+import { ExternalLink, Shield, CheckCircle2, Loader2, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export const MetaConnectStep = () => {
   const { setStep, updateState } = useWizard();
   const [connecting, setConnecting] = useState(false);
+  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  const [submittingToken, setSubmittingToken] = useState(false);
+
+  const handleTokenSubmit = async () => {
+    const token = tokenInput.trim();
+    if (!token) {
+      toast.error("Please paste an access token");
+      return;
+    }
+    setSubmittingToken(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "meta-token-connect",
+        { body: { accessToken: token } }
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      sessionStorage.setItem("meta_connection", JSON.stringify({
+        connectionId: data.connectionId,
+        userName: data.userName,
+        accounts: data.accounts,
+      }));
+      updateState({ metaConnected: true });
+      setTokenInput("");
+      setTokenDialogOpen(false);
+      toast.success(`Connected as ${data.userName}`);
+      setStep("account-select");
+    } catch (err: any) {
+      console.error("Token connect error:", err);
+      toast.error(err.message || "Failed to connect with token");
+    } finally {
+      setSubmittingToken(false);
+    }
+  };
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -77,6 +122,15 @@ export const MetaConnectStep = () => {
           {connecting ? "Connecting…" : "Connect with Meta"}
         </Button>
 
+        <button
+          type="button"
+          onClick={() => setTokenDialogOpen(true)}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+        >
+          <KeyRound className="w-3 h-3" />
+          Have an access token? Paste it here
+        </button>
+
         <Button
           variant="ghost"
           size="sm"
@@ -114,6 +168,54 @@ export const MetaConnectStep = () => {
           Your data is encrypted and never shared
         </div>
       </motion.div>
+
+      <Dialog open={tokenDialogOpen} onOpenChange={setTokenDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-primary" />
+              Connect with Access Token
+            </DialogTitle>
+            <DialogDescription>
+              Paste a Meta access token to connect without OAuth. We recommend a
+              long-lived <strong>System User token</strong> from Business
+              Settings with <code>ads_read</code> + <code>ads_management</code> scopes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Textarea
+              value={tokenInput}
+              onChange={(e) => setTokenInput(e.target.value)}
+              placeholder="EAAB..."
+              className="font-mono text-xs h-28 resize-none"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="text-xs text-muted-foreground">
+              Your token is stored securely under your account and used only to
+              fetch your ad data.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setTokenInput("");
+                setTokenDialogOpen(false);
+              }}
+              disabled={submittingToken}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleTokenSubmit} disabled={submittingToken}>
+              {submittingToken && (
+                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+              )}
+              {submittingToken ? "Validating…" : "Connect"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
