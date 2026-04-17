@@ -84,10 +84,8 @@ export const DataSyncStep = ({
         });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
-        setIsComplete(true);
-        updateState({ syncComplete: true });
-        setCurrentStep("Preparing insights");
-        setTimeout(() => handleComplete(), 1000);
+        // Sync runs in the background — realtime updates on sync_jobs will
+        // drive currentStep and the final complete/error state.
       } catch (err: any) {
         console.error("Sync error:", err);
         setError(err.message || "Sync failed");
