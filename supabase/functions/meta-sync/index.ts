@@ -335,14 +335,14 @@ Deno.serve(async (req) => {
         .maybeSingle();
 
       let prodAdId: number;
-      const creativeType = classifyCreative(ad.creative || {});
+      const creativeType = classifyCreative(ad.creativeDetails || ad.creative || {});
       if (existingProdAd) {
         prodAdId = existingProdAd.id;
         await admin.from("prod_ads").update({
           name: ad.name || "",
           status: ad.status,
           adset_id: ad.adset_id,
-          creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
+          creative_url: ad.creativeDetails?.image_url || ad.creativeDetails?.thumbnail_url || null,
           parent_ad_id: null,
         }).eq("id", prodAdId);
       } else {
@@ -352,7 +352,7 @@ Deno.serve(async (req) => {
           adset_id: ad.adset_id,
           name: ad.name || "",
           status: ad.status,
-          creative_url: ad.creative?.image_url || ad.creative?.thumbnail_url || null,
+          creative_url: ad.creativeDetails?.image_url || ad.creativeDetails?.thumbnail_url || null,
           parent_ad_id: null,
         }).select("id").single();
         prodAdId = newProdAd!.id;
@@ -360,7 +360,7 @@ Deno.serve(async (req) => {
       prodAdIdMap.set(ad.id, prodAdId);
 
       // Classify and store creative
-      const creative = ad.creative || {};
+      const creative = ad.creativeDetails || {};
 
       if (creativeType === "static_single" || creativeType === "static_carousel") {
         supportedAds++;
@@ -553,7 +553,7 @@ Deno.serve(async (req) => {
         const origCampaign = origAdset ? campaignLookup.get(origAdset.campaign_id) : undefined;
 
         // Get creative info
-        const creative = origAd?.creative || {};
+        const creative = origAd?.creativeDetails || {};
         const objStory = creative.object_story_spec || {};
         const linkData = objStory.link_data || {};
 
