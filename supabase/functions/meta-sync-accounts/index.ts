@@ -163,13 +163,18 @@ Deno.serve(async (req) => {
         .eq("id", syncId);
     };
 
+    // TEST MODE: cap each entity to keep Meta API calls minimal during debugging.
+    const TEST_MODE_LIMIT = 10;
+
     const runPhase = async () => {
       try {
         // 1. Campaigns
         await updateStep("Pulling campaigns");
-        const campaigns = await fetchAllPages(
+        const allCampaigns = await fetchAllPages(
           `https://graph.facebook.com/v21.0/${actId}/campaigns?fields=id,name,status,objective&limit=500&access_token=${accessToken}`,
         );
+        const campaigns = allCampaigns.slice(0, TEST_MODE_LIMIT);
+        console.log(`TEST MODE: ${allCampaigns.length} campaigns → using ${campaigns.length}`);
 
         const campaignRecords = campaigns.map((c: any) => ({
           ad_account_id: adAccountId,
@@ -196,9 +201,13 @@ Deno.serve(async (req) => {
 
         // 2. Adsets
         await updateStep("Pulling ad sets");
-        const adsets = await fetchAllPages(
+        const allAdsets = await fetchAllPages(
           `https://graph.facebook.com/v21.0/${actId}/adsets?fields=id,name,status,campaign_id,targeting&limit=500&access_token=${accessToken}`,
         );
+        const adsets = allAdsets
+          .filter((as: any) => campaignMap.has(as.campaign_id))
+          .slice(0, TEST_MODE_LIMIT);
+        console.log(`TEST MODE: ${allAdsets.length} adsets → using ${adsets.length}`);
 
         const adsetRecords = adsets
           .filter((as: any) => campaignMap.has(as.campaign_id))
@@ -227,13 +236,16 @@ Deno.serve(async (req) => {
 
         // 3. Ads (lightweight skeleton)
         await updateStep("Pulling ads");
-        const rawAds = await fetchAllPages(
+        const allRawAds = await fetchAllPages(
           `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,adset_id,creative{id}&limit=100&access_token=${accessToken}`,
         );
+        const rawAds = allRawAds
+          .filter((ad: any) => adsetMap.has(ad.adset_id))
+          .slice(0, TEST_MODE_LIMIT);
+        console.log(`TEST MODE: ${allRawAds.length} ads → using ${rawAds.length}`);
 
         let totalAds = 0;
         for (const ad of rawAds) {
-          if (!adsetMap.has(ad.adset_id)) continue;
           totalAds++;
 
           const { data: storedAd } = await admin
