@@ -384,12 +384,46 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4. Fetch insights — daily granularity
+    // 4. Fetch insights — daily granularity, chunked into 7-day windows
+    // to stay under Meta's per-request data cap on large accounts.
     await updateStep("Pulling ad performance");
-    const timeRange = `{"since":"${dateStart.toISOString().split("T")[0]}","until":"${dateEnd.toISOString().split("T")[0]}"}`;
-    const insights = await fetchAllPages(
-      `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency,reach&level=ad&time_increment=1&time_range=${encodeURIComponent(timeRange)}&limit=500&access_token=${accessToken}`
-    );
+    const insights: any[] = [];
+    const CHUNK_DAYS = 7;
+    const msPerDay = 86400000;
+    const totalMs = dateEnd.getTime() - dateStart.getTime();
+    const totalDays = Math.max(1, Math.ceil(totalMs / msPerDay));
+    for (let offset = 0; offset < totalDays; offset += CHUNK_DAYS) {
+      const chunkStart = new Date(dateStart.getTime() + offset * msPerDay);
+      const chunkEndTs = Math.min(
+        dateStart.getTime() + (offset + CHUNK_DAYS - 1) * msPerDay,
+        dateEnd.getTime()
+      );
+      const chunkEnd = new Date(chunkEndTs);
+      const since = chunkStart.toISOString().split("T")[0];
+      const until = chunkEnd.toISOString().split("T")[0];
+      const timeRange = `{"since":"${since}","until":"${until}"}`;
+      try {
+        const chunk = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency,reach&level=ad&time_increment=1&time_range=${encodeURIComponent(timeRange)}&limit=500&access_token=${accessToken}`
+        );
+        insights.push(...chunk);
+      } catch (chunkErr: any) {
+        // If a single chunk is still too large, fall back to day-by-day for that window.
+        const msg = chunkErr?.message || "";
+        if (msg.includes("reduce the amount") || msg.includes("too much data")) {
+          for (let d = chunkStart.getTime(); d <= chunkEnd.getTime(); d += msPerDay) {
+            const day = new Date(d).toISOString().split("T")[0];
+            const dayRange = `{"since":"${day}","until":"${day}"}`;
+            const daily = await fetchAllPages(
+              `https://graph.facebook.com/v21.0/${actId}/insights?fields=ad_id,spend,impressions,clicks,ctr,cpc,cpm,actions,action_values,frequency,reach&level=ad&time_increment=1&time_range=${encodeURIComponent(dayRange)}&limit=500&access_token=${accessToken}`
+            );
+            insights.push(...daily);
+          }
+        } else {
+          throw chunkErr;
+        }
+      }
+    }
 
     // Legacy: get stored ads map
     const { data: allStoredAds } = await admin
