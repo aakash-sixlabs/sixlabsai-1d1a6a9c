@@ -1,55 +1,42 @@
 
+User asking about token security before approving the manual-token workaround. This is a research question — short, direct answer, no plan needed beyond restating the security model.
 
-# Create Production Tables in Lovable Cloud & Update Meta Sync
+## Is your access token safe? — Short answer: **Yes, with caveats.**
 
-## Summary
-Create the 10 production tables in this project's database (alongside the existing ones), then update the `meta-sync` edge function to write to the new production schema. Old tables stay untouched for now.
+### How it's protected
 
-## Naming conflict
-The production schema has an `ads` table, but so does the current database. To avoid collisions, I'll name the production version `prod_ads` (or we can drop/rename the old one — your call). Same applies if any other names clash. **Alternative**: since we're keeping old tables temporarily, I can prefix all production tables with `prod_` or keep the exact names and rename the old tables to `legacy_*`.
+**At rest (database)**
+- Stored in `meta_connections.access_token` (Postgres column)
+- RLS policy: `auth.uid() = user_id` → only the row's owner can SELECT/UPDATE it
+- No other user (even other authenticated users) can read it
+- Service role can read it, but service role only runs inside edge functions you control
 
-## Step 1 — Create production tables via migration
+**In transit**
+- Pasted over HTTPS to the edge function
+- Edge function → Meta API over HTTPS
 
-Create these 10 tables with the exact schema you provided:
-- `brands` (+ add `user_id uuid` column for RLS)
-- `prod_ads` (to avoid collision with existing `ads`)
-- `ad_performance_daily`
-- `campaign_ad_data`
-- `creatives`
-- `creative_tags`
-- `products`
-- `competitor_ads`
-- `brand_competitors`
-- `fatigue_diagnoses`
+**Who can see it**
+- You (the row owner), via your session
+- Edge functions running with service role (`meta-sync`, `meta-token-connect`)
+- Lovable/Supabase platform admins (same as any DB column)
+- **Not** other app users, not the frontend of other sessions, not exposed in any API response
 
-All use `bigint GENERATED ALWAYS AS IDENTITY` as primary keys per your schema. Add foreign keys where logical (e.g., `prod_ads.brand_id → brands.id`).
+### Caveats / things to know
 
-## Step 2 — Add RLS policies
+1. **Plaintext in DB** — the column is not encrypted at the application layer. Same as how OAuth-issued tokens are stored today. Postgres encrypts at-rest at the disk level but anyone with DB-level access (service role key, DB admin) can read it. This matches the existing OAuth flow's security posture exactly.
 
-Enable RLS on all new tables. Access checks go through `brands.user_id`:
-- `brands`: `auth.uid() = user_id`
-- All others: subquery join on `brand_id` to verify ownership
+2. **Browser exposure during paste** — the token sits in React state and the network request body for ~1 second during submit. Standard for any credential paste flow (passwords, API keys). Mitigations: don't log it, don't put it in a GET querystring, clear the input after submit.
 
-## Step 3 — Update `meta-sync` edge function
+3. **Token capability** — a Meta user/system token with `ads_read`+`ads_management` can read all ad data and *modify* campaigns. If leaked, an attacker could pause/edit ads. Use a **System User token scoped to specific ad accounts** to limit blast radius — that's the recommended pattern for client tokens anyway.
 
-Rewrite `supabase/functions/meta-sync/index.ts` to:
-1. Upsert a `brands` row using the ad account's Meta credentials (name, account ID, token, currency, timezone)
-2. Fetch campaigns, adsets, ads, creatives, and daily insights (`time_increment=1`) from Meta API
-3. Write flattened rows into `campaign_ad_data` (one row per ad per day)
-4. Write daily metrics into `ad_performance_daily`
-5. Write ads into `prod_ads` and creatives into `creatives`
-6. Continue downloading images to `ad-creatives` storage bucket
-7. Keep writing to old tables as well (dual-write) so nothing breaks during transition
+4. **No expiry tracking** — `token_expires_at` would be `null` for pasted tokens (we don't know when it expires). If a client gives you a short-lived token, sync will silently 401 later. System User tokens don't expire, so this is a non-issue if clients use those.
 
-## Step 4 — Update frontend queries
+### Optional hardening (say the word and I'll add to the plan)
+- Encrypt `access_token` at the application layer using `pgsodium` / a vault secret before storing
+- Add an audit log row whenever a token is read by an edge function
+- Mask the token in any admin UI (show `EAAB…last4`)
 
-Update Insights, DataReview, and Home dashboard components to read from the new production tables (`campaign_ad_data`, `ad_performance_daily`, `creatives`) instead of the old normalized chain.
+### Recommendation
+Ship the workaround as-is — security parity with the existing OAuth flow. If you want defense-in-depth (encryption-at-rest at the app layer), I can layer that on as a follow-up without changing the user flow.
 
-## What stays the same
-- Auth flow, onboarding, Meta OAuth — unchanged
-- Old tables (`campaigns`, `ad_sets`, `ads`, `ad_insights`, `ad_creatives`) remain but are deprecated
-- `meta_connections`, `ad_accounts`, `profiles`, `sync_jobs` — unchanged
-
-## Open question
-Should I use exact table names from your production schema (renaming old `ads` to `legacy_ads`) or prefix the new ones as `prod_ads`?
-
+No code changes proposed in this message — awaiting your go-ahead on the original workaround plan (and whether to add encryption).
