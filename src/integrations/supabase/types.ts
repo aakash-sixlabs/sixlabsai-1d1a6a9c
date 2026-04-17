@@ -352,44 +352,6 @@ export type Database = {
           },
         ]
       }
-      brand_competitors: {
-        Row: {
-          brand_id: number | null
-          competitor_meta_page_id: string | null
-          competitor_meta_page_name: string | null
-          competitor_name: string | null
-          created_at: string
-          foreplay_brand_id: string | null
-          id: number
-        }
-        Insert: {
-          brand_id?: number | null
-          competitor_meta_page_id?: string | null
-          competitor_meta_page_name?: string | null
-          competitor_name?: string | null
-          created_at?: string
-          foreplay_brand_id?: string | null
-          id?: never
-        }
-        Update: {
-          brand_id?: number | null
-          competitor_meta_page_id?: string | null
-          competitor_meta_page_name?: string | null
-          competitor_name?: string | null
-          created_at?: string
-          foreplay_brand_id?: string | null
-          id?: never
-        }
-        Relationships: [
-          {
-            foreignKeyName: "brand_competitors_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       brands: {
         Row: {
           account_currency: string | null
@@ -592,128 +554,6 @@ export type Database = {
           },
         ]
       }
-      competitor_ads: {
-        Row: {
-          brand_id: number | null
-          competitor_brand_name: string | null
-          copy_body: string | null
-          copy_headline: string | null
-          created_at: string
-          cta_title: string | null
-          cta_type: string | null
-          days_running: number | null
-          display_format: string | null
-          emotional_drivers: string | null
-          est_monthly_spend: number | null
-          first_seen_date: string | null
-          foreplay_ad_id: string | null
-          foreplay_brand_id: string | null
-          full_transcription: string | null
-          id: number
-          image_url: string | null
-          is_active: boolean | null
-          last_seen_date: string | null
-          link_url: string | null
-          meta_ad_id: string | null
-          niches: string | null
-          platform: string | null
-          product_category: string | null
-          source: string | null
-          thumbnail_url: string | null
-          video_url: string | null
-        }
-        Insert: {
-          brand_id?: number | null
-          competitor_brand_name?: string | null
-          copy_body?: string | null
-          copy_headline?: string | null
-          created_at?: string
-          cta_title?: string | null
-          cta_type?: string | null
-          days_running?: number | null
-          display_format?: string | null
-          emotional_drivers?: string | null
-          est_monthly_spend?: number | null
-          first_seen_date?: string | null
-          foreplay_ad_id?: string | null
-          foreplay_brand_id?: string | null
-          full_transcription?: string | null
-          id?: never
-          image_url?: string | null
-          is_active?: boolean | null
-          last_seen_date?: string | null
-          link_url?: string | null
-          meta_ad_id?: string | null
-          niches?: string | null
-          platform?: string | null
-          product_category?: string | null
-          source?: string | null
-          thumbnail_url?: string | null
-          video_url?: string | null
-        }
-        Update: {
-          brand_id?: number | null
-          competitor_brand_name?: string | null
-          copy_body?: string | null
-          copy_headline?: string | null
-          created_at?: string
-          cta_title?: string | null
-          cta_type?: string | null
-          days_running?: number | null
-          display_format?: string | null
-          emotional_drivers?: string | null
-          est_monthly_spend?: number | null
-          first_seen_date?: string | null
-          foreplay_ad_id?: string | null
-          foreplay_brand_id?: string | null
-          full_transcription?: string | null
-          id?: never
-          image_url?: string | null
-          is_active?: boolean | null
-          last_seen_date?: string | null
-          link_url?: string | null
-          meta_ad_id?: string | null
-          niches?: string | null
-          platform?: string | null
-          product_category?: string | null
-          source?: string | null
-          thumbnail_url?: string | null
-          video_url?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "competitor_ads_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      creative_tags: {
-        Row: {
-          ad_id: number | null
-          brand_id: number | null
-          created_at: string
-          id: number
-          tags: string | null
-        }
-        Insert: {
-          ad_id?: number | null
-          brand_id?: number | null
-          created_at?: string
-          id?: never
-          tags?: string | null
-        }
-        Update: {
-          ad_id?: number | null
-          brand_id?: number | null
-          created_at?: string
-          id?: never
-          tags?: string | null
-        }
-        Relationships: []
-      }
       creatives: {
         Row: {
           brand_id: number | null
@@ -754,75 +594,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "creatives_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      fatigue_diagnoses: {
-        Row: {
-          ad_id: number | null
-          adset_id: string | null
-          brand_id: number | null
-          creative_id: number | null
-          ctr_trend_7d: number | null
-          current_visual_tags: string | null
-          detected_at: string
-          est_daily_waste: number | null
-          fatigued_component: string | null
-          id: number
-          is_actioned: boolean | null
-          platform: string | null
-          preserve_tags: string | null
-          replace_tags: string | null
-          severity: string | null
-        }
-        Insert: {
-          ad_id?: number | null
-          adset_id?: string | null
-          brand_id?: number | null
-          creative_id?: number | null
-          ctr_trend_7d?: number | null
-          current_visual_tags?: string | null
-          detected_at?: string
-          est_daily_waste?: number | null
-          fatigued_component?: string | null
-          id?: never
-          is_actioned?: boolean | null
-          platform?: string | null
-          preserve_tags?: string | null
-          replace_tags?: string | null
-          severity?: string | null
-        }
-        Update: {
-          ad_id?: number | null
-          adset_id?: string | null
-          brand_id?: number | null
-          creative_id?: number | null
-          ctr_trend_7d?: number | null
-          current_visual_tags?: string | null
-          detected_at?: string
-          est_daily_waste?: number | null
-          fatigued_component?: string | null
-          id?: never
-          is_actioned?: boolean | null
-          platform?: string | null
-          preserve_tags?: string | null
-          replace_tags?: string | null
-          severity?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "fatigue_diagnoses_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: false
-            referencedRelation: "prod_ads"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fatigue_diagnoses_brand_id_fkey"
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
@@ -903,47 +674,6 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "prod_ads_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      products: {
-        Row: {
-          brand_id: number | null
-          created_at: string
-          description: string | null
-          handle: string | null
-          id: number
-          image_urls: string | null
-          shopify_id: number | null
-          title: string | null
-        }
-        Insert: {
-          brand_id?: number | null
-          created_at?: string
-          description?: string | null
-          handle?: string | null
-          id?: never
-          image_urls?: string | null
-          shopify_id?: number | null
-          title?: string | null
-        }
-        Update: {
-          brand_id?: number | null
-          created_at?: string
-          description?: string | null
-          handle?: string | null
-          id?: never
-          image_urls?: string | null
-          shopify_id?: number | null
-          title?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "products_brand_id_fkey"
             columns: ["brand_id"]
             isOneToOne: false
             referencedRelation: "brands"
@@ -1051,7 +781,6 @@ export type Database = {
     }
     Functions: {
       owns_brand: { Args: { _brand_id: number }; Returns: boolean }
-      owns_creative: { Args: { _creative_id: number }; Returns: boolean }
       owns_prod_ad: { Args: { _ad_id: number }; Returns: boolean }
     }
     Enums: {
