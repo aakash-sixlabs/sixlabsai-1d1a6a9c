@@ -1,14 +1,59 @@
 import { motion } from "framer-motion";
 import { useWizard } from "@/context/WizardContext";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Shield, CheckCircle2, Loader2 } from "lucide-react";
+import { ExternalLink, Shield, CheckCircle2, Loader2, KeyRound } from "lucide-react";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export const MetaConnectStep = () => {
   const { setStep, updateState } = useWizard();
   const [connecting, setConnecting] = useState(false);
+  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  const [submittingToken, setSubmittingToken] = useState(false);
+
+  const handleTokenSubmit = async () => {
+    const token = tokenInput.trim();
+    if (!token) {
+      toast.error("Please paste an access token");
+      return;
+    }
+    setSubmittingToken(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "meta-token-connect",
+        { body: { accessToken: token } }
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      sessionStorage.setItem("meta_connection", JSON.stringify({
+        connectionId: data.connectionId,
+        userName: data.userName,
+        accounts: data.accounts,
+      }));
+      updateState({ metaConnected: true });
+      setTokenInput("");
+      setTokenDialogOpen(false);
+      toast.success(`Connected as ${data.userName}`);
+      setStep("account-select");
+    } catch (err: any) {
+      console.error("Token connect error:", err);
+      toast.error(err.message || "Failed to connect with token");
+    } finally {
+      setSubmittingToken(false);
+    }
+  };
 
   const handleConnect = async () => {
     setConnecting(true);
@@ -76,6 +121,15 @@ export const MetaConnectStep = () => {
           )}
           {connecting ? "Connecting…" : "Connect with Meta"}
         </Button>
+
+        <button
+          type="button"
+          onClick={() => setTokenDialogOpen(true)}
+          className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+        >
+          <KeyRound className="w-3 h-3" />
+          Have an access token? Paste it here
+        </button>
 
         <Button
           variant="ghost"
