@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.meta-sync]
 verify_jwt = false
+
+[functions.meta-sync-accounts]
+verify_jwt = false
+
+[functions.meta-sync-creatives]
+verify_jwt = false
+
+[functions.meta-sync-insights]
+verify_jwt = false
