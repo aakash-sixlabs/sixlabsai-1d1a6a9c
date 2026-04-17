@@ -163,13 +163,18 @@ Deno.serve(async (req) => {
         .eq("id", syncId);
     };
 
+    // TEST MODE: cap each entity to keep Meta API calls minimal during debugging.
+    const TEST_MODE_LIMIT = 10;
+
     const runPhase = async () => {
       try {
         // 1. Campaigns
         await updateStep("Pulling campaigns");
-        const campaigns = await fetchAllPages(
+        const allCampaigns = await fetchAllPages(
           `https://graph.facebook.com/v21.0/${actId}/campaigns?fields=id,name,status,objective&limit=500&access_token=${accessToken}`,
         );
+        const campaigns = allCampaigns.slice(0, TEST_MODE_LIMIT);
+        console.log(`TEST MODE: ${allCampaigns.length} campaigns → using ${campaigns.length}`);
 
         const campaignRecords = campaigns.map((c: any) => ({
           ad_account_id: adAccountId,
