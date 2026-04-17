@@ -201,9 +201,13 @@ Deno.serve(async (req) => {
 
         // 2. Adsets
         await updateStep("Pulling ad sets");
-        const adsets = await fetchAllPages(
+        const allAdsets = await fetchAllPages(
           `https://graph.facebook.com/v21.0/${actId}/adsets?fields=id,name,status,campaign_id,targeting&limit=500&access_token=${accessToken}`,
         );
+        const adsets = allAdsets
+          .filter((as: any) => campaignMap.has(as.campaign_id))
+          .slice(0, TEST_MODE_LIMIT);
+        console.log(`TEST MODE: ${allAdsets.length} adsets → using ${adsets.length}`);
 
         const adsetRecords = adsets
           .filter((as: any) => campaignMap.has(as.campaign_id))
