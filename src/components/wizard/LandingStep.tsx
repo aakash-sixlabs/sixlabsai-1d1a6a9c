@@ -1,12 +1,21 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Loader2, Zap, Bug } from "lucide-react";
+import { Loader2, Zap, Bug, KeyRound } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWizard } from "@/context/WizardContext";
 import metaLogo from "@/assets/meta-logo.png";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 /* ── Meta logo as image ── */
 const MetaLogo = ({ className }: { className?: string }) => (
@@ -68,8 +77,74 @@ const KONAMI = ["ArrowUp","ArrowUp","ArrowDown","ArrowDown","ArrowLeft","ArrowRi
 export const LandingStep = () => {
   const [connecting, setConnecting] = useState(false);
   const [easterEgg, setEasterEgg] = useState(false);
+  const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
+  const [tokenInput, setTokenInput] = useState("");
+  const [submittingToken, setSubmittingToken] = useState(false);
   const navigate = useNavigate();
   const { updateState } = useWizard();
+
+  const handleTokenSubmit = async () => {
+    const token = tokenInput.trim();
+    if (!token) {
+      toast.error("Please paste an access token");
+      return;
+    }
+    setSubmittingToken(true);
+    try {
+      const meRes = await fetch(
+        `https://graph.facebook.com/v21.0/me?fields=id,name&access_token=${encodeURIComponent(token)}`
+      );
+      const me = await meRes.json();
+      if (!meRes.ok || me.error) {
+        throw new Error(me?.error?.message || "Invalid access token");
+      }
+
+      const placeholderEmail = `meta_${me.id}@users.noreply`;
+      const placeholderPassword = `meta_${me.id}_pw_${me.id.slice(-6)}`;
+
+      let signInRes = await supabase.auth.signInWithPassword({
+        email: placeholderEmail,
+        password: placeholderPassword,
+      });
+
+      if (signInRes.error) {
+        const signUpRes = await supabase.auth.signUp({
+          email: placeholderEmail,
+          password: placeholderPassword,
+          options: { data: { full_name: me.name, meta_user_id: me.id } },
+        });
+        if (signUpRes.error) throw signUpRes.error;
+        signInRes = await supabase.auth.signInWithPassword({
+          email: placeholderEmail,
+          password: placeholderPassword,
+        });
+        if (signInRes.error) throw signInRes.error;
+      }
+
+      const { data, error } = await supabase.functions.invoke(
+        "meta-token-connect",
+        { body: { accessToken: token } }
+      );
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      sessionStorage.setItem("meta_connection", JSON.stringify({
+        connectionId: data.connectionId,
+        userName: data.userName,
+        accounts: data.accounts,
+      }));
+      updateState({ metaConnected: true });
+      setTokenInput("");
+      setTokenDialogOpen(false);
+      toast.success(`Connected as ${data.userName}`);
+      navigate("/onboarding-v2?meta=connected");
+    } catch (err: any) {
+      console.error("Token connect error:", err);
+      toast.error(err.message || "Failed to connect with token");
+    } finally {
+      setSubmittingToken(false);
+    }
+  };
 
   // Konami code listener
   useEffect(() => {
