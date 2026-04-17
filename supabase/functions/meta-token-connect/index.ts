@@ -37,9 +37,17 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const accessToken: string | undefined = body?.accessToken?.trim();
+    const adAccountIdRaw: string | undefined = body?.adAccountId?.trim();
     if (!accessToken || accessToken.length < 20) {
       return json({ error: "Invalid access token" }, 400);
     }
+
+    // Normalize: accept "act_123" or "123"
+    const adAccountId = adAccountIdRaw
+      ? adAccountIdRaw.startsWith("act_")
+        ? adAccountIdRaw
+        : `act_${adAccountIdRaw}`
+      : undefined;
 
     // 1. Validate token via /me
     const meRes = await fetch(
@@ -53,24 +61,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 2. List ad accounts
-    const acctRes = await fetch(
-      `${GRAPH}/me/adaccounts?fields=id,account_id,name,currency,timezone_name&limit=200&access_token=${encodeURIComponent(accessToken)}`
-    );
-    const acctJson = await acctRes.json();
-    if (!acctRes.ok || acctJson.error) {
-      return json(
-        { error: acctJson?.error?.message || "Failed to list ad accounts" },
-        400
-      );
-    }
-    const accounts = (acctJson.data || []) as Array<{
+    // 2. Fetch ad accounts — either the specific one, or all accessible
+    let accounts: Array<{
       id: string;
       account_id: string;
       name: string;
       currency?: string;
       timezone_name?: string;
-    }>;
+    }> = [];
+
+    if (adAccountId) {
+      const oneRes = await fetch(
+        `${GRAPH}/${adAccountId}?fields=id,account_id,name,currency,timezone_name&access_token=${encodeURIComponent(accessToken)}`
+      );
+      const oneJson = await oneRes.json();
+      if (!oneRes.ok || oneJson.error) {
+        return json(
+          {
+            error:
+              oneJson?.error?.message ||
+              `Cannot access ad account ${adAccountId}`,
+          },
+          400
+        );
+      }
+      accounts = [oneJson];
+    } else {
+      const acctRes = await fetch(
+        `${GRAPH}/me/adaccounts?fields=id,account_id,name,currency,timezone_name&limit=200&access_token=${encodeURIComponent(accessToken)}`
+      );
+      const acctJson = await acctRes.json();
+      if (!acctRes.ok || acctJson.error) {
+        return json(
+          { error: acctJson?.error?.message || "Failed to list ad accounts" },
+          400
+        );
+      }
+      accounts = acctJson.data || [];
+    }
 
     // 3. Upsert via service role (bypasses RLS for write but scoped to this user)
     const admin = createClient(supabaseUrl, serviceKey);

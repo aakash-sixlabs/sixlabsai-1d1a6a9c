@@ -16,6 +16,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 /* ── Meta logo as image ── */
 const MetaLogo = ({ className }: { className?: string }) => (
@@ -79,6 +81,7 @@ export const LandingStep = () => {
   const [easterEgg, setEasterEgg] = useState(false);
   const [tokenDialogOpen, setTokenDialogOpen] = useState(false);
   const [tokenInput, setTokenInput] = useState("");
+  const [adAccountInput, setAdAccountInput] = useState("");
   const [submittingToken, setSubmittingToken] = useState(false);
   const navigate = useNavigate();
   const { updateState } = useWizard();
@@ -123,7 +126,12 @@ export const LandingStep = () => {
 
       const { data, error } = await supabase.functions.invoke(
         "meta-token-connect",
-        { body: { accessToken: token } }
+        {
+          body: {
+            accessToken: token,
+            adAccountId: adAccountInput.trim() || undefined,
+          },
+        }
       );
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -133,8 +141,16 @@ export const LandingStep = () => {
         userName: data.userName,
         accounts: data.accounts,
       }));
+      // If user specified an ad account, pre-select it so onboarding skips selection
+      if (adAccountInput.trim() && data.accounts?.[0]) {
+        sessionStorage.setItem(
+          "preselected_ad_account_id",
+          data.accounts[0].id
+        );
+      }
       updateState({ metaConnected: true });
       setTokenInput("");
+      setAdAccountInput("");
       setTokenDialogOpen(false);
       toast.success(`Connected as ${data.userName}`);
       navigate("/onboarding-v2?meta=connected");
@@ -360,19 +376,34 @@ export const LandingStep = () => {
               <code className="mx-1">ads_management</code> scopes.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3 py-2">
-            <Textarea
-              value={tokenInput}
-              onChange={(e) => setTokenInput(e.target.value)}
-              placeholder="EAAB..."
-              className="font-mono text-xs h-28 resize-none"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <p className="text-xs text-muted-foreground">
-              We'll create an account tied to this Meta user and pull the same
-              data the OAuth flow would.
-            </p>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Access Token</Label>
+              <Textarea
+                value={tokenInput}
+                onChange={(e) => setTokenInput(e.target.value)}
+                placeholder="EAAB..."
+                className="font-mono text-xs h-24 resize-none"
+                autoComplete="off"
+                spellCheck={false}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">
+                Ad Account ID <span className="text-muted-foreground font-normal">(optional)</span>
+              </Label>
+              <Input
+                value={adAccountInput}
+                onChange={(e) => setAdAccountInput(e.target.value)}
+                placeholder="act_123456789 or 123456789"
+                className="font-mono text-xs"
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Pull data only for this account. Leave empty to list all accessible accounts.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button
