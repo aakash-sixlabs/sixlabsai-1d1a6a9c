@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 300))
     }
 
-    const rows = creativeResults
+    const rows = nonVideoCreatives
       .filter((c: any) => adMap[c.id])
       .map((c: any) => {
         let creativeType = 'unknown'
