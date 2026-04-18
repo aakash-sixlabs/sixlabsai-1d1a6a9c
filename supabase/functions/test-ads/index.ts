@@ -77,6 +77,7 @@ Deno.serve(async (req) => {
         status: a.status ?? null,
         effective_status: a.effective_status ?? null,
         meta_creative_id: a.creative?.id ?? null,
+        media_type: 'unknown',
         updated_at: new Date().toISOString()
       }))
 
