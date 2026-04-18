@@ -75,8 +75,31 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 300))
     }
 
+    // Detect media type for every fetched creative and update ads table
+    let videoCount = 0
+    for (const c of creativeResults) {
+      const mediaType = c.video_id
+        ? 'video'
+        : c.asset_feed_spec
+          ? 'dco'
+          : c.image_hash
+            ? 'static_single'
+            : 'unknown'
+
+      await admin
+        .from('ads')
+        .update({ media_type: mediaType })
+        .eq('meta_creative_id', c.id)
+        .eq('user_id', userId)
+
+      if (mediaType === 'video') videoCount++
+    }
+
+    // Only process non-video creatives going forward
+    const nonVideoCreatives = creativeResults.filter((c: any) => !c.video_id)
+
     const imageHashes: string[] = []
-    creativeResults.forEach((c: any) => {
+    nonVideoCreatives.forEach((c: any) => {
       if (c.image_hash) imageHashes.push(c.image_hash)
       c.asset_feed_spec?.images?.forEach((img: any) => {
         if (img.hash) imageHashes.push(img.hash)
@@ -102,7 +125,7 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 300))
     }
 
-    const rows = creativeResults
+    const rows = nonVideoCreatives
       .filter((c: any) => adMap[c.id])
       .map((c: any) => {
         let creativeType = 'unknown'
@@ -177,6 +200,8 @@ Deno.serve(async (req) => {
         success: !upsertError,
         total_creative_ids: creativeIds.length,
         total_fetched: creativeResults.length,
+        videos_skipped: videoCount,
+        non_video_processed: nonVideoCreatives.length,
         total_stored: upsertError ? 0 : rows.length,
         total_hashes_resolved: Object.keys(imageUrlMap).length,
         capped_at: TEST_MAX_RECORDS,
