@@ -650,6 +650,7 @@ export type Database = {
     }
     Functions: {
       owns_brand: { Args: { _brand_id: number }; Returns: boolean }
+      refresh_campaign_ad_data: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
