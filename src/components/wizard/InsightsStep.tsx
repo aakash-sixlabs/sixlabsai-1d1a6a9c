@@ -300,7 +300,7 @@ export const InsightsStep = () => {
       .subscribe();
 
     try {
-      const { data, error } = await supabase.functions.invoke("meta-sync", {
+      const { data, error } = await supabase.functions.invoke("meta-sync-accounts", {
         body: { adAccountId: accountId, dateRangeDays: state.dateRange || "90" },
       });
       if (error) throw error;
