@@ -177,6 +177,7 @@ export type Database = {
         Row: {
           ad_id: string
           clicks: number | null
+          cost_per_purchase: number | null
           cpc: number | null
           cpm: number | null
           created_at: string
@@ -189,15 +190,18 @@ export type Database = {
           platform_position: string | null
           purchases: number | null
           reach: number | null
+          result_type: string | null
           revenue: number | null
           roas: number | null
           spend: number | null
+          unique_ctr: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
           ad_id: string
           clicks?: number | null
+          cost_per_purchase?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
@@ -210,15 +214,18 @@ export type Database = {
           platform_position?: string | null
           purchases?: number | null
           reach?: number | null
+          result_type?: string | null
           revenue?: number | null
           roas?: number | null
           spend?: number | null
+          unique_ctr?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
           ad_id?: string
           clicks?: number | null
+          cost_per_purchase?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
@@ -231,9 +238,11 @@ export type Database = {
           platform_position?: string | null
           purchases?: number | null
           reach?: number | null
+          result_type?: string | null
           revenue?: number | null
           roas?: number | null
           spend?: number | null
+          unique_ctr?: number | null
           updated_at?: string
           user_id?: string
         }
@@ -318,6 +327,7 @@ export type Database = {
           created_at: string
           effective_status: string | null
           id: string
+          media_type: string | null
           meta_ad_id: string
           meta_creative_id: string | null
           name: string | null
@@ -330,6 +340,7 @@ export type Database = {
           created_at?: string
           effective_status?: string | null
           id?: string
+          media_type?: string | null
           meta_ad_id: string
           meta_creative_id?: string | null
           name?: string | null
@@ -342,6 +353,7 @@ export type Database = {
           created_at?: string
           effective_status?: string | null
           id?: string
+          media_type?: string | null
           meta_ad_id?: string
           meta_creative_id?: string | null
           name?: string | null
