@@ -1,5 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const TEST_MAX_RECORDS = 200
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
@@ -175,6 +177,8 @@ Deno.serve(async (req) => {
         total_fetched: creativeResults.length,
         total_stored: upsertError ? 0 : rows.length,
         total_hashes_resolved: Object.keys(imageUrlMap).length,
+        capped_at: TEST_MAX_RECORDS,
+        is_complete: creativeResults.length < TEST_MAX_RECORDS,
         upsert_error: upsertError?.message ?? null,
         sample: rows.slice(0, 3).map(r => ({
           meta_creative_id: r.meta_creative_id,

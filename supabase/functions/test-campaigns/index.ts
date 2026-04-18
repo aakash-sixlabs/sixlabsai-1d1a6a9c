@@ -1,21 +1,26 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const TEST_MAX_RECORDS = 200
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
     'authorization, x-client-info, apikey, content-type',
 }
 
-async function fetchAllPages(url: string): Promise<any[]> {
+async function fetchAllPages(
+  url: string,
+  maxRecords = TEST_MAX_RECORDS
+): Promise<any[]> {
   const results: any[] = []
   let nextUrl: string | null = url
 
-  while (nextUrl) {
+  while (nextUrl && results.length < maxRecords) {
     const response = await fetch(nextUrl)
     const data = await response.json()
     if (data.error) throw new Error(data.error.message)
     if (data.data) results.push(...data.data)
-    nextUrl = data.paging?.next ?? null
+    nextUrl = results.length < maxRecords ? data.paging?.next ?? null : null
     await new Promise(r => setTimeout(r, 300))
   }
 
@@ -79,6 +84,8 @@ Deno.serve(async (req) => {
         success: !upsertError,
         total_pulled: results.length,
         total_stored: upsertError ? 0 : rows.length,
+        capped_at: TEST_MAX_RECORDS,
+        is_complete: results.length < TEST_MAX_RECORDS,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),
