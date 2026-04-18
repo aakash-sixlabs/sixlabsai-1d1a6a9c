@@ -216,7 +216,7 @@ export const InsightsStep = () => {
       if (!selectedAccountId) setSelectedAccountId(fetchedAccounts[0].id);
     }
 
-    // Try production tables first (campaign_ad_data is the flattened source)
+    // Primary source: campaign_ad_data materialized view (flattened, denormalized)
     const { data: cadData } = await supabase.from("campaign_ad_data").select("*");
     const cadRows = cadData || [];
 
@@ -224,23 +224,24 @@ export const InsightsStep = () => {
       // Build enriched ads from production data — aggregate daily rows per ad
       const adAgg = new Map<string, any>();
       cadRows.forEach((row: any) => {
-        const key = row.ad_id || row.id;
+        const key = row.ad_id || `${row.brand_id}-${row.date}`;
         if (!adAgg.has(key)) {
+          const imgs = Array.isArray(row.image_urls) ? row.image_urls : [];
           adAgg.set(key, {
             id: key,
             adName: row.ad_name || "Unknown",
             campaignName: row.campaign_name || "Unknown Campaign",
             campaignId: row.campaign_id || "",
-            imageUrl: row.creative_image_url || row.creative_thumbnail_url || null,
-            creativeType: "static_single",
+            imageUrl: row.image_url || imgs[0] || null,
+            creativeType: row.creative_type || "static_single",
             spend: 0, impressions: 0, clicks: 0, ctrSum: 0, roasSum: 0, days: 0,
           });
         }
         const agg = adAgg.get(key)!;
-        agg.spend += (row.spend || 0);
-        agg.impressions += (row.impressions || 0);
-        agg.clicks += (row.clicks || 0);
-        agg.roasSum += (row.roas || 0);
+        agg.spend += Number(row.spend || 0);
+        agg.impressions += Number(row.impressions || 0);
+        agg.clicks += Number(row.clicks || 0);
+        agg.roasSum += Number(row.roas || 0);
         agg.days += 1;
       });
 
@@ -265,29 +266,11 @@ export const InsightsStep = () => {
       enriched.sort((a, b) => b.score - a.score);
       setAds(enriched);
     } else {
-      // Fallback to legacy tables
-      const [adsRes, creativesRes, insightsRes, adSetsRes, campaignsRes] = await Promise.all([
-        supabase.from("ads").select("*"),
-        supabase.from("ad_creatives").select("*"),
-        supabase.from("ad_insights").select("*"),
-        supabase.from("ad_sets").select("*"),
-        supabase.from("campaigns").select("*"),
-      ]);
-
-      const dbAds = adsRes.data || [];
-      const creatives = creativesRes.data || [];
-      const insights = insightsRes.data || [];
-      const adSetsData = adSetsRes.data || [];
-      const campaignsData = campaignsRes.data || [];
-
-      if (creatives.length === 0) {
-        setAds(generateMockData());
-      } else {
-        setAds(enrichAndSet(dbAds as any, creatives as any, insights as any, adSetsData as any, campaignsData as any));
-      }
+      // No synced data yet — show mock data so the UI is never empty during dev
+      setAds(generateMockData());
     }
     setLoading(false);
-  }, [enrichAndSet, selectedAccountId]);
+  }, [selectedAccountId]);
 
   // Background sync for returning users
   const triggerBackgroundSync = useCallback(async () => {
