@@ -75,8 +75,31 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 300))
     }
 
+    // Detect media type for every fetched creative and update ads table
+    let videoCount = 0
+    for (const c of creativeResults) {
+      const mediaType = c.video_id
+        ? 'video'
+        : c.asset_feed_spec
+          ? 'dco'
+          : c.image_hash
+            ? 'static_single'
+            : 'unknown'
+
+      await admin
+        .from('ads')
+        .update({ media_type: mediaType })
+        .eq('meta_creative_id', c.id)
+        .eq('user_id', userId)
+
+      if (mediaType === 'video') videoCount++
+    }
+
+    // Only process non-video creatives going forward
+    const nonVideoCreatives = creativeResults.filter((c: any) => !c.video_id)
+
     const imageHashes: string[] = []
-    creativeResults.forEach((c: any) => {
+    nonVideoCreatives.forEach((c: any) => {
       if (c.image_hash) imageHashes.push(c.image_hash)
       c.asset_feed_spec?.images?.forEach((img: any) => {
         if (img.hash) imageHashes.push(img.hash)
