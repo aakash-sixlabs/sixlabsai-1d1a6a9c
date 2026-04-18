@@ -46,7 +46,9 @@ Deno.serve(async (req) => {
       .eq('id', adAccountId)
       .single()
 
-    const metaAccountId = adAccount.account_id
+    const metaAccountId = adAccount.account_id.startsWith('act_')
+      ? adAccount.account_id
+      : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
 
     const results = await fetchAllPages(
