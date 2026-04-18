@@ -1,76 +1,82 @@
 
 
-## Understanding the phase split for `meta-sync`
+User wants schema restructure. Clear, well-specified spec. Just need to plan the migration and identify code touchpoints.
 
-The current function does everything in one invocation and dies at ~150s. Here's the plan to split it into chained phases, each safely under the limit.
+Code that references dropped/changed tables needs updating:
+- `meta-sync-accounts/index.ts` — uses `prod_ads`, old `campaigns/ad_sets/ads` columns (`campaign_id`, `adset_id`, `ad_name`)
+- `meta-sync-creatives/index.ts` — likely uses `ad_creatives` + `prod_ads`
+- `meta-sync-insights/index.ts` — uses `ad_insights` + `ad_performance_daily` + `campaign_ad_data`
+- `meta-sync/index.ts` — legacy
+- Frontend: `Insights.tsx`, `DataReviewStep.tsx`, `AdCreativeGrid.tsx`, `Output.tsx`, `Home` — may read `prod_ads`/`creatives`/`campaign_ad_data`/`ad_insights`
 
-### Why split?
+Plan keeps it tight: one migration + edge function rewrites + audit frontend reads.
 
-Edge Functions have a **~150s wall-clock limit**. Current sync does 5 heavy things serially in one call:
+---
 
-```text
-[boot] → campaigns → adsets → ads(skeleton) → creatives(batched+images) → insights(90 days loop) → [done]
-                                                                              ^ dies here around 150s
-```
+# Plan: Restructure schema for new sync pipeline
 
-Splitting means each phase returns fast, then triggers the next phase via a new function invocation. `sync_jobs` acts as the baton.
+## 1. Single migration (all schema changes)
 
-### Proposed phases
+Run as one migration so it's atomic and re-runnable.
 
-```text
-Phase 1: meta-sync-accounts    (~5-15s)
-  └─ campaigns + adsets + ads(skeleton) → writes to campaigns/ad_sets/ads/prod_ads
-  └─ updates sync_jobs.current_step = "creatives"
-  └─ invokes meta-sync-creatives
+**Drop redundant tables**
+- `prod_ads`, `creatives`, `ad_insights`, `campaign_ad_data` (all CASCADE)
 
-Phase 2: meta-sync-creatives   (~30-90s)
-  └─ batched creative details (50 at a time) + image rehost to ad-creatives bucket
-  └─ writes to ad_creatives + creatives + updates prod_ads.creative_url
-  └─ updates sync_jobs.current_step = "insights"
-  └─ invokes meta-sync-insights
+**Rebuild changed tables** (drop + recreate, since column renames + new FKs are extensive)
+- `campaigns` — adds `meta_campaign_id`, `effective_status`, budgets, times; FKs to `auth.users` + `ad_accounts`; UNIQUE `(user_id, meta_campaign_id)`
+- `ad_sets` — adds `meta_adset_id`, `effective_status`, budgets, `optimization_goal`, `billing_event`, times; FK to `campaigns`
+- `ads` — renames `adset_id`→`ad_set_id`, adds `meta_ad_id`/`meta_creative_id`/`effective_status`; FK to `ad_sets`
+- `ad_creatives` — adds `meta_creative_id`, image hash fields, `stored_image_url(s)`, raw spec jsonb columns; FK to `ads`
+- `ad_performance_daily` — adds `user_id`, `reach`, `cpc`, `cpm`, `purchases`, `revenue`; FK to `ads`; UNIQUE `(user_id, ad_id, date)`
 
-Phase 3: meta-sync-insights    (can loop itself if needed)
-  └─ pulls day-by-day insights, writes campaign_ad_data + ad_insights
-  └─ if date range is large, processes N days then re-invokes itself with a cursor
-  └─ on final day → sync_jobs.status = "complete"
-```
+**Re-apply RLS** on rebuilt tables (same `auth.uid() = user_id` policies as today).
 
-### How phases chain
+**Materialized view** `campaign_ad_data` joining performance → ads → creatives → ad_sets → campaigns → ad_accounts → brands; unique index `(brand_id, ad_id, date)`.
 
-Two patterns, both safe:
+**Indexes** — all 13 from spec.
 
-1. **Fire-and-forget invoke**: Phase 1 returns its HTTP response, then in `EdgeRuntime.waitUntil(...)` calls `supabase.functions.invoke('meta-sync-creatives', { body: { jobId } })`. The next phase boots as a fresh invocation with its own 150s budget.
+**`sync_jobs`** — add the 8 new counter columns via `ALTER TABLE … ADD COLUMN IF NOT EXISTS`.
 
-2. **Self-chaining for insights**: If 90 days of insights can't fit in 150s, Phase 3 processes e.g. 30 days, updates `sync_jobs` with a `cursor_date`, and re-invokes itself. Repeat until cursor reaches end date.
+Untouched: `auth.users`, `profiles`, `meta_connections`, `ad_accounts`, `ad_account_profiles`, `brands`.
 
-### What `sync_jobs` tracks
+## 2. Rewrite the 3 edge functions
 
-Already has `current_step`, `status`, `error_message`. We'd add:
-- `cursor_date` (date, nullable) — for Phase 3 self-chaining
-- `phase` (text, nullable) — explicit "accounts" / "creatives" / "insights" for clarity
+Sync code references columns/tables that no longer exist. Must update before next sync.
 
-Frontend realtime subscription on `sync_jobs` keeps the progress UI live across all phases — no UI changes needed beyond mapping the new `phase` values to friendly step labels.
+- **`meta-sync-accounts`** — write `meta_campaign_id` (not `campaign_id`), `meta_adset_id`, `meta_ad_id`, `ad_set_id` (renamed). Remove all `prod_ads` writes. Remove brand upsert from this function (brand already exists pre-sync, or move to a one-shot step).
+- **`meta-sync-creatives`** — write to new `ad_creatives` shape (`meta_creative_id`, `image_hash`, `stored_image_url`, `raw_asset_feed_spec`, etc.). Remove `prod_ads.creative_url` updates.
+- **`meta-sync-insights`** — write to new `ad_performance_daily` (now has `user_id`, `reach`, `cpc`, `cpm`, `purchases`, `revenue`). Remove all `ad_insights` and `campaign_ad_data` writes. At end of insights phase, `REFRESH MATERIALIZED VIEW CONCURRENTLY campaign_ad_data`.
+- Update `sync_jobs` progress to use new counter columns (`total_campaigns`, `total_creatives`, `images_downloaded`, etc.).
 
-### Failure handling
+## 3. Audit + patch frontend reads
 
-- Each phase wraps its work in try/catch. On error → `sync_jobs.status = 'error'`, store message, stop chain.
-- Retry = re-invoke the specific failed phase (knowable from `current_step`) rather than restarting from scratch.
+Find every component querying dropped tables and switch to the new sources:
 
-### What stays the same
+| Old read | New source |
+|---|---|
+| `prod_ads` | `ads` (joined as needed) |
+| `creatives` | `ad_creatives` |
+| `ad_insights` | `ad_performance_daily` |
+| `campaign_ad_data` (table) | `campaign_ad_data` (materialized view — same name, similar columns) |
 
-- All table writes (same schema, same data mapping we discussed earlier)
-- Realtime subscription to `sync_jobs` from the frontend
-- CORS, auth, error surfaces
-- Image bucket logic
+Files to check & update: `Insights.tsx`, `Output.tsx`, `Home`/dashboard, `DataReviewStep.tsx`, `AdCreativeGrid.tsx`, `DigestCards.tsx`, anything in `src/components/insights/`.
 
-### What changes
+Column renames to propagate everywhere:
+- `campaigns.campaign_id` → `meta_campaign_id`, `campaign_name` → `name`
+- `ad_sets.adset_id` → `meta_adset_id`, `adset_name` → `name`
+- `ads.ad_id` → `meta_ad_id`, `ad_name` → `name`, `adset_id` → `ad_set_id`
+- `ad_creatives.creative_id` → `meta_creative_id`, `image_urls` → `stored_image_urls`
 
-- `meta-sync/index.ts` becomes `meta-sync-accounts/index.ts` (phase 1 only)
-- Two new functions: `meta-sync-creatives/`, `meta-sync-insights/`
-- One small migration adding `cursor_date` + `phase` columns
-- Frontend `OnboardingV2.tsx` step labels updated (cosmetic)
+## 4. Regenerate types
 
-### Trade-off
+`src/integrations/supabase/types.ts` is auto-regenerated after migration — frontend type errors will surface the remaining call sites to fix.
 
-More moving parts, but each phase is independently retriable and nothing can ever exceed the wall limit. This is the standard pattern for Meta/Google Ads pulls on Supabase.
+---
+
+## Notes / risks
+
+- **Drop+recreate vs ALTER**: spec uses `CREATE TABLE IF NOT EXISTS` which would skip existing tables. But existing `campaigns/ad_sets/ads/ad_creatives/ad_performance_daily` have *different* column names (`campaign_id` vs `meta_campaign_id`, etc.), so `IF NOT EXISTS` would leave them stale. Will explicitly `DROP … CASCADE` then recreate. All current sync data is test data — confirmed safe to wipe.
+- **Materialized view refresh**: must be triggered after each sync (added to insights phase). Initial refresh runs empty after migration.
+- **RLS on new `ad_performance_daily`**: switches from `owns_prod_ad(ad_id)` to `auth.uid() = user_id` (since `user_id` is now on the row directly — simpler & faster).
+- Sync code rewrites are necessary in the same delivery — schema migration alone will break the next sync run.
 
