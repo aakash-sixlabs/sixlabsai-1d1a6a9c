@@ -54,7 +54,6 @@ Deno.serve(async (req) => {
     const results = await fetchAllPages(
       `https://graph.facebook.com/v21.0/${metaAccountId}/ads` +
       `?fields=id,name,status,effective_status,adset_id,creative{id}` +
-      `&filtering=[{"field":"creative.media_type","operator":"IN","value":["IMAGE"]}]` +
       `&limit=100` +
       `&access_token=${accessToken}`
     )
