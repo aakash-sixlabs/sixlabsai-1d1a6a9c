@@ -99,47 +99,68 @@ export type Database = {
       ad_creatives: {
         Row: {
           ad_id: string
-          call_to_action: string | null
           created_at: string
-          creative_id: string
-          creative_type: string
+          creative_type: string | null
+          cta_type: string | null
           description: string | null
           destination_url: string | null
           headline: string | null
           id: string
-          image_urls: Json | null
+          image_hash: string | null
+          image_hashes: Json | null
+          image_url: string | null
+          meta_creative_id: string
           primary_text: string | null
+          raw_asset_feed_spec: Json | null
           raw_data: Json | null
+          raw_object_story_spec: Json | null
+          stored_image_url: string | null
+          stored_image_urls: Json | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           ad_id: string
-          call_to_action?: string | null
           created_at?: string
-          creative_id: string
-          creative_type?: string
+          creative_type?: string | null
+          cta_type?: string | null
           description?: string | null
           destination_url?: string | null
           headline?: string | null
           id?: string
-          image_urls?: Json | null
+          image_hash?: string | null
+          image_hashes?: Json | null
+          image_url?: string | null
+          meta_creative_id: string
           primary_text?: string | null
+          raw_asset_feed_spec?: Json | null
           raw_data?: Json | null
+          raw_object_story_spec?: Json | null
+          stored_image_url?: string | null
+          stored_image_urls?: Json | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           ad_id?: string
-          call_to_action?: string | null
           created_at?: string
-          creative_id?: string
-          creative_type?: string
+          creative_type?: string | null
+          cta_type?: string | null
           description?: string | null
           destination_url?: string | null
           headline?: string | null
           id?: string
-          image_urls?: Json | null
+          image_hash?: string | null
+          image_hashes?: Json | null
+          image_url?: string | null
+          meta_creative_id?: string
           primary_text?: string | null
+          raw_asset_feed_spec?: Json | null
           raw_data?: Json | null
+          raw_object_story_spec?: Json | null
+          stored_image_url?: string | null
+          stored_image_urls?: Json | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -152,153 +173,133 @@ export type Database = {
           },
         ]
       }
-      ad_insights: {
+      ad_performance_daily: {
         Row: {
           ad_id: string
           clicks: number | null
-          conversion_value: number | null
-          conversions: number | null
           cpc: number | null
           cpm: number | null
           created_at: string
           ctr: number | null
-          date_start: string
-          date_stop: string
+          date: string
+          frequency: number | null
           id: string
           impressions: number | null
+          platform: string | null
+          platform_position: string | null
+          purchases: number | null
+          reach: number | null
+          revenue: number | null
           roas: number | null
           spend: number | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           ad_id: string
           clicks?: number | null
-          conversion_value?: number | null
-          conversions?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
           ctr?: number | null
-          date_start: string
-          date_stop: string
+          date: string
+          frequency?: number | null
           id?: string
           impressions?: number | null
+          platform?: string | null
+          platform_position?: string | null
+          purchases?: number | null
+          reach?: number | null
+          revenue?: number | null
           roas?: number | null
           spend?: number | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           ad_id?: string
           clicks?: number | null
-          conversion_value?: number | null
-          conversions?: number | null
           cpc?: number | null
           cpm?: number | null
           created_at?: string
           ctr?: number | null
-          date_start?: string
-          date_stop?: string
+          date?: string
+          frequency?: number | null
           id?: string
           impressions?: number | null
+          platform?: string | null
+          platform_position?: string | null
+          purchases?: number | null
+          reach?: number | null
+          revenue?: number | null
           roas?: number | null
           spend?: number | null
+          updated_at?: string
           user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ad_insights_ad_id_fkey"
-            columns: ["ad_id"]
-            isOneToOne: true
-            referencedRelation: "ads"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ad_performance_daily: {
-        Row: {
-          ad_id: number | null
-          clicks: number | null
-          created_at: string
-          creative_id: number | null
-          ctr: number | null
-          date: string | null
-          frequency: number | null
-          id: number
-          impressions: number | null
-          platform: string | null
-          platform_position: string | null
-          roas: number | null
-          spend: number | null
-        }
-        Insert: {
-          ad_id?: number | null
-          clicks?: number | null
-          created_at?: string
-          creative_id?: number | null
-          ctr?: number | null
-          date?: string | null
-          frequency?: number | null
-          id?: never
-          impressions?: number | null
-          platform?: string | null
-          platform_position?: string | null
-          roas?: number | null
-          spend?: number | null
-        }
-        Update: {
-          ad_id?: number | null
-          clicks?: number | null
-          created_at?: string
-          creative_id?: number | null
-          ctr?: number | null
-          date?: string | null
-          frequency?: number | null
-          id?: never
-          impressions?: number | null
-          platform?: string | null
-          platform_position?: string | null
-          roas?: number | null
-          spend?: number | null
         }
         Relationships: [
           {
             foreignKeyName: "ad_performance_daily_ad_id_fkey"
             columns: ["ad_id"]
             isOneToOne: false
-            referencedRelation: "prod_ads"
+            referencedRelation: "ads"
             referencedColumns: ["id"]
           },
         ]
       }
       ad_sets: {
         Row: {
-          adset_id: string
-          adset_name: string
+          billing_event: string | null
           campaign_id: string
           created_at: string
+          daily_budget: number | null
+          effective_status: string | null
+          end_time: string | null
           id: string
+          lifetime_budget: number | null
+          meta_adset_id: string
+          name: string | null
+          optimization_goal: string | null
+          start_time: string | null
           status: string | null
           targeting: Json | null
+          updated_at: string
           user_id: string
         }
         Insert: {
-          adset_id: string
-          adset_name: string
+          billing_event?: string | null
           campaign_id: string
           created_at?: string
+          daily_budget?: number | null
+          effective_status?: string | null
+          end_time?: string | null
           id?: string
+          lifetime_budget?: number | null
+          meta_adset_id: string
+          name?: string | null
+          optimization_goal?: string | null
+          start_time?: string | null
           status?: string | null
           targeting?: Json | null
+          updated_at?: string
           user_id: string
         }
         Update: {
-          adset_id?: string
-          adset_name?: string
+          billing_event?: string | null
           campaign_id?: string
           created_at?: string
+          daily_budget?: number | null
+          effective_status?: string | null
+          end_time?: string | null
           id?: string
+          lifetime_budget?: number | null
+          meta_adset_id?: string
+          name?: string | null
+          optimization_goal?: string | null
+          start_time?: string | null
           status?: string | null
           targeting?: Json | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -313,39 +314,45 @@ export type Database = {
       }
       ads: {
         Row: {
-          ad_id: string
-          ad_name: string
-          adset_id: string
+          ad_set_id: string
           created_at: string
-          creative_id: string | null
+          effective_status: string | null
           id: string
+          meta_ad_id: string
+          meta_creative_id: string | null
+          name: string | null
           status: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
-          ad_id: string
-          ad_name: string
-          adset_id: string
+          ad_set_id: string
           created_at?: string
-          creative_id?: string | null
+          effective_status?: string | null
           id?: string
+          meta_ad_id: string
+          meta_creative_id?: string | null
+          name?: string | null
           status?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
-          ad_id?: string
-          ad_name?: string
-          adset_id?: string
+          ad_set_id?: string
           created_at?: string
-          creative_id?: string | null
+          effective_status?: string | null
           id?: string
+          meta_ad_id?: string
+          meta_creative_id?: string | null
+          name?: string | null
           status?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "ads_adset_id_fkey"
-            columns: ["adset_id"]
+            foreignKeyName: "ads_ad_set_id_fkey"
+            columns: ["ad_set_id"]
             isOneToOne: false
             referencedRelation: "ad_sets"
             referencedColumns: ["id"]
@@ -391,157 +398,53 @@ export type Database = {
         }
         Relationships: []
       }
-      campaign_ad_data: {
-        Row: {
-          ad_id: string | null
-          ad_name: string | null
-          ad_status: string | null
-          adset_id: string | null
-          adset_name: string | null
-          adset_status: string | null
-          brand_id: number | null
-          call_to_action: string | null
-          campaign_id: string | null
-          campaign_name: string | null
-          campaign_status: string | null
-          clicks: number | null
-          cpc: number | null
-          cpm: number | null
-          created_at: string
-          creative_body: string | null
-          creative_id: string | null
-          creative_image_url: string | null
-          creative_thumbnail_url: string | null
-          creative_title: string | null
-          ctr: number | null
-          date: string | null
-          fatigue_severity: string | null
-          frequency: number | null
-          id: number
-          impressions: number | null
-          is_fatigued: boolean | null
-          platform: string | null
-          platform_position: string | null
-          purchases: number | null
-          reach: number | null
-          roas: number | null
-          spend: number | null
-          target_countries: string | null
-          target_languages: string | null
-        }
-        Insert: {
-          ad_id?: string | null
-          ad_name?: string | null
-          ad_status?: string | null
-          adset_id?: string | null
-          adset_name?: string | null
-          adset_status?: string | null
-          brand_id?: number | null
-          call_to_action?: string | null
-          campaign_id?: string | null
-          campaign_name?: string | null
-          campaign_status?: string | null
-          clicks?: number | null
-          cpc?: number | null
-          cpm?: number | null
-          created_at?: string
-          creative_body?: string | null
-          creative_id?: string | null
-          creative_image_url?: string | null
-          creative_thumbnail_url?: string | null
-          creative_title?: string | null
-          ctr?: number | null
-          date?: string | null
-          fatigue_severity?: string | null
-          frequency?: number | null
-          id?: never
-          impressions?: number | null
-          is_fatigued?: boolean | null
-          platform?: string | null
-          platform_position?: string | null
-          purchases?: number | null
-          reach?: number | null
-          roas?: number | null
-          spend?: number | null
-          target_countries?: string | null
-          target_languages?: string | null
-        }
-        Update: {
-          ad_id?: string | null
-          ad_name?: string | null
-          ad_status?: string | null
-          adset_id?: string | null
-          adset_name?: string | null
-          adset_status?: string | null
-          brand_id?: number | null
-          call_to_action?: string | null
-          campaign_id?: string | null
-          campaign_name?: string | null
-          campaign_status?: string | null
-          clicks?: number | null
-          cpc?: number | null
-          cpm?: number | null
-          created_at?: string
-          creative_body?: string | null
-          creative_id?: string | null
-          creative_image_url?: string | null
-          creative_thumbnail_url?: string | null
-          creative_title?: string | null
-          ctr?: number | null
-          date?: string | null
-          fatigue_severity?: string | null
-          frequency?: number | null
-          id?: never
-          impressions?: number | null
-          is_fatigued?: boolean | null
-          platform?: string | null
-          platform_position?: string | null
-          purchases?: number | null
-          reach?: number | null
-          roas?: number | null
-          spend?: number | null
-          target_countries?: string | null
-          target_languages?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "campaign_ad_data_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       campaigns: {
         Row: {
           ad_account_id: string
-          campaign_id: string
-          campaign_name: string
           created_at: string
+          daily_budget: number | null
+          effective_status: string | null
           id: string
+          lifetime_budget: number | null
+          meta_campaign_id: string
+          name: string | null
           objective: string | null
+          start_time: string | null
           status: string | null
+          stop_time: string | null
+          updated_at: string
           user_id: string
         }
         Insert: {
           ad_account_id: string
-          campaign_id: string
-          campaign_name: string
           created_at?: string
+          daily_budget?: number | null
+          effective_status?: string | null
           id?: string
+          lifetime_budget?: number | null
+          meta_campaign_id: string
+          name?: string | null
           objective?: string | null
+          start_time?: string | null
           status?: string | null
+          stop_time?: string | null
+          updated_at?: string
           user_id: string
         }
         Update: {
           ad_account_id?: string
-          campaign_id?: string
-          campaign_name?: string
           created_at?: string
+          daily_budget?: number | null
+          effective_status?: string | null
           id?: string
+          lifetime_budget?: number | null
+          meta_campaign_id?: string
+          name?: string | null
           objective?: string | null
+          start_time?: string | null
           status?: string | null
+          stop_time?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
@@ -550,53 +453,6 @@ export type Database = {
             columns: ["ad_account_id"]
             isOneToOne: false
             referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      creatives: {
-        Row: {
-          brand_id: number | null
-          copy_body: string | null
-          copy_cta: string | null
-          copy_headline: string | null
-          created_at: string
-          id: number
-          image_url: string | null
-          parent_creative_id: number | null
-          platform: string | null
-          source: string | null
-        }
-        Insert: {
-          brand_id?: number | null
-          copy_body?: string | null
-          copy_cta?: string | null
-          copy_headline?: string | null
-          created_at?: string
-          id?: never
-          image_url?: string | null
-          parent_creative_id?: number | null
-          platform?: string | null
-          source?: string | null
-        }
-        Update: {
-          brand_id?: number | null
-          copy_body?: string | null
-          copy_cta?: string | null
-          copy_headline?: string | null
-          created_at?: string
-          id?: never
-          image_url?: string | null
-          parent_creative_id?: number | null
-          platform?: string | null
-          source?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "creatives_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
             referencedColumns: ["id"]
           },
         ]
@@ -633,53 +489,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      prod_ads: {
-        Row: {
-          adset_id: string | null
-          brand_id: number | null
-          created_at: string
-          creative_id: number | null
-          creative_url: string | null
-          id: number
-          meta_ad_id: string | null
-          name: string | null
-          parent_ad_id: number | null
-          status: string | null
-        }
-        Insert: {
-          adset_id?: string | null
-          brand_id?: number | null
-          created_at?: string
-          creative_id?: number | null
-          creative_url?: string | null
-          id?: never
-          meta_ad_id?: string | null
-          name?: string | null
-          parent_ad_id?: number | null
-          status?: string | null
-        }
-        Update: {
-          adset_id?: string | null
-          brand_id?: number | null
-          created_at?: string
-          creative_id?: number | null
-          creative_url?: string | null
-          id?: never
-          meta_ad_id?: string | null
-          name?: string | null
-          parent_ad_id?: number | null
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "prod_ads_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "brands"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       profiles: {
         Row: {
@@ -729,10 +538,15 @@ export type Database = {
           date_range_start: string | null
           error_message: string | null
           id: string
+          images_downloaded: number | null
           phase: string | null
           status: string
           supported_ads: number | null
           total_ads: number | null
+          total_adsets: number | null
+          total_campaigns: number | null
+          total_creatives: number | null
+          total_images: number | null
           unsupported_ads: number | null
           updated_at: string
           user_id: string
@@ -746,10 +560,15 @@ export type Database = {
           date_range_start?: string | null
           error_message?: string | null
           id?: string
+          images_downloaded?: number | null
           phase?: string | null
           status?: string
           supported_ads?: number | null
           total_ads?: number | null
+          total_adsets?: number | null
+          total_campaigns?: number | null
+          total_creatives?: number | null
+          total_images?: number | null
           unsupported_ads?: number | null
           updated_at?: string
           user_id: string
@@ -763,10 +582,15 @@ export type Database = {
           date_range_start?: string | null
           error_message?: string | null
           id?: string
+          images_downloaded?: number | null
           phase?: string | null
           status?: string
           supported_ads?: number | null
           total_ads?: number | null
+          total_adsets?: number | null
+          total_campaigns?: number | null
+          total_creatives?: number | null
+          total_images?: number | null
           unsupported_ads?: number | null
           updated_at?: string
           user_id?: string
@@ -783,11 +607,49 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      campaign_ad_data: {
+        Row: {
+          ad_effective_status: string | null
+          ad_id: string | null
+          ad_name: string | null
+          ad_status: string | null
+          adset_id: string | null
+          adset_name: string | null
+          adset_status: string | null
+          brand_id: number | null
+          campaign_id: string | null
+          campaign_name: string | null
+          campaign_objective: string | null
+          campaign_status: string | null
+          clicks: number | null
+          cpc: number | null
+          cpm: number | null
+          creative_id: string | null
+          creative_type: string | null
+          cta_type: string | null
+          ctr: number | null
+          date: string | null
+          description: string | null
+          destination_url: string | null
+          frequency: number | null
+          headline: string | null
+          image_url: string | null
+          image_urls: Json | null
+          impressions: number | null
+          platform: string | null
+          platform_position: string | null
+          primary_text: string | null
+          purchases: number | null
+          reach: number | null
+          revenue: number | null
+          roas: number | null
+          spend: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       owns_brand: { Args: { _brand_id: number }; Returns: boolean }
-      owns_prod_ad: { Args: { _ad_id: number }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
