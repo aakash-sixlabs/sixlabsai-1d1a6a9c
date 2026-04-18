@@ -1,6 +1,7 @@
 // Phase 2: meta-sync-creatives
-// Fetches creative details in batches, downloads & rehosts images, writes
-// ad_creatives + creatives, updates prod_ads.creative_url.
+// Fetches creative details in batches, downloads & rehosts images,
+// writes to ad_creatives (new schema with meta_creative_id, image_hash,
+// stored_image_url(s), raw_asset_feed_spec, raw_object_story_spec).
 // Chains to meta-sync-insights.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -23,7 +24,7 @@ async function fetchCreativesInBatches(
     const url =
       `https://graph.facebook.com/v21.0/` +
       `?ids=${ids}` +
-      `&fields=id,name,image_url,image_hash,thumbnail_url,title,body,object_story_spec` +
+      `&fields=id,name,image_url,image_hash,thumbnail_url,title,body,call_to_action_type,object_story_spec,asset_feed_spec` +
       `&access_token=${accessToken}`;
 
     let attempt = 0;
@@ -56,7 +57,6 @@ async function fetchCreativesInBatches(
         break;
       }
     }
-    // Polite gap between batches
     await new Promise((r) => setTimeout(r, 500));
   }
   return results;
@@ -64,19 +64,57 @@ async function fetchCreativesInBatches(
 
 function classifyCreative(creative: any): string {
   const objStorySpec = creative.object_story_spec;
-  if (!objStorySpec) return "excluded_other";
-  if (objStorySpec.video_data || creative.video_id) return "excluded_video";
-  if (creative.asset_feed_spec) return "excluded_dynamic";
+  if (creative.asset_feed_spec) return "dco";
+  if (objStorySpec?.video_data || creative.video_id) return "video";
+  if (!objStorySpec) return "unknown";
   if (objStorySpec.link_data) {
     const linkData = objStorySpec.link_data;
     if (linkData.child_attachments && linkData.child_attachments.length > 0) {
       const hasVideo = linkData.child_attachments.some((c: any) => c.video_id);
-      return hasVideo ? "excluded_other" : "static_carousel";
+      return hasVideo ? "video" : "static_carousel";
     }
     if (linkData.image_hash || linkData.picture) return "static_single";
   }
   if (objStorySpec.photo_data) return "static_single";
-  return "excluded_other";
+  return "unknown";
+}
+
+// Extract all image hashes + CDN URLs we can find from a creative payload
+function extractImages(creative: any): { hashes: string[]; urls: string[] } {
+  const hashes: string[] = [];
+  const urls: string[] = [];
+
+  if (creative.image_hash) hashes.push(creative.image_hash);
+  if (creative.image_url) urls.push(creative.image_url);
+
+  const oss = creative.object_story_spec || {};
+  const linkData = oss.link_data || {};
+  if (linkData.image_hash) hashes.push(linkData.image_hash);
+  if (linkData.picture) urls.push(linkData.picture);
+  if (linkData.image_url) urls.push(linkData.image_url);
+  if (Array.isArray(linkData.child_attachments)) {
+    for (const child of linkData.child_attachments) {
+      if (child.image_hash) hashes.push(child.image_hash);
+      if (child.picture) urls.push(child.picture);
+      if (child.image_url) urls.push(child.image_url);
+    }
+  }
+  if (oss.photo_data?.image_hash) hashes.push(oss.photo_data.image_hash);
+  if (oss.photo_data?.url) urls.push(oss.photo_data.url);
+
+  // DCO asset_feed_spec
+  const afs = creative.asset_feed_spec;
+  if (afs?.images && Array.isArray(afs.images)) {
+    for (const img of afs.images) {
+      if (img.hash) hashes.push(img.hash);
+      if (img.url) urls.push(img.url);
+    }
+  }
+
+  return {
+    hashes: [...new Set(hashes)],
+    urls: [...new Set(urls)],
+  };
 }
 
 Deno.serve(async (req) => {
@@ -84,7 +122,6 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // This function is invoked server-to-server with service role; no user JWT check.
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
@@ -129,56 +166,52 @@ Deno.serve(async (req) => {
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
 
-        // Load all stored ads for this user in this brand
+        // Load all stored ads for this user (new schema: meta_ad_id, meta_creative_id)
         const { data: storedAds } = await admin
           .from("ads")
-          .select("id, ad_id, creative_id")
+          .select("id, meta_ad_id, meta_creative_id")
           .eq("user_id", userId);
 
         const creativeIds = [
           ...new Set(
             (storedAds || [])
-              .map((a: any) => a.creative_id)
+              .map((a: any) => a.meta_creative_id)
               .filter(Boolean) as string[],
           ),
         ];
 
-        await updateStep(`Fetching ${creativeIds.length} creatives`);
+        await updateStep(`Fetching ${creativeIds.length} creatives`, {
+          total_creatives: creativeIds.length,
+        });
         const creativeMap = await fetchCreativesInBatches(creativeIds, accessToken);
 
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         let processed = 0;
+        let imagesDownloaded = 0;
         const total = (storedAds || []).length;
 
         for (const storedAd of storedAds || []) {
           processed++;
           if (processed % 25 === 0) {
-            await updateStep(`Processing creatives (${processed}/${total})`);
+            await updateStep(`Processing creatives (${processed}/${total})`, {
+              images_downloaded: imagesDownloaded,
+            });
           }
 
-          const creative = storedAd.creative_id
-            ? creativeMap[storedAd.creative_id] || {}
+          const creative = storedAd.meta_creative_id
+            ? creativeMap[storedAd.meta_creative_id] || {}
             : {};
           const creativeType = classifyCreative(creative);
+          const oss = creative.object_story_spec || {};
+          const linkData = oss.link_data || {};
 
-          const objStory = creative.object_story_spec || {};
-          const linkData = objStory.link_data || {};
-          const fbImageUrls: string[] = [];
-          if (linkData.picture) fbImageUrls.push(linkData.picture);
-          if (linkData.image_url) fbImageUrls.push(linkData.image_url);
-          if (creative.image_url) fbImageUrls.push(creative.image_url);
-          if (linkData.child_attachments) {
-            for (const child of linkData.child_attachments) {
-              if (child.picture) fbImageUrls.push(child.picture);
-              if (child.image_url) fbImageUrls.push(child.image_url);
-            }
-          }
+          const { hashes, urls } = extractImages(creative);
 
-          const uniqueFbUrls = [...new Set(fbImageUrls)];
+          // Download + rehost each image to Supabase Storage
           const storedImageUrls: string[] = [];
-          for (let imgIdx = 0; imgIdx < uniqueFbUrls.length; imgIdx++) {
+          for (let imgIdx = 0; imgIdx < urls.length; imgIdx++) {
             try {
-              const imgRes = await fetch(uniqueFbUrls[imgIdx]);
+              const imgRes = await fetch(urls[imgIdx]);
               if (!imgRes.ok) continue;
               const contentType = imgRes.headers.get("content-type") || "image/jpeg";
               const imgBuffer = await imgRes.arrayBuffer();
@@ -195,66 +228,53 @@ Deno.serve(async (req) => {
                 storedImageUrls.push(
                   `${supabaseUrl}/storage/v1/object/public/ad-creatives/${storagePath}`,
                 );
+                imagesDownloaded++;
               }
             } catch (imgErr) {
-              console.error(`Image ${imgIdx} failed for ad ${storedAd.ad_id}:`, imgErr);
+              console.error(`Image ${imgIdx} failed for ad ${storedAd.meta_ad_id}:`, imgErr);
             }
           }
 
-          // ad_creatives
+          const primaryHash = hashes[0] || null;
+          const primaryFbUrl = urls[0] || null;
+          const primaryStoredUrl = storedImageUrls[0] || null;
+
+          // Upsert into new ad_creatives schema
           await admin.from("ad_creatives").upsert(
             {
-              ad_id: storedAd.id,
               user_id: userId,
-              creative_id: creative.id || storedAd.ad_id,
+              ad_id: storedAd.id,
+              meta_creative_id: creative.id || storedAd.meta_creative_id || storedAd.meta_ad_id,
               creative_type: creativeType,
-              image_urls: storedImageUrls,
-              headline: linkData.title || linkData.name || null,
-              primary_text: linkData.message || objStory.photo_data?.message || null,
+              headline: linkData.title || linkData.name || creative.title || null,
+              primary_text:
+                linkData.message ||
+                oss.photo_data?.message ||
+                creative.body ||
+                null,
               description: linkData.description || null,
+              cta_type:
+                linkData.call_to_action?.type ||
+                creative.call_to_action_type ||
+                null,
               destination_url: linkData.link || null,
-              call_to_action: linkData.call_to_action?.type || null,
+              image_hash: primaryHash,
+              image_url: primaryFbUrl,
+              stored_image_url: primaryStoredUrl,
+              image_hashes: hashes,
+              stored_image_urls: storedImageUrls,
+              raw_asset_feed_spec: creative.asset_feed_spec || null,
+              raw_object_story_spec: oss && Object.keys(oss).length ? oss : null,
               raw_data: creative,
             },
-            { onConflict: "creative_id", ignoreDuplicates: false },
+            { onConflict: "user_id,meta_creative_id" },
           );
-
-          const primaryImageUrl = storedImageUrls[0] || null;
-
-          // prod_ads.creative_url
-          await admin
-            .from("prod_ads")
-            .update({ creative_url: primaryImageUrl })
-            .eq("meta_ad_id", storedAd.ad_id)
-            .eq("brand_id", brandId);
-
-          // creatives (production)
-          const creativeLookupQuery = admin
-            .from("creatives")
-            .select("id")
-            .eq("brand_id", brandId);
-          const { data: existingCreative } = primaryImageUrl
-            ? await creativeLookupQuery.eq("image_url", primaryImageUrl).maybeSingle()
-            : await creativeLookupQuery.limit(1).maybeSingle();
-
-          const payload = {
-            brand_id: brandId,
-            image_url: primaryImageUrl,
-            copy_headline: linkData.title || linkData.name || null,
-            copy_body: linkData.message || objStory.photo_data?.message || null,
-            copy_cta: linkData.call_to_action?.type || null,
-            source: "meta",
-            platform: "facebook",
-          };
-
-          if (existingCreative) {
-            await admin.from("creatives").update(payload).eq("id", existingCreative.id);
-          } else {
-            await admin.from("creatives").insert(payload);
-          }
         }
 
-        await updateStep("Pulling performance data", { phase: "insights" });
+        await updateStep("Pulling performance data", {
+          phase: "insights",
+          images_downloaded: imagesDownloaded,
+        });
 
         // Chain to phase 3
         const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;

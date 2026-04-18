@@ -1,7 +1,8 @@
 // Phase 3: meta-sync-insights
-// Pulls day-by-day insights, self-chaining via sync_jobs.cursor_date when a run
-// approaches the edge function wall limit. Writes ad_performance_daily,
-// campaign_ad_data, and aggregated ad_insights. On final day → status=complete.
+// Pulls day-by-day insights, writes to ad_performance_daily (new schema with
+// user_id, reach, cpc, cpm, purchases, revenue, roas).
+// Self-chains via sync_jobs.cursor_date when approaching wall limit.
+// On final day → REFRESH MATERIALIZED VIEW campaign_ad_data, mark complete.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -10,9 +11,8 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Soft time budget per invocation. Insights HTTP + writes can be slow,
-// so we re-invoke ourselves well before the 150s wall limit.
 const SOFT_TIME_BUDGET_MS = 100_000;
+const PER_DAY_DELAY_MS = 1500;
 
 async function fetchAllPages(url: string) {
   const results: any[] = [];
@@ -20,7 +20,6 @@ async function fetchAllPages(url: string) {
   while (nextUrl) {
     let attempt = 0;
     let data: any;
-    // Retry loop for rate limits (HTTP 429 or Meta error codes 4/17/32/613, subcode 2446079)
     while (true) {
       const res = await fetch(nextUrl);
       data = await res.json().catch(() => ({}));
@@ -38,7 +37,6 @@ async function fetchAllPages(url: string) {
           `Meta rate limit hit after ${attempt} retries: ${err?.message || res.status}`,
         );
       }
-      // Exponential backoff: 10s, 20s, 40s, 80s, 160s
       const waitMs = 10_000 * Math.pow(2, attempt);
       console.warn(`Rate limited by Meta (attempt ${attempt + 1}), waiting ${waitMs}ms`);
       await new Promise((r) => setTimeout(r, waitMs));
@@ -49,15 +47,10 @@ async function fetchAllPages(url: string) {
     results.push(...(data.data || []));
     nextUrl = data.paging?.next || null;
     if (results.length > 5000) break;
-    // Small inter-page delay to be polite
     if (nextUrl) await new Promise((r) => setTimeout(r, 250));
   }
   return results;
 }
-
-// Gentle delay between per-day insights requests to stay under Meta's ads rate limit.
-const PER_DAY_DELAY_MS = 1500;
-
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -74,7 +67,7 @@ Deno.serve(async (req) => {
     const body = await req.json();
     syncId = body.syncId;
     const { adAccountId, userId, brandId } = body;
-    if (!syncId || !adAccountId || !userId || !brandId) {
+    if (!syncId || !adAccountId || !userId) {
       return new Response(JSON.stringify({ error: "Missing params" }), {
         status: 400,
         headers: corsHeaders,
@@ -125,32 +118,16 @@ Deno.serve(async (req) => {
           ? adAccount.account_id
           : `act_${adAccount.account_id}`;
 
-        // Preload lookups (lightweight)
+        // Map Meta ad_id → internal ads.id (new schema: meta_ad_id)
         const { data: allStoredAds } = await admin
           .from("ads")
-          .select("id, ad_id, ad_name, status, adset_id")
-          .eq("user_id", userId);
-        const adMap = new Map(
-          (allStoredAds || []).map((a: any) => [a.ad_id, a.id]),
-        );
-        const adInfoByMetaId = new Map(
-          (allStoredAds || []).map((a: any) => [a.ad_id, a]),
-        );
-
-        const { data: allProdAds } = await admin
-          .from("prod_ads")
           .select("id, meta_ad_id")
-          .eq("brand_id", brandId);
-        const prodAdIdMap = new Map<string, number>(
-          (allProdAds || []).map((a: any) => [a.meta_ad_id as string, a.id as number]),
+          .eq("user_id", userId);
+        const adMap = new Map<string, string>(
+          (allStoredAds || []).map((a: any) => [a.meta_ad_id as string, a.id as string]),
         );
 
         const msPerDay = 86400000;
-        const totalDays = Math.max(
-          1,
-          Math.ceil((dateEnd.getTime() - dateStart.getTime()) / msPerDay) + 1,
-        );
-
         let current = new Date(cursor);
         let daysThisRun = 0;
 
@@ -164,7 +141,6 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             }).eq("id", syncId!);
 
-            // Self-chain
             const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
             const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
             await fetch(`${supabaseUrl}/functions/v1/meta-sync-insights`, {
@@ -190,16 +166,27 @@ Deno.serve(async (req) => {
             console.error(`Insights fetch failed for ${day}:`, dayErr?.message || dayErr);
           }
 
+          const perfRows: any[] = [];
           for (const insight of dayInsights) {
-            const storedAdId = adMap.get(insight.ad_id);
-            const prodAdId = prodAdIdMap.get(insight.ad_id);
+            const internalAdId = adMap.get(insight.ad_id);
+            if (!internalAdId) continue;
 
-            const purchases = insight.actions?.find(
-              (a: any) => a.action_type === "offsite_conversion" || a.action_type === "purchase",
-            )?.value || 0;
-            const convValue = insight.action_values?.find(
-              (a: any) => a.action_type === "offsite_conversion" || a.action_type === "purchase",
-            )?.value || 0;
+            const purchases = parseInt(
+              insight.actions?.find(
+                (a: any) =>
+                  a.action_type === "purchase" ||
+                  a.action_type === "offsite_conversion.fb_pixel_purchase" ||
+                  a.action_type === "offsite_conversion",
+              )?.value || "0",
+            );
+            const revenue = parseFloat(
+              insight.action_values?.find(
+                (a: any) =>
+                  a.action_type === "purchase" ||
+                  a.action_type === "offsite_conversion.fb_pixel_purchase" ||
+                  a.action_type === "offsite_conversion",
+              )?.value || "0",
+            );
 
             const spend = parseFloat(insight.spend || "0");
             const impressions = parseInt(insight.impressions || "0");
@@ -209,94 +196,31 @@ Deno.serve(async (req) => {
             const cpm = parseFloat(insight.cpm || "0");
             const frequency = parseFloat(insight.frequency || "0");
             const reach = parseInt(insight.reach || "0");
-            const roas = spend > 0 ? parseFloat(convValue) / spend : 0;
-            const insightDate = insight.date_start;
+            const roas = spend > 0 ? revenue / spend : 0;
 
-            if (prodAdId) {
-              const { data: existingPerf } = await admin
-                .from("ad_performance_daily")
-                .select("id")
-                .eq("ad_id", prodAdId)
-                .eq("date", insightDate)
-                .maybeSingle();
+            perfRows.push({
+              user_id: userId,
+              ad_id: internalAdId,
+              date: insight.date_start,
+              impressions,
+              clicks,
+              spend,
+              reach,
+              ctr,
+              cpc,
+              cpm,
+              frequency,
+              purchases,
+              revenue,
+              roas,
+              platform: "facebook",
+            });
+          }
 
-              if (existingPerf) {
-                await admin.from("ad_performance_daily").update({
-                  impressions, clicks, spend, ctr, frequency, roas,
-                  platform: "facebook",
-                }).eq("id", existingPerf.id);
-              } else {
-                await admin.from("ad_performance_daily").insert({
-                  ad_id: prodAdId,
-                  date: insightDate,
-                  impressions, clicks, spend, ctr, frequency, roas,
-                  platform: "facebook",
-                });
-              }
-
-              const storedAdInfo = adInfoByMetaId.get(insight.ad_id);
-
-              const { data: existingCad } = await admin
-                .from("campaign_ad_data")
-                .select("id")
-                .eq("brand_id", brandId)
-                .eq("ad_id", insight.ad_id)
-                .eq("date", insightDate)
-                .maybeSingle();
-
-              const cadRow = {
-                brand_id: brandId,
-                ad_id: insight.ad_id,
-                ad_name: storedAdInfo?.ad_name || null,
-                ad_status: storedAdInfo?.status || null,
-                date: insightDate,
-                impressions, clicks, spend, reach, ctr, cpc, cpm, frequency, roas,
-                purchases: parseInt(purchases),
-                platform: "facebook",
-              };
-
-              if (existingCad) {
-                await admin.from("campaign_ad_data").update(cadRow).eq("id", existingCad.id);
-              } else {
-                await admin.from("campaign_ad_data").insert(cadRow);
-              }
-            }
-
-            // Legacy aggregate (one row per ad over full range)
-            if (storedAdId) {
-              const { data: existingAgg } = await admin
-                .from("ad_insights")
-                .select("id, spend, impressions, clicks, conversions, conversion_value")
-                .eq("ad_id", storedAdId)
-                .maybeSingle();
-
-              const nextSpend = (existingAgg?.spend || 0) + spend;
-              const nextImpressions = (existingAgg?.impressions || 0) + impressions;
-              const nextClicks = (existingAgg?.clicks || 0) + clicks;
-              const nextConversions = (existingAgg?.conversions || 0) + parseInt(purchases);
-              const nextConvValue = (existingAgg?.conversion_value || 0) + parseFloat(convValue);
-
-              const aggCtr = nextImpressions > 0 ? (nextClicks / nextImpressions) * 100 : 0;
-              const aggCpc = nextClicks > 0 ? nextSpend / nextClicks : 0;
-              const aggCpm = nextImpressions > 0 ? (nextSpend / nextImpressions) * 1000 : 0;
-              const aggRoas = nextSpend > 0 ? nextConvValue / nextSpend : 0;
-
-              await admin.from("ad_insights").upsert(
-                {
-                  ad_id: storedAdId,
-                  user_id: userId,
-                  date_start: job.date_range_start,
-                  date_stop: job.date_range_end,
-                  spend: nextSpend,
-                  impressions: nextImpressions,
-                  clicks: nextClicks,
-                  ctr: aggCtr, cpc: aggCpc, cpm: aggCpm, roas: aggRoas,
-                  conversions: nextConversions,
-                  conversion_value: nextConvValue,
-                },
-                { onConflict: "ad_id", ignoreDuplicates: false },
-              );
-            }
+          if (perfRows.length > 0) {
+            await admin.from("ad_performance_daily").upsert(perfRows, {
+              onConflict: "user_id,ad_id,date",
+            });
           }
 
           daysThisRun++;
@@ -310,11 +234,17 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Done
+        // Refresh the materialized view so dashboard sees fresh data
+        try {
+          await admin.rpc("refresh_campaign_ad_data");
+        } catch (refreshErr) {
+          console.warn("MV refresh failed (non-fatal):", refreshErr);
+        }
+
         await admin.from("sync_jobs").update({
           status: "complete",
           current_step: "Complete",
-          phase: "complete",
+          phase: "done",
           cursor_date: null,
           updated_at: new Date().toISOString(),
         }).eq("id", syncId!);

@@ -1,5 +1,6 @@
 // Phase 1: meta-sync-accounts
-// Fetches campaigns + adsets + ads (skeleton), writes to campaigns/ad_sets/ads/prod_ads.
+// Fetches campaigns + adsets + ads (skeleton) under the new schema:
+//   campaigns(meta_campaign_id, name, ...) → ad_sets(meta_adset_id, ...) → ads(meta_ad_id, meta_creative_id)
 // Chains to meta-sync-creatives.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -98,7 +99,7 @@ Deno.serve(async (req) => {
       ? adAccount.account_id
       : `act_${adAccount.account_id}`;
 
-    // Upsert brand
+    // Upsert brand (still used for analytics view)
     const { data: existingBrand } = await admin
       .from("brands")
       .select("id")
@@ -125,7 +126,6 @@ Deno.serve(async (req) => {
       brandId = newBrand!.id;
     }
 
-    // Create sync job
     const dateEnd = new Date();
     const dateStart = new Date();
     dateStart.setDate(dateEnd.getDate() - (parseInt(dateRangeDays) || 30));
@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
         // 1. Campaigns
         await updateStep("Pulling campaigns");
         const allCampaigns = await fetchAllPages(
-          `https://graph.facebook.com/v21.0/${actId}/campaigns?fields=id,name,status,objective&limit=500&access_token=${accessToken}`,
+          `https://graph.facebook.com/v21.0/${actId}/campaigns?fields=id,name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time&limit=500&access_token=${accessToken}`,
         );
         const campaigns = allCampaigns.slice(0, TEST_MODE_LIMIT);
         console.log(`TEST MODE: ${allCampaigns.length} campaigns → using ${campaigns.length}`);
@@ -179,123 +179,97 @@ Deno.serve(async (req) => {
         const campaignRecords = campaigns.map((c: any) => ({
           ad_account_id: adAccountId,
           user_id: userId,
-          campaign_id: c.id,
-          campaign_name: c.name,
+          meta_campaign_id: c.id,
+          name: c.name,
           status: c.status,
+          effective_status: c.effective_status,
           objective: c.objective,
+          daily_budget: c.daily_budget ? parseFloat(c.daily_budget) : null,
+          lifetime_budget: c.lifetime_budget ? parseFloat(c.lifetime_budget) : null,
+          start_time: c.start_time || null,
+          stop_time: c.stop_time || null,
         }));
         if (campaignRecords.length > 0) {
           await admin.from("campaigns").upsert(campaignRecords, {
-            onConflict: "campaign_id",
-            ignoreDuplicates: true,
+            onConflict: "user_id,meta_campaign_id",
           });
         }
 
         const { data: storedCampaigns } = await admin
           .from("campaigns")
-          .select("id, campaign_id")
+          .select("id, meta_campaign_id")
           .eq("ad_account_id", adAccountId);
         const campaignMap = new Map(
-          (storedCampaigns || []).map((c: any) => [c.campaign_id, c.id]),
+          (storedCampaigns || []).map((c: any) => [c.meta_campaign_id, c.id]),
         );
 
         // 2. Adsets
-        await updateStep("Pulling ad sets");
+        await updateStep("Pulling ad sets", { total_campaigns: campaigns.length });
         const allAdsets = await fetchAllPages(
-          `https://graph.facebook.com/v21.0/${actId}/adsets?fields=id,name,status,campaign_id,targeting&limit=500&access_token=${accessToken}`,
+          `https://graph.facebook.com/v21.0/${actId}/adsets?fields=id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget,optimization_goal,billing_event,targeting,start_time,end_time&limit=500&access_token=${accessToken}`,
         );
         const adsets = allAdsets
           .filter((as: any) => campaignMap.has(as.campaign_id))
           .slice(0, TEST_MODE_LIMIT);
         console.log(`TEST MODE: ${allAdsets.length} adsets → using ${adsets.length}`);
 
-        const adsetRecords = adsets
-          .filter((as: any) => campaignMap.has(as.campaign_id))
-          .map((as: any) => ({
-            campaign_id: campaignMap.get(as.campaign_id),
-            user_id: userId,
-            adset_id: as.id,
-            adset_name: as.name,
-            status: as.status,
-            targeting: as.targeting || null,
-          }));
+        const adsetRecords = adsets.map((as: any) => ({
+          campaign_id: campaignMap.get(as.campaign_id),
+          user_id: userId,
+          meta_adset_id: as.id,
+          name: as.name,
+          status: as.status,
+          effective_status: as.effective_status,
+          daily_budget: as.daily_budget ? parseFloat(as.daily_budget) : null,
+          lifetime_budget: as.lifetime_budget ? parseFloat(as.lifetime_budget) : null,
+          optimization_goal: as.optimization_goal || null,
+          billing_event: as.billing_event || null,
+          targeting: as.targeting || null,
+          start_time: as.start_time || null,
+          end_time: as.end_time || null,
+        }));
         if (adsetRecords.length > 0) {
           await admin.from("ad_sets").upsert(adsetRecords, {
-            onConflict: "adset_id",
-            ignoreDuplicates: true,
+            onConflict: "user_id,meta_adset_id",
           });
         }
 
         const { data: storedAdsets } = await admin
           .from("ad_sets")
-          .select("id, adset_id")
+          .select("id, meta_adset_id")
           .eq("user_id", userId);
         const adsetMap = new Map(
-          (storedAdsets || []).map((a: any) => [a.adset_id, a.id]),
+          (storedAdsets || []).map((a: any) => [a.meta_adset_id, a.id]),
         );
 
-        // 3. Ads (lightweight skeleton)
-        await updateStep("Pulling ads");
+        // 3. Ads (lightweight skeleton) — id, name, status, adset_id, creative.id only
+        await updateStep("Pulling ads", { total_adsets: adsets.length });
         const allRawAds = await fetchAllPages(
-          `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,adset_id,creative{id}&limit=100&access_token=${accessToken}`,
+          `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,effective_status,adset_id,creative{id}&limit=100&access_token=${accessToken}`,
         );
         const rawAds = allRawAds
           .filter((ad: any) => adsetMap.has(ad.adset_id))
           .slice(0, TEST_MODE_LIMIT);
         console.log(`TEST MODE: ${allRawAds.length} ads → using ${rawAds.length}`);
 
-        let totalAds = 0;
-        for (const ad of rawAds) {
-          totalAds++;
-
-          const { data: storedAd } = await admin
-            .from("ads")
-            .upsert(
-              {
-                adset_id: adsetMap.get(ad.adset_id),
-                user_id: userId,
-                ad_id: ad.id,
-                ad_name: ad.name || "",
-                status: ad.status,
-                creative_id: ad.creative?.id || null,
-              },
-              { onConflict: "ad_id", ignoreDuplicates: false },
-            )
-            .select()
-            .single();
-
-          if (!storedAd) continue;
-
-          // prod_ads (skeleton without creative_url yet)
-          const { data: existingProdAd } = await admin
-            .from("prod_ads")
-            .select("id")
-            .eq("meta_ad_id", ad.id)
-            .eq("brand_id", brandId)
-            .maybeSingle();
-
-          if (existingProdAd) {
-            await admin.from("prod_ads").update({
-              name: ad.name || "",
-              status: ad.status,
-              adset_id: ad.adset_id,
-              parent_ad_id: null,
-            }).eq("id", existingProdAd.id);
-          } else {
-            await admin.from("prod_ads").insert({
-              brand_id: brandId,
-              meta_ad_id: ad.id,
-              adset_id: ad.adset_id,
-              name: ad.name || "",
-              status: ad.status,
-              parent_ad_id: null,
-            });
-          }
+        const adRecords = rawAds.map((ad: any) => ({
+          ad_set_id: adsetMap.get(ad.adset_id),
+          user_id: userId,
+          meta_ad_id: ad.id,
+          name: ad.name || "",
+          status: ad.status,
+          effective_status: ad.effective_status,
+          meta_creative_id: ad.creative?.id || null,
+        }));
+        if (adRecords.length > 0) {
+          await admin.from("ads").upsert(adRecords, {
+            onConflict: "user_id,meta_ad_id",
+          });
         }
 
         await updateStep("Pulling creatives", {
           phase: "creatives",
-          total_ads: totalAds,
+          total_ads: adRecords.length,
         });
 
         // Chain to phase 2

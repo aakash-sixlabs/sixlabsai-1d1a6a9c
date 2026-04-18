@@ -79,7 +79,7 @@ export const DataSyncStep = ({
 
     const startSync = async () => {
       try {
-        const { data, error: fnError } = await supabase.functions.invoke("meta-sync", {
+        const { data, error: fnError } = await supabase.functions.invoke("meta-sync-accounts", {
           body: { adAccountId: state.selectedAccount, dateRangeDays: state.dateRange },
         });
         if (fnError) throw fnError;
