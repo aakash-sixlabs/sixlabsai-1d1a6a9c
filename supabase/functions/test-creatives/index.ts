@@ -200,6 +200,8 @@ Deno.serve(async (req) => {
         success: !upsertError,
         total_creative_ids: creativeIds.length,
         total_fetched: creativeResults.length,
+        videos_skipped: videoCount,
+        non_video_processed: nonVideoCreatives.length,
         total_stored: upsertError ? 0 : rows.length,
         total_hashes_resolved: Object.keys(imageUrlMap).length,
         capped_at: TEST_MAX_RECORDS,
