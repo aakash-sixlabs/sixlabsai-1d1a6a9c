@@ -232,6 +232,44 @@ Deno.serve(async (req) => {
         }
       })
 
+    let imagesDownloaded = 0
+    let imagesFailed = 0
+
+    for (const row of rows) {
+      if (row.image_url) {
+        const filePath = `ads/${row.meta_creative_id}_primary.jpg`
+        const storedUrl = await downloadAndStore(row.image_url, filePath)
+        if (storedUrl) {
+          ;(row as any).stored_image_url = storedUrl
+          imagesDownloaded++
+        } else {
+          imagesFailed++
+        }
+        await new Promise(r => setTimeout(r, 100))
+      }
+
+      if (
+        row.image_hashes &&
+        Array.isArray(row.image_hashes) &&
+        row.image_hashes.length > 0
+      ) {
+        const storedUrls: string[] = []
+        for (let i = 0; i < row.image_hashes.length; i++) {
+          const hash = row.image_hashes[i]
+          const variantUrl = imageUrlMap[hash]
+          if (variantUrl) {
+            const filePath = `ads/${row.meta_creative_id}_variant_${i}.jpg`
+            const storedUrl = await downloadAndStore(variantUrl, filePath)
+            if (storedUrl) storedUrls.push(storedUrl)
+            await new Promise(r => setTimeout(r, 100))
+          }
+        }
+        if (storedUrls.length > 0) {
+          ;(row as any).stored_image_urls = storedUrls
+        }
+      }
+    }
+
     const { error: upsertError } = await admin
       .from('ad_creatives')
       .upsert(rows, {
