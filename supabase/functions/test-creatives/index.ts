@@ -144,6 +144,33 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 300))
     }
 
+    async function downloadAndStore(
+      imageUrl: string,
+      filePath: string
+    ): Promise<string | null> {
+      try {
+        const response = await fetch(imageUrl)
+        if (!response.ok) return null
+        const blob = await response.blob()
+        const contentType =
+          response.headers.get('content-type') ?? 'image/jpeg'
+        const { error } = await admin.storage
+          .from('ad-creatives')
+          .upload(filePath, blob, { contentType, upsert: true })
+        if (error) {
+          console.error('Storage upload failed:', error)
+          return null
+        }
+        const { data } = admin.storage
+          .from('ad-creatives')
+          .getPublicUrl(filePath)
+        return data.publicUrl
+      } catch (err) {
+        console.error('Download failed:', err)
+        return null
+      }
+    }
+
     const rows = nonVideoCreatives
       .filter((c: any) => adMap[c.id])
       .map((c: any) => {
@@ -205,6 +232,44 @@ Deno.serve(async (req) => {
         }
       })
 
+    let imagesDownloaded = 0
+    let imagesFailed = 0
+
+    for (const row of rows) {
+      if (row.image_url) {
+        const filePath = `ads/${row.meta_creative_id}_primary.jpg`
+        const storedUrl = await downloadAndStore(row.image_url, filePath)
+        if (storedUrl) {
+          ;(row as any).stored_image_url = storedUrl
+          imagesDownloaded++
+        } else {
+          imagesFailed++
+        }
+        await new Promise(r => setTimeout(r, 100))
+      }
+
+      if (
+        row.image_hashes &&
+        Array.isArray(row.image_hashes) &&
+        row.image_hashes.length > 0
+      ) {
+        const storedUrls: string[] = []
+        for (let i = 0; i < row.image_hashes.length; i++) {
+          const hash = row.image_hashes[i]
+          const variantUrl = imageUrlMap[hash]
+          if (variantUrl) {
+            const filePath = `ads/${row.meta_creative_id}_variant_${i}.jpg`
+            const storedUrl = await downloadAndStore(variantUrl, filePath)
+            if (storedUrl) storedUrls.push(storedUrl)
+            await new Promise(r => setTimeout(r, 100))
+          }
+        }
+        if (storedUrls.length > 0) {
+          ;(row as any).stored_image_urls = storedUrls
+        }
+      }
+    }
+
     const { error: upsertError } = await admin
       .from('ad_creatives')
       .upsert(rows, {
@@ -230,6 +295,9 @@ Deno.serve(async (req) => {
         total_hashes_collected: uniqueHashes.length,
         total_hashes_resolved: Object.keys(imageUrlMap).length,
         total_with_image_url: rows.filter((r: any) => r.image_url !== null).length,
+        images_downloaded: imagesDownloaded,
+        images_failed: imagesFailed,
+        images_skipped: rows.filter((r: any) => !r.image_url).length,
         hit_limit: false,
         limit_reason: null,
         upsert_error: upsertError?.message ?? null,
