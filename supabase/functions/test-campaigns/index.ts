@@ -121,7 +121,6 @@ Deno.serve(async (req) => {
       lifetime_budget: c.lifetime_budget ? parseFloat(c.lifetime_budget) / 100 : null,
       start_time: c.start_time ?? null,
       stop_time: c.stop_time ?? null,
-      meta_updated_time: c.updated_time ?? null,
       updated_at: new Date().toISOString()
     }))
 
