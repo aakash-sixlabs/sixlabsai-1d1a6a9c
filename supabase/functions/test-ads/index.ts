@@ -1,6 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const TEST_MAX_ADS = 200
+const ADSET_BATCH_SIZE = 50
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -24,14 +25,13 @@ async function fetchAllPages(url: string): Promise<any[]> {
       if (data.error) {
         const code = data.error.code
         const isRateLimit =
-          code === 17 ||   // user request limit
-          code === 4 ||    // app request limit
-          code === 32 ||   // page request limit
-          code === 80004   // ads management limit
+          code === 17 ||
+          code === 4 ||
+          code === 32 ||
+          code === 80004
 
         if (isRateLimit && retries < 3) {
           const delay = Math.pow(2, retries + 1) * 1000
-          // 2s → 4s → 8s
           console.log(`Rate limit hit, retrying in ${delay}ms...`)
           await new Promise(r => setTimeout(r, delay))
           retries++
@@ -39,7 +39,7 @@ async function fetchAllPages(url: string): Promise<any[]> {
         }
         throw new Error(data.error.message)
       }
-      break // success — exit retry loop
+      break
     }
 
     if (data.data) results.push(...data.data)
@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
       : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
 
+    // STEP 1 — Get stored ad sets from DB
     const { data: adSetData } = await admin
       .from('ad_sets')
       .select('id, meta_adset_id')
@@ -90,71 +91,80 @@ Deno.serve(async (req) => {
           success: false,
           error: 'No ad sets found. Run test-adsets first.'
         }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     const adSetMap = Object.fromEntries(
       adSetData.map((s: any) => [s.meta_adset_id, s.id])
     )
+    const metaAdSetIds = adSetData.map((s: any) => s.meta_adset_id)
 
-    // Pull ad-level insights to know which paused ads had impressions
-    // AND which ad sets had any activity (so we can skip dead ad sets)
-    const adInsightRows = await fetchAllPages(
+    // STEP 2 — Pull ad insights scoped to stored ad sets
+    const insightRows = await fetchAllPages(
       `https://graph.facebook.com/v21.0/${metaAccountId}/insights` +
       `?level=ad` +
-      `&fields=ad_id,adset_id,impressions` +
+      `&fields=ad_id,impressions` +
       `&time_range={"since":"${since}","until":"${until}"}` +
+      `&filtering=[{"field":"adset.id","operator":"IN",` +
+      `"value":${JSON.stringify(metaAdSetIds.slice(0, 50))}}]` +
       `&limit=100` +
       `&access_token=${accessToken}`
     )
 
     const adsWithImpressions = new Set(
-      adInsightRows.map((r: any) => r.ad_id)
-    )
-    const adSetsWithActivity = new Set(
-      adInsightRows.map((r: any) => r.adset_id)
+      insightRows.map((r: any) => r.ad_id)
     )
 
-    // Prioritize ad sets that had recent activity — skip cold ad sets
-    // to avoid 150s function timeout on accounts with many dormant ad sets
-    const prioritizedAdSets = adSetData.filter(
-      (s: any) => adSetsWithActivity.has(s.meta_adset_id)
-    )
+    // STEP 3 — Pull ACTIVE + PAUSED ads in batches of 50 ad set IDs
+    const activeAds: any[] = []
+    const pausedAds: any[] = []
 
-    const allAds: any[] = []
-    const skippedColdAdSets = adSetData.length - prioritizedAdSets.length
+    for (let i = 0; i < metaAdSetIds.length; i += ADSET_BATCH_SIZE) {
+      const batch = metaAdSetIds.slice(i, i + ADSET_BATCH_SIZE)
 
-    // ONE call per ad set — no status filter, filter in code after
-    for (const adSet of prioritizedAdSets) {
-      if (allAds.length >= TEST_MAX_ADS) break
-
-      const adSetAds = await fetchAllPages(
-        `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
-        `?fields=id,name,status,effective_status,` +
-        `adset_id,creative{id}` +
+      const batchActive = await fetchAllPages(
+        `https://graph.facebook.com/v21.0/${metaAccountId}/ads` +
+        `?fields=id,name,status,effective_status,adset_id,creative{id}` +
+        `&effective_status=["ACTIVE","WITH_ISSUES"]` +
+        `&filtering=[{"field":"adset.id","operator":"IN",` +
+        `"value":${JSON.stringify(batch)}}]` +
         `&limit=100` +
         `&access_token=${accessToken}`
       )
+      activeAds.push(...batchActive)
 
-      // Filter in code:
-      // ACTIVE + WITH_ISSUES → always keep
-      // PAUSED → only if had impressions
-      const relevantAds = adSetAds.filter((a: any) => {
-        const status = a.effective_status
-        if (status === 'ACTIVE' || status === 'WITH_ISSUES') return true
-        if (status === 'PAUSED') {
-          return adsWithImpressions.has(a.id)
-        }
-        return false
-      })
+      const batchPaused = await fetchAllPages(
+        `https://graph.facebook.com/v21.0/${metaAccountId}/ads` +
+        `?fields=id,name,status,effective_status,adset_id,creative{id}` +
+        `&effective_status=["PAUSED"]` +
+        `&filtering=[{"field":"adset.id","operator":"IN",` +
+        `"value":${JSON.stringify(batch)}}]` +
+        `&limit=100` +
+        `&access_token=${accessToken}`
+      )
+      pausedAds.push(...batchPaused)
 
-      allAds.push(...relevantAds)
       await new Promise(r => setTimeout(r, 500))
     }
 
+    // STEP 4 — Filter paused ads to only those with impressions
+    const relevantPausedAds = pausedAds.filter(
+      (a: any) => adsWithImpressions.has(a.id)
+    )
+
+    // STEP 5 — Merge and deduplicate
+    const seen = new Set()
+    const allAds = [...activeAds, ...relevantPausedAds].filter((a: any) => {
+      if (seen.has(a.id)) return false
+      seen.add(a.id)
+      return true
+    })
+
+    // STEP 6 — Cap at 200 for testing
     const results = allAds.slice(0, TEST_MAX_ADS)
 
+    // STEP 7 — Build and upsert rows
     const rows = results
       .filter((a: any) => adSetMap[a.adset_id])
       .map((a: any) => ({
@@ -180,21 +190,20 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: !upsertError,
         date_range: `${since} to ${until}`,
-        total_adsets_checked: adSetData.length,
-        adsets_with_activity: adSetData.length - skippedColdAdSets,
-        skipped_cold_adsets: skippedColdAdSets,
-        total_ads_pulled: allAds.length,
+        total_adsets_in_db: metaAdSetIds.length,
+        total_batches: Math.ceil(metaAdSetIds.length / ADSET_BATCH_SIZE),
+        total_active_pulled: activeAds.length,
+        total_paused_pulled: pausedAds.length,
+        total_paused_with_impressions: relevantPausedAds.length,
+        total_paused_excluded: pausedAds.length - relevantPausedAds.length,
+        total_merged: allAds.length,
         total_stored: upsertError ? 0 : rows.length,
-        skipped_no_adset: results.length - rows.length,
         capped_at: TEST_MAX_ADS,
-        hit_limit: allAds.length >= TEST_MAX_ADS,
-        limit_reason: allAds.length >= TEST_MAX_ADS
-          ? `Reached ${TEST_MAX_ADS} ad cap`
-          : null,
+        hit_limit: allAds.length > TEST_MAX_ADS,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error: any) {
