@@ -38,7 +38,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { adAccountId, accessToken } = await req.json()
+    const { adAccountId, accessToken, dateRangeDays = 90 } = await req.json()
+
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - dateRangeDays)
+    const since = cutoffDate.toISOString().split('T')[0]
 
     const { data: adAccount } = await admin
       .from('ad_accounts')
@@ -48,7 +52,6 @@ Deno.serve(async (req) => {
 
     const userId = adAccount.user_id
 
-    // Get all stored ad sets — scope ads pull to these
     const { data: adSetData } = await admin
       .from('ad_sets')
       .select('id, meta_adset_id')
@@ -68,17 +71,40 @@ Deno.serve(async (req) => {
       adSetData.map((s: any) => [s.meta_adset_id, s.id])
     )
 
-    // Loop through stored ad sets and pull their ads
     const allAds: any[] = []
     for (const adSet of adSetData) {
       if (allAds.length >= TEST_MAX_ADS) break
 
-      const adSetAds = await fetchAllPages(
+      // Pull 1 — ACTIVE + WITH_ISSUES ads (no date filter)
+      const activeAds = await fetchAllPages(
         `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
-        `?fields=id,name,status,effective_status,adset_id,creative{id}` +
+        `?fields=id,name,status,effective_status,` +
+        `adset_id,creative{id}` +
+        `&effective_status=["ACTIVE","WITH_ISSUES"]` +
         `&limit=100` +
         `&access_token=${accessToken}`
       )
+
+      // Pull 2 — PAUSED ads updated within date range
+      const pausedAds = await fetchAllPages(
+        `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
+        `?fields=id,name,status,effective_status,` +
+        `adset_id,creative{id}` +
+        `&effective_status=["PAUSED"]` +
+        `&filtering=[{"field":"ad.updated_time",` +
+        `"operator":"GREATER_THAN","value":"${since}"}]` +
+        `&limit=100` +
+        `&access_token=${accessToken}`
+      )
+
+      // Merge and deduplicate per ad set
+      const seen = new Set()
+      const adSetAds = [...activeAds, ...pausedAds]
+        .filter(a => {
+          if (seen.has(a.id)) return false
+          seen.add(a.id)
+          return true
+        })
 
       allAds.push(...adSetAds)
       await new Promise(r => setTimeout(r, 200))
@@ -114,9 +140,7 @@ Deno.serve(async (req) => {
         total_stored: upsertError ? 0 : rows.length,
         capped_at: TEST_MAX_ADS,
         hit_limit: hitLimit,
-        limit_reason: hitLimit
-          ? `Stopped after reaching TEST_MAX_ADS=${TEST_MAX_ADS}. More ads exist in remaining ad sets.`
-          : null,
+        limit_reason: hitLimit ? `Reached ${TEST_MAX_ADS} ad cap` : null,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),
