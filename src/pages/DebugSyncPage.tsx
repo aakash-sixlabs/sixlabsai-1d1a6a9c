@@ -235,8 +235,8 @@ export default function DebugSyncPage() {
           <TestCard
             step="STEP 5"
             title="Insights"
-            description="Pull last 7 days of daily performance metrics."
-            note="Requires Ads to be synced first. Test mode pulls 7 days only."
+            description="Pull last 30 days of daily performance metrics."
+            note="Requires Ads to be synced first. Test mode pulls 30 days only."
             state={insightState}
             onRun={() => runTest('test-insights', setInsightState)}
           />
