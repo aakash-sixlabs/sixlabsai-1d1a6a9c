@@ -144,6 +144,33 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 300))
     }
 
+    async function downloadAndStore(
+      imageUrl: string,
+      filePath: string
+    ): Promise<string | null> {
+      try {
+        const response = await fetch(imageUrl)
+        if (!response.ok) return null
+        const blob = await response.blob()
+        const contentType =
+          response.headers.get('content-type') ?? 'image/jpeg'
+        const { error } = await admin.storage
+          .from('ad-creatives')
+          .upload(filePath, blob, { contentType, upsert: true })
+        if (error) {
+          console.error('Storage upload failed:', error)
+          return null
+        }
+        const { data } = admin.storage
+          .from('ad-creatives')
+          .getPublicUrl(filePath)
+        return data.publicUrl
+      } catch (err) {
+        console.error('Download failed:', err)
+        return null
+      }
+    }
+
     const rows = nonVideoCreatives
       .filter((c: any) => adMap[c.id])
       .map((c: any) => {
