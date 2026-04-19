@@ -140,7 +140,7 @@ export default function DebugSyncPage() {
         status: data.success ? 'success' : 'error',
         result: data,
         message: data.success
-          ? `${data.total_pulled ?? data.total_fetched ?? 0} pulled · ${data.total_stored ?? 0} stored`
+          ? `${data.total_merged ?? data.total_pulled ?? data.total_fetched ?? 0} pulled · ${data.total_stored ?? 0} stored`
           : data.upsert_error ?? data.error ?? 'Unknown error',
       })
     } catch (err: any) {
