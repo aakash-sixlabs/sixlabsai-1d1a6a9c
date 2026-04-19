@@ -70,7 +70,7 @@ Deno.serve(async (req) => {
 
     const endDate = new Date()
     const startDate = new Date()
-    startDate.setDate(startDate.getDate() - 7)
+    startDate.setDate(startDate.getDate() - 30)
     const since = startDate.toISOString().split('T')[0]
     const until = endDate.toISOString().split('T')[0]
 
