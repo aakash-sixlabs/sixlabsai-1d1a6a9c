@@ -85,6 +85,7 @@ Deno.serve(async (req) => {
     }
 
     const results = allAds.slice(0, TEST_MAX_ADS)
+    const hitLimit = allAds.length >= TEST_MAX_ADS
 
     const rows = results.map(a => ({
       user_id: userId,
@@ -112,6 +113,10 @@ Deno.serve(async (req) => {
         total_pulled: results.length,
         total_stored: upsertError ? 0 : rows.length,
         capped_at: TEST_MAX_ADS,
+        hit_limit: hitLimit,
+        limit_reason: hitLimit
+          ? `Stopped after reaching TEST_MAX_ADS=${TEST_MAX_ADS}. More ads exist in remaining ad sets.`
+          : null,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),

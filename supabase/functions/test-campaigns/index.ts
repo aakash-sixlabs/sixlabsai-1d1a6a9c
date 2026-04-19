@@ -89,6 +89,8 @@ Deno.serve(async (req) => {
         total_stored: upsertError ? 0 : rows.length,
         capped_at: null,
         is_complete: true,
+        hit_limit: false,
+        limit_reason: null,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),

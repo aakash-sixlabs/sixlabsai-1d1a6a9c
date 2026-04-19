@@ -106,6 +106,8 @@ Deno.serve(async (req) => {
         skipped_no_campaign: skipped,
         capped_at: null,
         is_complete: true,
+        hit_limit: false,
+        limit_reason: null,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),
