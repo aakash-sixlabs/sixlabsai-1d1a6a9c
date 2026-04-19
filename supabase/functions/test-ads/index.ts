@@ -21,7 +21,7 @@ async function fetchAllPages(
     if (data.error) throw new Error(data.error.message)
     if (data.data) results.push(...data.data)
     nextUrl = results.length < maxRecords ? data.paging?.next ?? null : null
-    await new Promise(r => setTimeout(r, 200))
+    await new Promise(r => setTimeout(r, 500))
   }
 
   return results
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     for (const adSet of adSetData) {
       if (allAds.length >= TEST_MAX_ADS) break
 
-      // Pull ACTIVE + WITH_ISSUES ads (always include)
+      // Pull 1 — ACTIVE + WITH_ISSUES ads (always include)
       const activeAds = await fetchAllPages(
         `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
         `?fields=id,name,status,effective_status,` +
@@ -105,7 +105,9 @@ Deno.serve(async (req) => {
         `&access_token=${accessToken}`
       )
 
-      // Pull ALL PAUSED ads (we'll filter by impressions next)
+      await new Promise(r => setTimeout(r, 500))
+
+      // Pull 2 — ALL PAUSED ads (we'll filter by impressions next)
       const pausedAds = await fetchAllPages(
         `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
         `?fields=id,name,status,effective_status,` +
@@ -114,6 +116,8 @@ Deno.serve(async (req) => {
         `&limit=100` +
         `&access_token=${accessToken}`
       )
+
+      await new Promise(r => setTimeout(r, 500))
 
       // PAUSED → only if had impressions in date range
       const relevantPausedAds = pausedAds
@@ -133,7 +137,7 @@ Deno.serve(async (req) => {
       })
 
       allAds.push(...adSetAds)
-      await new Promise(r => setTimeout(r, 200))
+      await new Promise(r => setTimeout(r, 500))
     }
 
     const results = allAds.slice(0, TEST_MAX_ADS)
