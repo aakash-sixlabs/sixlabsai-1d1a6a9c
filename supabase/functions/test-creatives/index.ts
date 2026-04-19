@@ -85,8 +85,14 @@ Deno.serve(async (req) => {
       const hasImageAssets =
         (c.asset_feed_spec?.images?.length ?? 0) > 0
 
+      // video_id can be at top level OR
+      // inside object_story_spec.video_data
+      const hasVideoId =
+        !!c.video_id ||
+        !!c.object_story_spec?.video_data?.video_id
+
       const mediaType =
-        c.video_id || hasVideoAssets
+        hasVideoId || hasVideoAssets
           ? 'video'
           : hasImageAssets
             ? 'dco'
