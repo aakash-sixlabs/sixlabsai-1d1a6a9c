@@ -209,6 +209,8 @@ Deno.serve(async (req) => {
         static_stored: staticStored,
         dco_stored: dcoStored,
         total_hashes_resolved: Object.keys(imageUrlMap).length,
+        hit_limit: false,
+        limit_reason: null,
         upsert_error: upsertError?.message ?? null,
         sample: rows.slice(0, 3).map(r => ({
           meta_creative_id: r.meta_creative_id,
