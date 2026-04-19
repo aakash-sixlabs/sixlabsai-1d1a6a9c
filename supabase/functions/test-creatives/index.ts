@@ -77,14 +77,22 @@ Deno.serve(async (req) => {
 
     // Detect media type for every fetched creative and update ads table
     let videoCount = 0
+    const nonVideoCreatives: any[] = []
+
     for (const c of creativeResults) {
-      const mediaType = c.video_id
-        ? 'video'
-        : c.asset_feed_spec
-          ? 'dco'
-          : c.image_hash
-            ? 'static_single'
-            : 'unknown'
+      const hasVideoAssets =
+        (c.asset_feed_spec?.videos?.length ?? 0) > 0
+      const hasImageAssets =
+        (c.asset_feed_spec?.images?.length ?? 0) > 0
+
+      const mediaType =
+        c.video_id || hasVideoAssets
+          ? 'video'
+          : hasImageAssets
+            ? 'dco'
+            : c.image_hash
+              ? 'static_single'
+              : 'unknown'
 
       await admin
         .from('ads')
@@ -92,18 +100,23 @@ Deno.serve(async (req) => {
         .eq('meta_creative_id', c.id)
         .eq('user_id', userId)
 
-      if (mediaType === 'video') videoCount++
+      if (mediaType === 'video') {
+        videoCount++
+        continue
+      }
+
+      nonVideoCreatives.push({ ...c, _mediaType: mediaType, _hasImageAssets: hasImageAssets })
     }
 
-    // Only process non-video creatives going forward
-    const nonVideoCreatives = creativeResults.filter((c: any) => !c.video_id)
-
+    // Collect image hashes only from non-video creatives
     const imageHashes: string[] = []
     nonVideoCreatives.forEach((c: any) => {
       if (c.image_hash) imageHashes.push(c.image_hash)
-      c.asset_feed_spec?.images?.forEach((img: any) => {
-        if (img.hash) imageHashes.push(img.hash)
-      })
+      if (c._hasImageAssets) {
+        c.asset_feed_spec.images.forEach((img: any) => {
+          if (img.hash) imageHashes.push(img.hash)
+        })
+      }
     })
     const uniqueHashes = [...new Set(imageHashes)]
 
@@ -128,14 +141,7 @@ Deno.serve(async (req) => {
     const rows = nonVideoCreatives
       .filter((c: any) => adMap[c.id])
       .map((c: any) => {
-        let creativeType = 'unknown'
-        if (c.video_id) {
-          creativeType = 'video'
-        } else if (c.asset_feed_spec) {
-          creativeType = 'dco'
-        } else if (c.image_hash) {
-          creativeType = 'static_single'
-        }
+        const creativeType = c._mediaType
 
         const primaryHash =
           c.image_hash ??
@@ -145,6 +151,10 @@ Deno.serve(async (req) => {
         const allHashes = c.asset_feed_spec?.images
           ?.map((img: any) => img.hash)
           .filter(Boolean) ?? []
+
+        const allImageUrls = allHashes
+          .map((h: string) => imageUrlMap[h])
+          .filter(Boolean)
 
         const headline =
           c.title ??
@@ -181,6 +191,7 @@ Deno.serve(async (req) => {
           image_hash: primaryHash,
           image_url: primaryHash ? imageUrlMap[primaryHash] ?? null : null,
           image_hashes: allHashes.length > 0 ? allHashes : null,
+          stored_image_urls: allImageUrls.length > 0 ? allImageUrls : null,
           raw_asset_feed_spec: c.asset_feed_spec ?? null,
           raw_object_story_spec: c.object_story_spec ?? null,
           raw_data: c,
@@ -197,6 +208,7 @@ Deno.serve(async (req) => {
 
     const staticStored = rows.filter((r: any) => r.creative_type === 'static_single').length
     const dcoStored = rows.filter((r: any) => r.creative_type === 'dco').length
+    const unknownStored = rows.filter((r: any) => r.creative_type === 'unknown').length
 
     return new Response(
       JSON.stringify({
@@ -208,7 +220,10 @@ Deno.serve(async (req) => {
         total_stored: upsertError ? 0 : rows.length,
         static_stored: staticStored,
         dco_stored: dcoStored,
+        unknown_stored: unknownStored,
+        total_hashes_collected: uniqueHashes.length,
         total_hashes_resolved: Object.keys(imageUrlMap).length,
+        total_with_image_url: rows.filter((r: any) => r.image_url !== null).length,
         hit_limit: false,
         limit_reason: null,
         upsert_error: upsertError?.message ?? null,
