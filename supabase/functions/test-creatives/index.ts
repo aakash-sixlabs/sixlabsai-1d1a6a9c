@@ -195,6 +195,9 @@ Deno.serve(async (req) => {
         ignoreDuplicates: false
       })
 
+    const staticStored = rows.filter((r: any) => r.creative_type === 'static_single').length
+    const dcoStored = rows.filter((r: any) => r.creative_type === 'dco').length
+
     return new Response(
       JSON.stringify({
         success: !upsertError,
@@ -203,9 +206,9 @@ Deno.serve(async (req) => {
         videos_skipped: videoCount,
         non_video_processed: nonVideoCreatives.length,
         total_stored: upsertError ? 0 : rows.length,
+        static_stored: staticStored,
+        dco_stored: dcoStored,
         total_hashes_resolved: Object.keys(imageUrlMap).length,
-        capped_at: TEST_MAX_RECORDS,
-        is_complete: creativeResults.length < TEST_MAX_RECORDS,
         upsert_error: upsertError?.message ?? null,
         sample: rows.slice(0, 3).map(r => ({
           meta_creative_id: r.meta_creative_id,

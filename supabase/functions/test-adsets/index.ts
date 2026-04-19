@@ -57,7 +57,8 @@ Deno.serve(async (req) => {
       `daily_budget,lifetime_budget,optimization_goal,` +
       `billing_event,targeting,start_time,end_time` +
       `&limit=100` +
-      `&access_token=${accessToken}`
+      `&access_token=${accessToken}`,
+      Number.MAX_SAFE_INTEGER
     )
 
     const { data: campaignData } = await admin
@@ -103,8 +104,8 @@ Deno.serve(async (req) => {
         total_pulled: results.length,
         total_stored: upsertError ? 0 : rows.length,
         skipped_no_campaign: skipped,
-        capped_at: TEST_MAX_RECORDS,
-        is_complete: results.length < TEST_MAX_RECORDS,
+        capped_at: null,
+        is_complete: true,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),

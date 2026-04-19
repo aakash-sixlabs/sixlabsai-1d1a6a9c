@@ -1,26 +1,21 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const TEST_MAX_RECORDS = 200
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers':
     'authorization, x-client-info, apikey, content-type',
 }
 
-async function fetchAllPages(
-  url: string,
-  maxRecords = TEST_MAX_RECORDS
-): Promise<any[]> {
+async function fetchAllPages(url: string): Promise<any[]> {
   const results: any[] = []
   let nextUrl: string | null = url
 
-  while (nextUrl && results.length < maxRecords) {
+  while (nextUrl) {
     const response = await fetch(nextUrl)
     const data = await response.json()
     if (data.error) throw new Error(data.error.message)
     if (data.data) results.push(...data.data)
-    nextUrl = results.length < maxRecords ? data.paging?.next ?? null : null
+    nextUrl = data.paging?.next ?? null
     await new Promise(r => setTimeout(r, 300))
   }
 
@@ -51,16 +46,18 @@ Deno.serve(async (req) => {
       : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
 
+    // Only pull insights for non-video ads we've stored
     const { data: adsData } = await admin
       .from('ads')
       .select('id, meta_ad_id')
       .eq('user_id', userId)
+      .neq('media_type', 'video')
 
     if (!adsData || adsData.length === 0) {
       return new Response(
         JSON.stringify({
           success: false,
-          error: 'No ads found. Run test-ads first.'
+          error: 'No non-video ads found. Run test-creatives first.'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
@@ -69,26 +66,43 @@ Deno.serve(async (req) => {
     const adMap = Object.fromEntries(
       adsData.map((a: any) => [a.meta_ad_id, a.id])
     )
+    const metaAdIds = adsData.map((a: any) => a.meta_ad_id)
 
     const endDate = new Date()
     const startDate = new Date()
     startDate.setDate(startDate.getDate() - 7)
-
     const since = startDate.toISOString().split('T')[0]
     const until = endDate.toISOString().split('T')[0]
 
-    const results = await fetchAllPages(
-      `https://graph.facebook.com/v21.0/${metaAccountId}/insights` +
-      `?level=ad` +
-      `&fields=ad_id,reach,impressions,clicks,spend,ctr,` +
-      `unique_ctr,cpc,cpm,frequency,actions,action_values` +
-      `&time_range={"since":"${since}","until":"${until}"}` +
-      `&time_increment=1` +
-      `&limit=100` +
-      `&access_token=${accessToken}`
-    )
+    // Batch insights queries — 50 ad IDs per call
+    const BATCH_SIZE = 50
+    const allInsights: any[] = []
 
-    const rows = results
+    for (let i = 0; i < metaAdIds.length; i += BATCH_SIZE) {
+      const batch = metaAdIds.slice(i, i + BATCH_SIZE)
+      const filtering = encodeURIComponent(
+        JSON.stringify([
+          { field: 'ad.id', operator: 'IN', value: batch }
+        ])
+      )
+
+      const batchResults = await fetchAllPages(
+        `https://graph.facebook.com/v21.0/${metaAccountId}/insights` +
+        `?level=ad` +
+        `&fields=ad_id,reach,impressions,clicks,spend,ctr,` +
+        `unique_ctr,cpc,cpm,frequency,actions,action_values` +
+        `&filtering=${filtering}` +
+        `&time_range={"since":"${since}","until":"${until}"}` +
+        `&time_increment=1` +
+        `&limit=100` +
+        `&access_token=${accessToken}`
+      )
+
+      allInsights.push(...batchResults)
+      await new Promise(r => setTimeout(r, 300))
+    }
+
+    const rows = allInsights
       .filter(r => adMap[r.ad_id])
       .map(r => {
         const purchases = parseFloat(
@@ -132,11 +146,9 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: !upsertError,
         date_range: `${since} to ${until}`,
-        total_pulled: results.length,
+        total_ads_checked: adsData.length,
+        total_insight_rows_pulled: allInsights.length,
         total_stored: upsertError ? 0 : rows.length,
-        skipped_no_ad: results.length - rows.length,
-        capped_at: TEST_MAX_RECORDS,
-        is_complete: results.length < TEST_MAX_RECORDS,
         upsert_error: upsertError?.message ?? null,
         sample: rows.slice(0, 3)
       }),

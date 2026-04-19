@@ -56,7 +56,8 @@ Deno.serve(async (req) => {
       `?fields=id,name,status,effective_status,objective,` +
       `daily_budget,lifetime_budget,start_time,stop_time` +
       `&limit=100` +
-      `&access_token=${accessToken}`
+      `&access_token=${accessToken}`,
+      Number.MAX_SAFE_INTEGER
     )
 
     const rows = results.map(c => ({
@@ -86,8 +87,8 @@ Deno.serve(async (req) => {
         success: !upsertError,
         total_pulled: results.length,
         total_stored: upsertError ? 0 : rows.length,
-        capped_at: TEST_MAX_RECORDS,
-        is_complete: results.length < TEST_MAX_RECORDS,
+        capped_at: null,
+        is_complete: true,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),
