@@ -99,11 +99,11 @@ Deno.serve(async (req) => {
     )
 
     // Pull ad-level insights to know which paused ads had impressions
-    // (active ads always included)
+    // AND which ad sets had any activity (so we can skip dead ad sets)
     const adInsightRows = await fetchAllPages(
       `https://graph.facebook.com/v21.0/${metaAccountId}/insights` +
       `?level=ad` +
-      `&fields=ad_id,impressions` +
+      `&fields=ad_id,adset_id,impressions` +
       `&time_range={"since":"${since}","until":"${until}"}` +
       `&limit=100` +
       `&access_token=${accessToken}`
@@ -112,11 +112,21 @@ Deno.serve(async (req) => {
     const adsWithImpressions = new Set(
       adInsightRows.map((r: any) => r.ad_id)
     )
+    const adSetsWithActivity = new Set(
+      adInsightRows.map((r: any) => r.adset_id)
+    )
+
+    // Prioritize ad sets that had recent activity — skip cold ad sets
+    // to avoid 150s function timeout on accounts with many dormant ad sets
+    const prioritizedAdSets = adSetData.filter(
+      (s: any) => adSetsWithActivity.has(s.meta_adset_id)
+    )
 
     const allAds: any[] = []
+    const skippedColdAdSets = adSetData.length - prioritizedAdSets.length
 
     // ONE call per ad set — no status filter, filter in code after
-    for (const adSet of adSetData) {
+    for (const adSet of prioritizedAdSets) {
       if (allAds.length >= TEST_MAX_ADS) break
 
       const adSetAds = await fetchAllPages(
