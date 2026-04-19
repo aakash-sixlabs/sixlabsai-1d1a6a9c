@@ -8,19 +8,42 @@ const corsHeaders = {
     'authorization, x-client-info, apikey, content-type',
 }
 
-async function fetchAllPages(
-  url: string,
-  maxRecords = Number.MAX_SAFE_INTEGER
-): Promise<any[]> {
+async function fetchAllPages(url: string): Promise<any[]> {
   const results: any[] = []
   let nextUrl: string | null = url
 
-  while (nextUrl && results.length < maxRecords) {
-    const response = await fetch(nextUrl)
-    const data = await response.json()
-    if (data.error) throw new Error(data.error.message)
+  while (nextUrl) {
+    let retries = 0
+    let response: Response | null = null
+    let data: any = null
+
+    while (retries < 4) {
+      response = await fetch(nextUrl)
+      data = await response.json()
+
+      if (data.error) {
+        const code = data.error.code
+        const isRateLimit =
+          code === 17 ||   // user request limit
+          code === 4 ||    // app request limit
+          code === 32 ||   // page request limit
+          code === 80004   // ads management limit
+
+        if (isRateLimit && retries < 3) {
+          const delay = Math.pow(2, retries + 1) * 1000
+          // 2s → 4s → 8s
+          console.log(`Rate limit hit, retrying in ${delay}ms...`)
+          await new Promise(r => setTimeout(r, delay))
+          retries++
+          continue
+        }
+        throw new Error(data.error.message)
+      }
+      break // success — exit retry loop
+    }
+
     if (data.data) results.push(...data.data)
-    nextUrl = results.length < maxRecords ? data.paging?.next ?? null : null
+    nextUrl = data.paging?.next ?? null
     await new Promise(r => setTimeout(r, 500))
   }
 
@@ -75,8 +98,9 @@ Deno.serve(async (req) => {
       adSetData.map((s: any) => [s.meta_adset_id, s.id])
     )
 
-    // Pull ad-level insights to find which ads had impressions
-    const insightRows = await fetchAllPages(
+    // Pull ad-level insights to know which paused ads had impressions
+    // (active ads always included)
+    const adInsightRows = await fetchAllPages(
       `https://graph.facebook.com/v21.0/${metaAccountId}/insights` +
       `?level=ad` +
       `&fields=ad_id,impressions` +
@@ -86,74 +110,54 @@ Deno.serve(async (req) => {
     )
 
     const adsWithImpressions = new Set(
-      insightRows.map((r: any) => r.ad_id)
+      adInsightRows.map((r: any) => r.ad_id)
     )
 
     const allAds: any[] = []
-    let totalPausedExcluded = 0
 
+    // ONE call per ad set — no status filter, filter in code after
     for (const adSet of adSetData) {
       if (allAds.length >= TEST_MAX_ADS) break
 
-      // Pull 1 — ACTIVE + WITH_ISSUES ads (always include)
-      const activeAds = await fetchAllPages(
+      const adSetAds = await fetchAllPages(
         `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
         `?fields=id,name,status,effective_status,` +
         `adset_id,creative{id}` +
-        `&effective_status=["ACTIVE","WITH_ISSUES"]` +
         `&limit=100` +
         `&access_token=${accessToken}`
       )
 
-      await new Promise(r => setTimeout(r, 500))
-
-      // Pull 2 — ALL PAUSED ads (we'll filter by impressions next)
-      const pausedAds = await fetchAllPages(
-        `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
-        `?fields=id,name,status,effective_status,` +
-        `adset_id,creative{id}` +
-        `&effective_status=["PAUSED"]` +
-        `&limit=100` +
-        `&access_token=${accessToken}`
-      )
-
-      await new Promise(r => setTimeout(r, 500))
-
-      // PAUSED → only if had impressions in date range
-      const relevantPausedAds = pausedAds
-        .filter((a: any) => adsWithImpressions.has(a.id))
-
-      totalPausedExcluded += pausedAds.length - relevantPausedAds.length
-
-      // Merge per ad set with dedup
-      const seen = new Set()
-      const adSetAds = [
-        ...activeAds,
-        ...relevantPausedAds
-      ].filter((a: any) => {
-        if (seen.has(a.id)) return false
-        seen.add(a.id)
-        return true
+      // Filter in code:
+      // ACTIVE + WITH_ISSUES → always keep
+      // PAUSED → only if had impressions
+      const relevantAds = adSetAds.filter((a: any) => {
+        const status = a.effective_status
+        if (status === 'ACTIVE' || status === 'WITH_ISSUES') return true
+        if (status === 'PAUSED') {
+          return adsWithImpressions.has(a.id)
+        }
+        return false
       })
 
-      allAds.push(...adSetAds)
+      allAds.push(...relevantAds)
       await new Promise(r => setTimeout(r, 500))
     }
 
     const results = allAds.slice(0, TEST_MAX_ADS)
-    const hitLimit = allAds.length >= TEST_MAX_ADS
 
-    const rows = results.map((a: any) => ({
-      user_id: userId,
-      ad_set_id: adSetMap[a.adset_id],
-      meta_ad_id: a.id,
-      name: a.name,
-      status: a.status ?? null,
-      effective_status: a.effective_status ?? null,
-      meta_creative_id: a.creative?.id ?? null,
-      media_type: 'unknown',
-      updated_at: new Date().toISOString()
-    }))
+    const rows = results
+      .filter((a: any) => adSetMap[a.adset_id])
+      .map((a: any) => ({
+        user_id: userId,
+        ad_set_id: adSetMap[a.adset_id],
+        meta_ad_id: a.id,
+        name: a.name,
+        status: a.status ?? null,
+        effective_status: a.effective_status ?? null,
+        meta_creative_id: a.creative?.id ?? null,
+        media_type: 'unknown',
+        updated_at: new Date().toISOString()
+      }))
 
     const { error: upsertError } = await admin
       .from('ads')
@@ -167,12 +171,14 @@ Deno.serve(async (req) => {
         success: !upsertError,
         date_range: `${since} to ${until}`,
         total_adsets_checked: adSetData.length,
-        total_pulled: results.length,
-        total_paused_excluded: totalPausedExcluded,
+        total_ads_pulled: allAds.length,
         total_stored: upsertError ? 0 : rows.length,
+        skipped_no_adset: results.length - rows.length,
         capped_at: TEST_MAX_ADS,
-        hit_limit: hitLimit,
-        limit_reason: hitLimit ? `Reached ${TEST_MAX_ADS} ad cap` : null,
+        hit_limit: allAds.length >= TEST_MAX_ADS,
+        limit_reason: allAds.length >= TEST_MAX_ADS
+          ? `Reached ${TEST_MAX_ADS} ad cap`
+          : null,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),
