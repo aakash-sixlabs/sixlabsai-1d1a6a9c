@@ -149,6 +149,8 @@ Deno.serve(async (req) => {
         total_ads_checked: adsData.length,
         total_insight_rows_pulled: allInsights.length,
         total_stored: upsertError ? 0 : rows.length,
+        hit_limit: false,
+        limit_reason: null,
         upsert_error: upsertError?.message ?? null,
         sample: rows.slice(0, 3)
       }),
