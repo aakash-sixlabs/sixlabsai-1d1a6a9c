@@ -43,50 +43,71 @@ Deno.serve(async (req) => {
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - dateRangeDays)
     const since = cutoffDate.toISOString().split('T')[0]
+    const until = new Date().toISOString().split('T')[0]
 
+    // Get user_id and meta account id
     const { data: adAccount } = await admin
       .from('ad_accounts')
       .select('account_id, user_id')
       .eq('id', adAccountId)
       .single()
 
-    const metaAccountId = adAccount.account_id.startsWith('act_')
-      ? adAccount.account_id
-      : `act_${adAccount.account_id}`
+    const metaAccountId = adAccount.account_id
     const userId = adAccount.user_id
 
-    // Pull 1 — ALL ACTIVE campaigns (no date filter)
+    // STEP 1 — Pull ALL ACTIVE campaigns
     const activeCampaigns = await fetchAllPages(
       `https://graph.facebook.com/v21.0/${metaAccountId}/campaigns` +
       `?fields=id,name,status,effective_status,objective,` +
-      `daily_budget,lifetime_budget,start_time,stop_time` +
+      `daily_budget,lifetime_budget,start_time,stop_time,updated_time` +
       `&effective_status=["ACTIVE"]` +
       `&limit=100` +
       `&access_token=${accessToken}`
     )
 
-    // Pull 2 — PAUSED campaigns updated within date range
-    const pausedCampaigns = await fetchAllPages(
-      `https://graph.facebook.com/v21.0/${metaAccountId}/campaigns` +
-      `?fields=id,name,status,effective_status,objective,` +
-      `daily_budget,lifetime_budget,start_time,stop_time` +
-      `&effective_status=["PAUSED"]` +
-      `&filtering=[{"field":"campaign.updated_time",` +
-      `"operator":"GREATER_THAN","value":"${since}"}]` +
+    // STEP 2 — Pull campaign insights for last N days
+    // to find which campaigns had impressions
+    const insightRows = await fetchAllPages(
+      `https://graph.facebook.com/v21.0/${metaAccountId}/insights` +
+      `?level=campaign` +
+      `&fields=campaign_id,impressions` +
+      `&time_range={"since":"${since}","until":"${until}"}` +
       `&limit=100` +
       `&access_token=${accessToken}`
     )
 
-    // Merge and deduplicate by id
-    const seen = new Set()
-    const results = [...activeCampaigns, ...pausedCampaigns]
-      .filter(c => {
-        if (seen.has(c.id)) return false
-        seen.add(c.id)
-        return true
-      })
+    // Build set of campaign IDs with impressions
+    const campaignsWithImpressions = new Set(
+      insightRows.map((r: any) => r.campaign_id)
+    )
 
-    const rows = results.map(c => ({
+    // STEP 3 — Pull ALL PAUSED campaigns
+    const pausedCampaigns = await fetchAllPages(
+      `https://graph.facebook.com/v21.0/${metaAccountId}/campaigns` +
+      `?fields=id,name,status,effective_status,objective,` +
+      `daily_budget,lifetime_budget,start_time,stop_time,updated_time` +
+      `&effective_status=["PAUSED"]` +
+      `&limit=100` +
+      `&access_token=${accessToken}`
+    )
+
+    // STEP 4 — Filter paused to only those with at least 1 impression
+    const relevantPausedCampaigns = pausedCampaigns
+      .filter((c: any) => campaignsWithImpressions.has(c.id))
+
+    // STEP 5 — Merge and deduplicate
+    const seen = new Set()
+    const results = [
+      ...activeCampaigns,
+      ...relevantPausedCampaigns
+    ].filter((c: any) => {
+      if (seen.has(c.id)) return false
+      seen.add(c.id)
+      return true
+    })
+
+    // STEP 6 — Build rows and upsert
+    const rows = results.map((c: any) => ({
       user_id: userId,
       ad_account_id: adAccountId,
       meta_campaign_id: c.id,
@@ -98,6 +119,7 @@ Deno.serve(async (req) => {
       lifetime_budget: c.lifetime_budget ? parseFloat(c.lifetime_budget) / 100 : null,
       start_time: c.start_time ?? null,
       stop_time: c.stop_time ?? null,
+      meta_updated_time: c.updated_time ?? null,
       updated_at: new Date().toISOString()
     }))
 
@@ -108,11 +130,15 @@ Deno.serve(async (req) => {
         ignoreDuplicates: false
       })
 
+    // STEP 7 — Return response
     return new Response(
       JSON.stringify({
         success: !upsertError,
+        date_range: `${since} to ${until}`,
         total_active_pulled: activeCampaigns.length,
         total_paused_pulled: pausedCampaigns.length,
+        total_paused_with_impressions: relevantPausedCampaigns.length,
+        total_paused_excluded: pausedCampaigns.length - relevantPausedCampaigns.length,
         total_merged: results.length,
         total_stored: upsertError ? 0 : rows.length,
         upsert_error: upsertError?.message ?? null,
