@@ -181,6 +181,8 @@ Deno.serve(async (req) => {
         success: !upsertError,
         date_range: `${since} to ${until}`,
         total_adsets_checked: adSetData.length,
+        adsets_with_activity: adSetData.length - skippedColdAdSets,
+        skipped_cold_adsets: skippedColdAdSets,
         total_ads_pulled: allAds.length,
         total_stored: upsertError ? 0 : rows.length,
         skipped_no_adset: results.length - rows.length,
