@@ -10,7 +10,7 @@ const corsHeaders = {
 
 async function fetchAllPages(
   url: string,
-  maxRecords = TEST_MAX_RECORDS
+  maxRecords = Number.MAX_SAFE_INTEGER
 ): Promise<any[]> {
   const results: any[] = []
   let nextUrl: string | null = url
@@ -38,7 +38,11 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
-    const { adAccountId, accessToken } = await req.json()
+    const { adAccountId, accessToken, dateRangeDays = 90 } = await req.json()
+
+    const cutoffDate = new Date()
+    cutoffDate.setDate(cutoffDate.getDate() - dateRangeDays)
+    const since = cutoffDate.toISOString().split('T')[0]
 
     const { data: adAccount } = await admin
       .from('ad_accounts')
@@ -51,14 +55,36 @@ Deno.serve(async (req) => {
       : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
 
-    const results = await fetchAllPages(
+    // Pull 1 — ALL ACTIVE campaigns (no date filter)
+    const activeCampaigns = await fetchAllPages(
       `https://graph.facebook.com/v21.0/${metaAccountId}/campaigns` +
       `?fields=id,name,status,effective_status,objective,` +
       `daily_budget,lifetime_budget,start_time,stop_time` +
+      `&effective_status=["ACTIVE"]` +
       `&limit=100` +
-      `&access_token=${accessToken}`,
-      Number.MAX_SAFE_INTEGER
+      `&access_token=${accessToken}`
     )
+
+    // Pull 2 — PAUSED campaigns updated within date range
+    const pausedCampaigns = await fetchAllPages(
+      `https://graph.facebook.com/v21.0/${metaAccountId}/campaigns` +
+      `?fields=id,name,status,effective_status,objective,` +
+      `daily_budget,lifetime_budget,start_time,stop_time` +
+      `&effective_status=["PAUSED"]` +
+      `&filtering=[{"field":"campaign.updated_time",` +
+      `"operator":"GREATER_THAN","value":"${since}"}]` +
+      `&limit=100` +
+      `&access_token=${accessToken}`
+    )
+
+    // Merge and deduplicate by id
+    const seen = new Set()
+    const results = [...activeCampaigns, ...pausedCampaigns]
+      .filter(c => {
+        if (seen.has(c.id)) return false
+        seen.add(c.id)
+        return true
+      })
 
     const rows = results.map(c => ({
       user_id: userId,
@@ -85,12 +111,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: !upsertError,
-        total_pulled: results.length,
+        total_active_pulled: activeCampaigns.length,
+        total_paused_pulled: pausedCampaigns.length,
+        total_merged: results.length,
         total_stored: upsertError ? 0 : rows.length,
-        capped_at: null,
-        is_complete: true,
-        hit_limit: false,
-        limit_reason: null,
         upsert_error: upsertError?.message ?? null,
         sample: results.slice(0, 3)
       }),
