@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - dateRangeDays)
     const since = cutoffDate.toISOString().split('T')[0]
+    const until = new Date().toISOString().split('T')[0]
 
     const { data: adAccount } = await admin
       .from('ad_accounts')
@@ -50,6 +51,9 @@ Deno.serve(async (req) => {
       .eq('id', adAccountId)
       .single()
 
+    const metaAccountId = adAccount.account_id.startsWith('act_')
+      ? adAccount.account_id
+      : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
 
     const { data: adSetData } = await admin
@@ -71,11 +75,27 @@ Deno.serve(async (req) => {
       adSetData.map((s: any) => [s.meta_adset_id, s.id])
     )
 
+    // Pull ad-level insights to find which ads had impressions
+    const insightRows = await fetchAllPages(
+      `https://graph.facebook.com/v21.0/${metaAccountId}/insights` +
+      `?level=ad` +
+      `&fields=ad_id,impressions` +
+      `&time_range={"since":"${since}","until":"${until}"}` +
+      `&limit=100` +
+      `&access_token=${accessToken}`
+    )
+
+    const adsWithImpressions = new Set(
+      insightRows.map((r: any) => r.ad_id)
+    )
+
     const allAds: any[] = []
+    let totalPausedExcluded = 0
+
     for (const adSet of adSetData) {
       if (allAds.length >= TEST_MAX_ADS) break
 
-      // Pull 1 — ACTIVE + WITH_ISSUES ads (no date filter)
+      // Pull ACTIVE + WITH_ISSUES ads (always include)
       const activeAds = await fetchAllPages(
         `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
         `?fields=id,name,status,effective_status,` +
@@ -85,26 +105,32 @@ Deno.serve(async (req) => {
         `&access_token=${accessToken}`
       )
 
-      // Pull 2 — PAUSED ads updated within date range
+      // Pull ALL PAUSED ads (we'll filter by impressions next)
       const pausedAds = await fetchAllPages(
         `https://graph.facebook.com/v21.0/${adSet.meta_adset_id}/ads` +
         `?fields=id,name,status,effective_status,` +
         `adset_id,creative{id}` +
         `&effective_status=["PAUSED"]` +
-        `&filtering=[{"field":"ad.updated_time",` +
-        `"operator":"GREATER_THAN","value":"${since}"}]` +
         `&limit=100` +
         `&access_token=${accessToken}`
       )
 
-      // Merge and deduplicate per ad set
+      // PAUSED → only if had impressions in date range
+      const relevantPausedAds = pausedAds
+        .filter((a: any) => adsWithImpressions.has(a.id))
+
+      totalPausedExcluded += pausedAds.length - relevantPausedAds.length
+
+      // Merge per ad set with dedup
       const seen = new Set()
-      const adSetAds = [...activeAds, ...pausedAds]
-        .filter(a => {
-          if (seen.has(a.id)) return false
-          seen.add(a.id)
-          return true
-        })
+      const adSetAds = [
+        ...activeAds,
+        ...relevantPausedAds
+      ].filter((a: any) => {
+        if (seen.has(a.id)) return false
+        seen.add(a.id)
+        return true
+      })
 
       allAds.push(...adSetAds)
       await new Promise(r => setTimeout(r, 200))
@@ -113,7 +139,7 @@ Deno.serve(async (req) => {
     const results = allAds.slice(0, TEST_MAX_ADS)
     const hitLimit = allAds.length >= TEST_MAX_ADS
 
-    const rows = results.map(a => ({
+    const rows = results.map((a: any) => ({
       user_id: userId,
       ad_set_id: adSetMap[a.adset_id],
       meta_ad_id: a.id,
@@ -135,8 +161,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: !upsertError,
+        date_range: `${since} to ${until}`,
         total_adsets_checked: adSetData.length,
         total_pulled: results.length,
+        total_paused_excluded: totalPausedExcluded,
         total_stored: upsertError ? 0 : rows.length,
         capped_at: TEST_MAX_ADS,
         hit_limit: hitLimit,
