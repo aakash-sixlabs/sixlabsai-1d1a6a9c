@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const TEST_MAX_ADS = 200
+const TEST_MAX_ADS = 500
 const ADSET_BATCH_SIZE = 50
 
 const corsHeaders = {
