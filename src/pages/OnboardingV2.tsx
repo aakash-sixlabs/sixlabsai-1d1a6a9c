@@ -277,7 +277,7 @@ const OnboardingV2 = () => {
               className="w-full gap-2"
               size="lg"
               disabled={!selected}
-              onClick={startPull}
+              onClick={handleAccountContinue}
             >
               Continue <ArrowRight className="w-4 h-4" />
             </Button>
