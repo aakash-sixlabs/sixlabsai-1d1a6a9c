@@ -1,4 +1,4 @@
-// Test brand kit extractor: URL -> Firecrawl scrape (markdown + branding + screenshot) -> Lovable AI inference -> unified brand kit
+// Streaming brand kit extractor: URL -> Firecrawl scrape -> Lovable AI inference -> SSE stream of logs + final result
 // Writes nothing to the database. Pure compute + return.
 
 const corsHeaders = {
@@ -51,7 +51,6 @@ async function firecrawlScrape(url: string, apiKey: string) {
       `Firecrawl scrape failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`,
     );
   }
-  // Firecrawl v2 returns { success, data: { markdown, branding, screenshot, links, metadata } }
   return data?.data ?? data;
 }
 
@@ -68,7 +67,7 @@ async function inferBrandMeta(
   markdown: string,
   metadata: any,
   apiKey: string,
-): Promise<AiInferred> {
+): Promise<{ inferred: AiInferred; usage: any; durationMs: number }> {
   const trimmed = (markdown || "").slice(0, 8000);
   const sysPrompt =
     "You are a brand strategist. Extract structured brand information from the provided website content. Output valid JSON only, matching this exact shape: { brand_name: string, tagline: string, tone_of_voice: string (3-5 comma-separated adjectives), product_categories: string[] (3-6 items), target_audience: string (one sentence), value_propositions: string[] (3 items, short phrases) }. If a field is unknown, use a sensible inference rather than leaving it blank.";
@@ -79,6 +78,7 @@ async function inferBrandMeta(
     sourceURL: metadata?.sourceURL,
   })}\n\nPage content (markdown):\n${trimmed}`;
 
+  const t0 = Date.now();
   const resp = await fetch(AI_GATEWAY, {
     method: "POST",
     headers: {
@@ -94,6 +94,7 @@ async function inferBrandMeta(
       response_format: { type: "json_object" },
     }),
   });
+  const durationMs = Date.now() - t0;
 
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
@@ -103,11 +104,13 @@ async function inferBrandMeta(
   }
   const content = data?.choices?.[0]?.message?.content;
   if (!content) throw new Error("AI inference returned empty content");
+  let inferred: AiInferred;
   try {
-    return JSON.parse(content);
+    inferred = JSON.parse(content);
   } catch {
     throw new Error("AI inference returned non-JSON content");
   }
+  return { inferred, usage: data?.usage ?? null, durationMs };
 }
 
 function extractColors(branding: any) {
@@ -139,83 +142,150 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!FIRECRAWL_API_KEY) {
-      return jsonResponse({ error: "FIRECRAWL_API_KEY not configured" }, 500);
-    }
-    if (!LOVABLE_API_KEY) {
-      return jsonResponse({ error: "LOVABLE_API_KEY not configured" }, 500);
-    }
+  const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  if (!FIRECRAWL_API_KEY) return jsonResponse({ error: "FIRECRAWL_API_KEY not configured" }, 500);
+  if (!LOVABLE_API_KEY) return jsonResponse({ error: "LOVABLE_API_KEY not configured" }, 500);
 
-    const body = await req.json().catch(() => ({}));
-    const websiteUrl = normalizeUrl(String(body?.websiteUrl ?? ""));
-    if (!websiteUrl) {
-      return jsonResponse(
-        { error: "Invalid websiteUrl. Provide a valid hostname like nike.com." },
-        400,
-      );
-    }
-
-    const warnings: string[] = [];
-
-    // Step 1: Firecrawl scrape
-    let scrape: any;
-    try {
-      scrape = await firecrawlScrape(websiteUrl, FIRECRAWL_API_KEY);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return jsonResponse({ error: `Scrape step failed: ${msg}` }, 502);
-    }
-
-    const branding = scrape?.branding ?? {};
-    const metadata = scrape?.metadata ?? {};
-    const markdown: string = scrape?.markdown ?? "";
-    const screenshot: string | null = scrape?.screenshot ?? null;
-    const links: string[] = Array.isArray(scrape?.links) ? scrape.links : [];
-
-    // Step 2: AI inference (best-effort)
-    let aiInferred: AiInferred = {};
-    try {
-      aiInferred = await inferBrandMeta(markdown, metadata, LOVABLE_API_KEY);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      warnings.push(`AI inference skipped: ${msg}`);
-    }
-
-    const logoUrl =
-      branding?.logo ?? branding?.images?.logo ?? null;
-    const faviconUrl = branding?.images?.favicon ?? null;
-
-    const result = {
-      brand_name:
-        aiInferred.brand_name || metadata?.title?.split(/[|\-–—:]/)[0]?.trim() || null,
-      tagline: aiInferred.tagline ?? null,
-      website_url: websiteUrl,
-      logo_url: logoUrl,
-      favicon_url: faviconUrl,
-      screenshot_url: screenshot,
-      colors: extractColors(branding),
-      fonts: extractFonts(branding),
-      tone_of_voice: aiInferred.tone_of_voice ?? null,
-      product_categories: aiInferred.product_categories ?? [],
-      target_audience: aiInferred.target_audience ?? null,
-      value_propositions: aiInferred.value_propositions ?? [],
-      raw: {
-        firecrawl_branding: branding,
-        firecrawl_metadata: metadata,
-        firecrawl_links_sample: links.slice(0, 25),
-        ai_inference_model: "google/gemini-2.5-flash",
-        extracted_at: new Date().toISOString(),
-      },
-      warnings,
-    };
-
-    return jsonResponse(result);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error("test-brand-kit error:", msg);
-    return jsonResponse({ error: msg }, 500);
+  const body = await req.json().catch(() => ({}));
+  const websiteUrl = normalizeUrl(String(body?.websiteUrl ?? ""));
+  if (!websiteUrl) {
+    return jsonResponse({ error: "Invalid websiteUrl. Provide a valid hostname like nike.com." }, 400);
   }
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder();
+      const send = (event: string, data: any) => {
+        const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+        try {
+          controller.enqueue(encoder.encode(payload));
+        } catch {
+          // controller closed
+        }
+      };
+      const log = (level: "info" | "warn" | "error" | "success", message: string, meta?: any) => {
+        send("log", { ts: new Date().toISOString(), level, message, meta });
+      };
+
+      const t0 = Date.now();
+      const warnings: string[] = [];
+
+      try {
+        log("info", `▶ Starting brand kit extraction`, { url: websiteUrl });
+
+        // Step 1: Firecrawl
+        log("info", "→ Calling Firecrawl /v2/scrape", {
+          formats: ["markdown", "branding", "screenshot", "links"],
+          onlyMainContent: true,
+        });
+        const t1 = Date.now();
+        let scrape: any;
+        try {
+          scrape = await firecrawlScrape(websiteUrl, FIRECRAWL_API_KEY);
+          log("success", `✓ Firecrawl returned in ${Date.now() - t1}ms`, {
+            has_markdown: !!scrape?.markdown,
+            markdown_chars: (scrape?.markdown ?? "").length,
+            has_branding: !!scrape?.branding,
+            has_screenshot: !!scrape?.screenshot,
+            links_count: Array.isArray(scrape?.links) ? scrape.links.length : 0,
+            page_title: scrape?.metadata?.title ?? null,
+            status_code: scrape?.metadata?.statusCode ?? null,
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          log("error", `✗ Firecrawl failed: ${msg}`);
+          send("error", { error: `Scrape step failed: ${msg}` });
+          controller.close();
+          return;
+        }
+
+        const branding = scrape?.branding ?? {};
+        const metadata = scrape?.metadata ?? {};
+        const markdown: string = scrape?.markdown ?? "";
+        const screenshot: string | null = scrape?.screenshot ?? null;
+        const links: string[] = Array.isArray(scrape?.links) ? scrape.links : [];
+
+        const colors = extractColors(branding);
+        const fonts = extractFonts(branding);
+        log("info", "🎨 Extracted brand assets from Firecrawl", {
+          logo: branding?.logo ?? branding?.images?.logo ?? null,
+          favicon: branding?.images?.favicon ?? null,
+          colors,
+          fonts: fonts.all,
+        });
+
+        // Step 2: AI inference
+        log("info", "→ Calling Lovable AI Gateway", {
+          model: "google/gemini-2.5-flash",
+          input_chars: Math.min(markdown.length, 8000),
+        });
+        let aiInferred: AiInferred = {};
+        try {
+          const { inferred, usage, durationMs } = await inferBrandMeta(
+            markdown,
+            metadata,
+            LOVABLE_API_KEY,
+          );
+          aiInferred = inferred;
+          log("success", `✓ AI inference returned in ${durationMs}ms`, { usage });
+          log("info", "🧠 Inferred brand metadata", {
+            brand_name: inferred.brand_name,
+            tagline: inferred.tagline,
+            tone_of_voice: inferred.tone_of_voice,
+            categories: inferred.product_categories,
+          });
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          log("warn", `⚠ AI inference skipped: ${msg}`);
+          warnings.push(`AI inference skipped: ${msg}`);
+        }
+
+        const logoUrl = branding?.logo ?? branding?.images?.logo ?? null;
+        const faviconUrl = branding?.images?.favicon ?? null;
+
+        const result = {
+          brand_name:
+            aiInferred.brand_name || metadata?.title?.split(/[|\-–—:]/)[0]?.trim() || null,
+          tagline: aiInferred.tagline ?? null,
+          website_url: websiteUrl,
+          logo_url: logoUrl,
+          favicon_url: faviconUrl,
+          screenshot_url: screenshot,
+          colors,
+          fonts,
+          tone_of_voice: aiInferred.tone_of_voice ?? null,
+          product_categories: aiInferred.product_categories ?? [],
+          target_audience: aiInferred.target_audience ?? null,
+          value_propositions: aiInferred.value_propositions ?? [],
+          raw: {
+            firecrawl_branding: branding,
+            firecrawl_metadata: metadata,
+            firecrawl_links_sample: links.slice(0, 25),
+            ai_inference_model: "google/gemini-2.5-flash",
+            extracted_at: new Date().toISOString(),
+          },
+          warnings,
+        };
+
+        log("success", `✅ Done in ${Date.now() - t0}ms — emitting result`);
+        send("result", result);
+        controller.close();
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        log("error", `✗ Unhandled error: ${msg}`);
+        send("error", { error: msg });
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 });
