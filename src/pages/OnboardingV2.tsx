@@ -285,6 +285,16 @@ const OnboardingV2 = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Phase 1.5: Brand Kit */}
+      {phase === "brand-kit" && selected && (
+        <BrandKitStep
+          open
+          adAccountId={selected}
+          defaultBrandName={selectedAccountName}
+          onComplete={startPull}
+        />
+      )}
+
       {/* Phase 2: Pulling Data */}
       <Dialog open={phase === "pulling"} modal>
         <DialogContent
