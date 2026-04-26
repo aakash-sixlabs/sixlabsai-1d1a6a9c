@@ -411,7 +411,7 @@ function BrandKitTestCardInner() {
             <div className="relative">
               <button onClick={copyRaw} className="absolute top-2 right-2 bg-gray-700 hover:bg-gray-600 text-gray-100 text-xs rounded px-2 py-1 z-10">{copied ? 'Copied!' : 'Copy'}</button>
               <div className="bg-gray-900 text-gray-100 rounded-b max-h-96 overflow-auto">
-                <pre className="text-xs font-mono whitespace-pre-wrap p-3">{JSON.stringify(kit, null, 2)}</pre>
+                <pre className="text-xs font-mono whitespace-pre-wrap p-3">{JSON.stringify({ ...kit, screenshot_url: kit.screenshot_url ? `[${kit.screenshot_url.length} chars omitted]` : null }, null, 2)}</pre>
               </div>
             </div>
           </details>
