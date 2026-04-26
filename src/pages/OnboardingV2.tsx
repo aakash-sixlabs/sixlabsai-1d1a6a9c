@@ -100,13 +100,12 @@ const OnboardingV2 = () => {
     init();
   }, []);
 
-  /* ── Start data pull ── */
-  const startPull = async () => {
+  /* ── Step 1: account selected → save default + show brand kit ── */
+  const handleAccountContinue = async () => {
     if (!selected) return;
     const account = accounts.find((a) => a.id === selected);
     if (!account) return;
 
-    // Save default ad account
     if (!isDevMode) {
       try {
         const {
@@ -129,6 +128,15 @@ const OnboardingV2 = () => {
       selectedMetaAccountId: account.account_id,
       dateRange: "90",
     });
+
+    setPhase("brand-kit");
+  };
+
+  /* ── Step 2: brand kit confirmed → start data pull ── */
+  const startPull = async () => {
+    if (!selected) return;
+    const account = accounts.find((a) => a.id === selected);
+    if (!account) return;
 
     setPhase("pulling");
     setSyncStarted(true);
