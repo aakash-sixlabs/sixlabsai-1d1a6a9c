@@ -1,0 +1,1 @@
+DELETE FROM public.ad_performance_daily; DELETE FROM public.ad_creatives; DELETE FROM public.ads;
