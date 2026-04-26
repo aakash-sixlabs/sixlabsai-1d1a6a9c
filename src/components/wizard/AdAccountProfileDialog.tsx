@@ -85,7 +85,48 @@ export const AdAccountProfileDialog = ({
         if (match) setIndustry(match);
       }
     }
-  }, [open]);
+
+    // Load existing brand kit fields
+    (async () => {
+      const { data } = await supabase
+        .from("ad_account_profiles")
+        .select("website_url, brand_kit_status, primary_color, logo_url")
+        .eq("ad_account_id", accountId)
+        .maybeSingle();
+      if (data) {
+        setWebsiteUrl(data.website_url ?? "");
+        setBrandKitStatus(data.brand_kit_status ?? "pending");
+        setPrimaryColor(data.primary_color ?? "");
+        setLogoUrl(data.logo_url ?? null);
+      }
+    })();
+  }, [open, accountId]);
+
+  const handleBuildKit = async () => {
+    if (!websiteUrl.trim()) {
+      toast.error("Enter your brand website first");
+      return;
+    }
+    setBuildingKit(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("build-brand-kit", {
+        body: { adAccountId: accountId, websiteUrl: websiteUrl.trim(), brandName: accountName },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const kit = data?.kit;
+      if (kit) {
+        setPrimaryColor(kit.primary_color ?? "");
+        setLogoUrl(kit.logo_url ?? null);
+        setBrandKitStatus("ready");
+        toast.success("Brand kit updated!");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to build brand kit");
+    } finally {
+      setBuildingKit(false);
+    }
+  };
 
   const handlePageChange = (pageId: string) => {
     setSelectedPageId(pageId);
