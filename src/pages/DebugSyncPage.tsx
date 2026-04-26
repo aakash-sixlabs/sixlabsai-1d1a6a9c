@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
 
-type Status = 'idle' | 'loading' | 'success' | 'error'
+type Status = 'idle' | 'loading' | 'success' | 'error' | 'skipped'
 interface CardState {
   status: Status
   result: any
@@ -17,9 +17,10 @@ interface TestCardProps {
   note: string
   state: CardState
   onRun: () => void
+  disabled?: boolean
 }
 
-function TestCard({ step, title, description, note, state, onRun }: TestCardProps) {
+function TestCard({ step, title, description, note, state, onRun, disabled }: TestCardProps) {
   const [copied, setCopied] = useState(false)
 
   function copyResult() {
@@ -33,6 +34,7 @@ function TestCard({ step, title, description, note, state, onRun }: TestCardProp
     loading: 'bg-yellow-400 animate-pulse',
     success: 'bg-green-500',
     error: 'bg-red-500',
+    skipped: 'bg-gray-400',
   }[state.status]
 
   const cardBorder = {
@@ -40,6 +42,7 @@ function TestCard({ step, title, description, note, state, onRun }: TestCardProp
     loading: 'border-yellow-300',
     success: 'border-green-300',
     error: 'border-red-300',
+    skipped: 'border-gray-300 border-dashed',
   }[state.status]
 
   return (
@@ -59,8 +62,8 @@ function TestCard({ step, title, description, note, state, onRun }: TestCardProp
           <span className={`w-3 h-3 rounded-full ${statusDot}`} />
           <button
             onClick={onRun}
-            disabled={state.status === 'loading'}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm rounded px-4 py-2"
+            disabled={state.status === 'loading' || disabled}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm rounded px-4 py-2"
           >
             {state.status === 'loading' ? 'Running...' : 'Run Test'}
           </button>
@@ -71,7 +74,13 @@ function TestCard({ step, title, description, note, state, onRun }: TestCardProp
         ⚠️ {note}
       </div>
 
-      {state.message && (
+      {state.status === 'skipped' && (
+        <div className="mt-3 text-sm rounded px-3 py-2 bg-gray-50 text-gray-600 border border-gray-200">
+          ⊘ Skipped — previous step failed
+        </div>
+      )}
+
+      {state.message && state.status !== 'skipped' && (
         <div
           className={`mt-3 text-sm rounded px-3 py-2 ${
             state.status === 'success'
@@ -102,6 +111,12 @@ function TestCard({ step, title, description, note, state, onRun }: TestCardProp
   )
 }
 
+type StepDef = {
+  fnName: string
+  label: string
+  setter: React.Dispatch<React.SetStateAction<CardState>>
+}
+
 export default function DebugSyncPage() {
   const [adAccountId, setAdAccountId] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -112,6 +127,11 @@ export default function DebugSyncPage() {
   const [adState, setAdState] = useState<CardState>(initialState)
   const [creativeState, setCreativeState] = useState<CardState>(initialState)
   const [insightState, setInsightState] = useState<CardState>(initialState)
+
+  const [isRunningAll, setIsRunningAll] = useState(false)
+  const [overallStatus, setOverallStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
+  const [overallMessage, setOverallMessage] = useState('')
+  const [currentStep, setCurrentStep] = useState<number | null>(null)
 
   function validate() {
     if (!adAccountId.trim()) {
@@ -128,29 +148,103 @@ export default function DebugSyncPage() {
   async function runTest(
     fnName: string,
     setter: React.Dispatch<React.SetStateAction<CardState>>,
-  ) {
-    if (!validate()) return
+  ): Promise<CardState> {
     setter({ status: 'loading', result: null, message: '' })
+    let finalState: CardState
     try {
       const { data, error } = await supabase.functions.invoke(fnName, {
         body: { adAccountId, accessToken },
       })
       if (error) throw error
-      setter({
+      finalState = {
         status: data.success ? 'success' : 'error',
         result: data,
         message: data.success
           ? `${data.total_merged ?? data.total_pulled ?? data.total_fetched ?? 0} pulled · ${data.total_stored ?? 0} stored`
           : data.upsert_error ?? data.error ?? 'Unknown error',
-      })
+      }
     } catch (err: any) {
-      setter({
+      finalState = {
         status: 'error',
         result: null,
         message: err.message ?? 'Function failed',
-      })
+      }
+    }
+    setter(finalState)
+    return finalState
+  }
+
+  async function runSingle(
+    fnName: string,
+    setter: React.Dispatch<React.SetStateAction<CardState>>,
+  ) {
+    if (!validate()) return
+    await runTest(fnName, setter)
+  }
+
+  function resetAll() {
+    setCampaignState(initialState)
+    setAdSetState(initialState)
+    setAdState(initialState)
+    setCreativeState(initialState)
+    setInsightState(initialState)
+    setOverallStatus('idle')
+    setOverallMessage('')
+    setCurrentStep(null)
+  }
+
+  async function runAll() {
+    if (!validate()) return
+
+    const steps: StepDef[] = [
+      { fnName: 'test-campaigns', label: 'Campaigns', setter: setCampaignState },
+      { fnName: 'test-adsets', label: 'Ad Sets', setter: setAdSetState },
+      { fnName: 'test-ads', label: 'Ads', setter: setAdState },
+      { fnName: 'test-creatives', label: 'Creatives', setter: setCreativeState },
+      { fnName: 'test-insights', label: 'Insights', setter: setInsightState },
+    ]
+
+    setIsRunningAll(true)
+    setOverallStatus('running')
+    setOverallMessage('')
+    // Reset all cards to idle at the start
+    steps.forEach(s => s.setter(initialState))
+
+    let failedAt: { index: number; step: StepDef; message: string } | null = null
+
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i]
+      setCurrentStep(i + 1)
+      const result = await runTest(step.fnName, step.setter)
+      if (result.status === 'error') {
+        failedAt = { index: i, step, message: result.message }
+        // Mark remaining steps as skipped
+        for (let j = i + 1; j < steps.length; j++) {
+          steps[j].setter({ status: 'skipped', result: null, message: '' })
+        }
+        break
+      }
+      // Small delay between steps
+      if (i < steps.length - 1) {
+        await new Promise(r => setTimeout(r, 500))
+      }
+    }
+
+    setCurrentStep(null)
+    setIsRunningAll(false)
+
+    if (failedAt) {
+      setOverallStatus('error')
+      setOverallMessage(
+        `Failed at Step ${failedAt.index + 1} (${failedAt.step.fnName}): ${failedAt.message}`,
+      )
+    } else {
+      setOverallStatus('success')
+      setOverallMessage('All 5 steps completed successfully')
     }
   }
+
+  const progressPct = currentStep ? (currentStep / 5) * 100 : 0
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -158,7 +252,7 @@ export default function DebugSyncPage() {
         <header>
           <h1 className="text-3xl font-bold text-gray-900">Meta Sync Debug</h1>
           <p className="text-gray-600 mt-2">
-            Test each sync segment independently. Run in order: Campaigns → Ad Sets → Ads → Creatives → Insights
+            Test each sync segment independently, or run the full chain. Order: Campaigns → Ad Sets → Ads → Creatives → Insights
           </p>
         </header>
 
@@ -197,7 +291,51 @@ export default function DebugSyncPage() {
               </button>
             </div>
           </div>
+
+          <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+            <button
+              onClick={runAll}
+              disabled={isRunningAll}
+              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded px-5 py-2.5 text-sm"
+            >
+              {isRunningAll ? `Running Step ${currentStep} of 5...` : '▶ Run All Steps Sequentially'}
+            </button>
+            <button
+              onClick={resetAll}
+              disabled={isRunningAll}
+              className="border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 text-sm rounded px-4 py-2.5"
+            >
+              Reset All
+            </button>
+          </div>
         </section>
+
+        {isRunningAll && currentStep && (
+          <section className="bg-white border border-yellow-300 rounded-lg p-4">
+            <div className="flex items-center justify-between text-sm font-medium text-gray-800 mb-2">
+              <span>Step {currentStep} of 5 — Running...</span>
+              <span className="text-gray-500">{Math.round(progressPct)}%</span>
+            </div>
+            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-yellow-400 transition-all duration-300"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+          </section>
+        )}
+
+        {overallStatus === 'success' && (
+          <section className="bg-green-50 border-2 border-green-300 rounded-lg p-4 text-green-900">
+            <div className="font-semibold">✅ {overallMessage}</div>
+          </section>
+        )}
+
+        {overallStatus === 'error' && (
+          <section className="bg-red-50 border-2 border-red-300 rounded-lg p-4 text-red-900">
+            <div className="font-semibold">❌ {overallMessage}</div>
+          </section>
+        )}
 
         <section className="space-y-4">
           <TestCard
@@ -206,7 +344,8 @@ export default function DebugSyncPage() {
             description="Pull all campaigns from the Meta ad account."
             note="No prerequisites."
             state={campaignState}
-            onRun={() => runTest('test-campaigns', setCampaignState)}
+            disabled={isRunningAll}
+            onRun={() => runSingle('test-campaigns', setCampaignState)}
           />
           <TestCard
             step="STEP 2"
@@ -214,7 +353,8 @@ export default function DebugSyncPage() {
             description="Pull all ad sets and link them to stored campaigns."
             note="Requires Campaigns to be synced first."
             state={adSetState}
-            onRun={() => runTest('test-adsets', setAdSetState)}
+            disabled={isRunningAll}
+            onRun={() => runSingle('test-adsets', setAdSetState)}
           />
           <TestCard
             step="STEP 3"
@@ -222,7 +362,8 @@ export default function DebugSyncPage() {
             description="Pull image-based ads and link to stored ad sets."
             note="Requires Ad Sets to be synced first."
             state={adState}
-            onRun={() => runTest('test-ads', setAdState)}
+            disabled={isRunningAll}
+            onRun={() => runSingle('test-ads', setAdState)}
           />
           <TestCard
             step="STEP 4"
@@ -230,7 +371,8 @@ export default function DebugSyncPage() {
             description="Batch-fetch creative details and resolve image URLs."
             note="Requires Ads to be synced first."
             state={creativeState}
-            onRun={() => runTest('test-creatives', setCreativeState)}
+            disabled={isRunningAll}
+            onRun={() => runSingle('test-creatives', setCreativeState)}
           />
           <TestCard
             step="STEP 5"
@@ -238,7 +380,8 @@ export default function DebugSyncPage() {
             description="Pull last 30 days of daily performance metrics."
             note="Requires Ads to be synced first. Test mode pulls 30 days only."
             state={insightState}
-            onRun={() => runTest('test-insights', setInsightState)}
+            disabled={isRunningAll}
+            onRun={() => runSingle('test-insights', setInsightState)}
           />
         </section>
       </div>
