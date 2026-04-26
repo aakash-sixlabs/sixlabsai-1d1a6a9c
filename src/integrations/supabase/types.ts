@@ -469,6 +469,116 @@ export type Database = {
           },
         ]
       }
+      generated_creatives: {
+        Row: {
+          aspect_ratio: string | null
+          created_at: string
+          description: string | null
+          headline: string | null
+          id: string
+          image_url: string
+          job_id: string
+          metadata: Json
+          primary_text: string | null
+          thumbnail_url: string | null
+          user_id: string
+          variant_index: number
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          created_at?: string
+          description?: string | null
+          headline?: string | null
+          id?: string
+          image_url: string
+          job_id: string
+          metadata?: Json
+          primary_text?: string | null
+          thumbnail_url?: string | null
+          user_id: string
+          variant_index?: number
+        }
+        Update: {
+          aspect_ratio?: string | null
+          created_at?: string
+          description?: string | null
+          headline?: string | null
+          id?: string
+          image_url?: string
+          job_id?: string
+          metadata?: Json
+          primary_text?: string | null
+          thumbnail_url?: string | null
+          user_id?: string
+          variant_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_creatives_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "generation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      generation_jobs: {
+        Row: {
+          ad_account_id: string | null
+          aspect_ratios: string[]
+          created_at: string
+          error_message: string | null
+          goal: string | null
+          id: string
+          product_image_url: string | null
+          product_input_method: string | null
+          product_url: string | null
+          promo_details: Json
+          promo_scope: string | null
+          service_request_payload: Json
+          service_response_payload: Json | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id?: string | null
+          aspect_ratios?: string[]
+          created_at?: string
+          error_message?: string | null
+          goal?: string | null
+          id?: string
+          product_image_url?: string | null
+          product_input_method?: string | null
+          product_url?: string | null
+          promo_details?: Json
+          promo_scope?: string | null
+          service_request_payload?: Json
+          service_response_payload?: Json | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string | null
+          aspect_ratios?: string[]
+          created_at?: string
+          error_message?: string | null
+          goal?: string | null
+          id?: string
+          product_image_url?: string | null
+          product_input_method?: string | null
+          product_url?: string | null
+          promo_details?: Json
+          promo_scope?: string | null
+          service_request_payload?: Json
+          service_response_payload?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       meta_connections: {
         Row: {
           access_token: string

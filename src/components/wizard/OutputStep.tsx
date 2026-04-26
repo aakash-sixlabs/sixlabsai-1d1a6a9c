@@ -1,58 +1,158 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Download, RefreshCw, X, Pencil, Check, ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { Download, RefreshCw, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-/* ── Mock creatives ── */
-const MOCK_CREATIVES = Array.from({ length: 12 }, (_, i) => ({
-  id: `creative-${i + 1}`,
-  label: `Variant ${i + 1}`,
-  gradient: [
-    "from-primary/20 via-accent/10 to-secondary",
-    "from-accent/20 via-primary/10 to-muted",
-    "from-warning/20 via-accent/10 to-card",
-    "from-primary/30 via-muted to-accent/10",
-    "from-secondary via-primary/5 to-accent/15",
-    "from-accent/25 via-card to-primary/10",
-  ][i % 6],
-}));
+interface GeneratedCreative {
+  id: string;
+  variant_index: number;
+  aspect_ratio: string | null;
+  image_url: string;
+  thumbnail_url: string | null;
+  headline: string | null;
+  primary_text: string | null;
+  description: string | null;
+}
+
+const LazyImage = ({
+  src,
+  alt,
+  className,
+  aspectClass,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  aspectClass: string;
+}) => {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  return (
+    <div className={`relative ${aspectClass} bg-muted overflow-hidden`}>
+      {!loaded && !errored && (
+        <Skeleton className="absolute inset-0 w-full h-full" />
+      )}
+      {errored ? (
+        <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+          <ImageOff className="w-6 h-6" />
+        </div>
+      ) : (
+        <img
+          src={src}
+          alt={alt}
+          loading="lazy"
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            loaded ? "opacity-100" : "opacity-0"
+          } ${className ?? ""}`}
+        />
+      )}
+    </div>
+  );
+};
 
 export const OutputStep = () => {
   const navigate = useNavigate();
-  const [selected, setSelected] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editText, setEditText] = useState("");
+  const [searchParams] = useSearchParams();
+  const jobId = searchParams.get("jobId");
 
-  const selectedCreative = MOCK_CREATIVES.find((c) => c.id === selected);
-  const selectedIndex = MOCK_CREATIVES.findIndex((c) => c.id === selected);
+  const [creatives, setCreatives] = useState<GeneratedCreative[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!jobId) {
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase
+        .from("generated_creatives")
+        .select("*")
+        .eq("job_id", jobId)
+        .order("variant_index", { ascending: true });
+      if (error) {
+        toast.error("Failed to load creatives.");
+        setLoading(false);
+        return;
+      }
+      setCreatives(data ?? []);
+      setLoading(false);
+    })();
+  }, [jobId]);
+
+  const selectedCreative = creatives.find((c) => c.id === selected);
+  const selectedIndex = creatives.findIndex((c) => c.id === selected);
+
+  // Preload neighbors in lightbox
+  useEffect(() => {
+    if (selectedIndex < 0) return;
+    [selectedIndex - 1, selectedIndex + 1].forEach((i) => {
+      const c = creatives[i];
+      if (c) {
+        const img = new Image();
+        img.src = c.image_url;
+      }
+    });
+  }, [selectedIndex, creatives]);
 
   const navigateCreative = (dir: 1 | -1) => {
     const next = selectedIndex + dir;
-    if (next >= 0 && next < MOCK_CREATIVES.length) {
-      setSelected(MOCK_CREATIVES[next].id);
-      setEditingId(null);
-      setEditText("");
+    if (next >= 0 && next < creatives.length) {
+      setSelected(creatives[next].id);
     }
   };
 
-  const handleEdit = (id: string) => {
-    setEditingId(id);
-    setEditText("");
-  };
-
-  const submitEdit = () => {
-    if (!editText.trim()) return;
-    toast.success("Edit submitted — regenerating creative…");
-    setEditingId(null);
-    setEditText("");
-  };
-
   const downloadAll = () => toast.success("Downloading all creatives…");
-  const regenerateAll = () => toast.success("Regenerating all creatives…");
+  const regenerateAll = () => toast.message("Regenerate flow coming soon.");
+
+  const aspectClassFor = (ratio: string | null): string => {
+    switch (ratio) {
+      case "9:16":
+        return "aspect-[9/16]";
+      case "16:9":
+        return "aspect-[16/9]";
+      case "4:5":
+        return "aspect-[4/5]";
+      case "1:1":
+      default:
+        return "aspect-square";
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="container max-w-6xl py-10">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-square rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!jobId || creatives.length === 0) {
+    return (
+      <div className="container max-w-6xl py-20 text-center">
+        <h2 className="text-2xl font-bold text-foreground font-display mb-2">
+          No creatives yet
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Start a new generation to see your creatives here.
+        </p>
+        <Button onClick={() => navigate("/create-ad")}>Create New Ad</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="container max-w-6xl py-10">
@@ -62,7 +162,7 @@ export const OutputStep = () => {
           <div>
             <h2 className="text-2xl font-bold text-foreground font-display">Your Creatives</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {MOCK_CREATIVES.length} creatives generated. Click to enlarge, edit, or download.
+              {creatives.length} creatives generated. Click to enlarge or download.
             </p>
           </div>
           <div className="flex gap-2">
@@ -77,26 +177,27 @@ export const OutputStep = () => {
 
         {/* Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {MOCK_CREATIVES.map((c, i) => (
+          {creatives.map((c, i) => (
             <motion.div
               key={c.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
+              transition={{ delay: Math.min(i * 0.04, 0.4) }}
               className="group relative rounded-xl border border-border bg-card overflow-hidden cursor-pointer hover:shadow-md transition-all"
-              onClick={() => { setSelected(c.id); setEditingId(null); setEditText(""); }}
+              onClick={() => setSelected(c.id)}
             >
-              <div className={`aspect-square bg-gradient-to-br ${c.gradient} flex items-center justify-center`}>
-                <span className="text-3xl font-bold text-foreground/20 font-display">{i + 1}</span>
-              </div>
-              <div className="px-3 py-2.5 flex items-center justify-between">
-                <span className="text-xs font-medium text-foreground">{c.label}</span>
-                <button
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-muted"
-                  onClick={(e) => { e.stopPropagation(); setSelected(c.id); handleEdit(c.id); }}
-                >
-                  <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
+              <LazyImage
+                src={c.thumbnail_url ?? c.image_url}
+                alt={c.headline ?? `Variant ${i + 1}`}
+                aspectClass="aspect-square"
+              />
+              <div className="px-3 py-2.5">
+                <span className="text-xs font-medium text-foreground">
+                  Variant {i + 1}
+                  {c.aspect_ratio && (
+                    <span className="text-muted-foreground"> · {c.aspect_ratio}</span>
+                  )}
+                </span>
               </div>
             </motion.div>
           ))}
@@ -110,18 +211,18 @@ export const OutputStep = () => {
         </div>
       </motion.div>
 
-      {/* ── Lightbox Dialog ── */}
-      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditingId(null); } }}>
+      {/* Lightbox */}
+      <Dialog open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
         <DialogContent className="max-w-3xl p-0 gap-0 overflow-hidden bg-card border-border">
           {selectedCreative && (
             <div className="flex flex-col">
-              {/* Image area */}
               <div className="relative">
-                <div className={`aspect-[4/3] bg-gradient-to-br ${selectedCreative.gradient} flex items-center justify-center`}>
-                  <span className="text-6xl font-bold text-foreground/15 font-display">{selectedIndex + 1}</span>
-                </div>
+                <LazyImage
+                  src={selectedCreative.image_url}
+                  alt={selectedCreative.headline ?? `Variant ${selectedIndex + 1}`}
+                  aspectClass={aspectClassFor(selectedCreative.aspect_ratio)}
+                />
 
-                {/* Nav arrows */}
                 {selectedIndex > 0 && (
                   <button
                     onClick={() => navigateCreative(-1)}
@@ -130,7 +231,7 @@ export const OutputStep = () => {
                     <ChevronLeft className="w-5 h-5 text-foreground" />
                   </button>
                 )}
-                {selectedIndex < MOCK_CREATIVES.length - 1 && (
+                {selectedIndex < creatives.length - 1 && (
                   <button
                     onClick={() => navigateCreative(1)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-card/80 backdrop-blur-sm hover:bg-card transition-colors shadow-sm"
@@ -140,50 +241,34 @@ export const OutputStep = () => {
                 )}
               </div>
 
-              {/* Footer */}
-              <div className="p-5 space-y-4">
+              <div className="p-5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-display font-semibold text-foreground">{selectedCreative.label}</h3>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleEdit(selectedCreative.id)}>
-                      <Pencil className="w-3.5 h-3.5" /> Edit
-                    </Button>
-                    <Button size="sm" className="gap-1.5" onClick={() => toast.success("Downloading…")}>
-                      <Download className="w-3.5 h-3.5" /> Download
-                    </Button>
+                  <div>
+                    <h3 className="font-display font-semibold text-foreground">
+                      Variant {selectedIndex + 1}
+                      {selectedCreative.aspect_ratio && (
+                        <span className="text-muted-foreground text-sm font-normal ml-2">
+                          {selectedCreative.aspect_ratio}
+                        </span>
+                      )}
+                    </h3>
+                    {selectedCreative.headline && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {selectedCreative.headline}
+                      </p>
+                    )}
                   </div>
+                  <Button
+                    size="sm"
+                    className="gap-1.5"
+                    onClick={() => window.open(selectedCreative.image_url, "_blank")}
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </Button>
                 </div>
-
-                {/* Edit panel */}
-                <AnimatePresence>
-                  {editingId === selectedCreative.id && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
-                        <p className="text-sm font-medium text-foreground">What would you like to change?</p>
-                        <Textarea
-                          placeholder="e.g. Make the background warmer, add a badge with '20% OFF', change the headline…"
-                          value={editText}
-                          onChange={(e) => setEditText(e.target.value)}
-                          className="resize-none bg-card"
-                          rows={3}
-                        />
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="ghost" size="sm" onClick={() => setEditingId(null)}>
-                            <X className="w-3.5 h-3.5 mr-1" /> Cancel
-                          </Button>
-                          <Button size="sm" onClick={submitEdit} disabled={!editText.trim()}>
-                            <Check className="w-3.5 h-3.5 mr-1" /> Submit Edit
-                          </Button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {selectedCreative.primary_text && (
+                  <p className="text-sm text-foreground/80">{selectedCreative.primary_text}</p>
+                )}
               </div>
             </div>
           )}
