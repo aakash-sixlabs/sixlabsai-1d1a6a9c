@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Globe, FileText, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { Building2, Globe, FileText, ArrowRight, Loader2, CheckCircle2, Sparkles, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -55,6 +55,11 @@ export const AdAccountProfileDialog = ({
   const [selectedPageName, setSelectedPageName] = useState("");
   const [pages, setPages] = useState<Page[]>([]);
   const [saving, setSaving] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [brandKitStatus, setBrandKitStatus] = useState<string>("pending");
+  const [primaryColor, setPrimaryColor] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [buildingKit, setBuildingKit] = useState(false);
 
   useEffect(() => {
     if (!open) return;
