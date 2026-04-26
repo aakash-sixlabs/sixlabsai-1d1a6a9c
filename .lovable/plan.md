@@ -1,87 +1,107 @@
 ## Goal
 
-Add a single "Run All Steps" button to `/debug-sync` that runs `test-campaigns → test-adsets → test-ads → test-creatives → test-insights` in sequence, stopping immediately if any step fails. Each step's per-card UI (status dot, result JSON, copy button) keeps working exactly as today — the new button just orchestrates the existing five cards.
+Replace the mock creatives on `/output` with real generated creatives, and persist every input + output of the generation flow into the database. The external generation service is stubbed for now (returns placeholder image URLs) so we can wire the full pipeline end-to-end and swap in the real endpoint later.
 
-No edge functions are touched. No production sync code is touched.
+The "Edit creative" feature is dropped from both the schema and the UI.
 
-## Changes
+---
 
-### `src/pages/DebugSyncPage.tsx` — only file modified
+## On your storage question
 
-**1. Add a "Run All Steps" button + global run state**
+Yes — option 1 (storing the URLs as-is) works. The browser fetches the image directly from the external URL via a standard `<img src="...">` tag at runtime. No proxy needed.
 
-New state:
-```text
-isRunningAll: boolean
-overallStatus: 'idle' | 'running' | 'success' | 'error'
-overallMessage: string
-currentStep: 1 | 2 | 3 | 4 | 5 | null
-```
+Trade-offs:
+- **Pros:** zero storage cost, no download step, faster generation flow.
+- **Cons:** if the service ever expires/rotates URLs, our `/output` page breaks for old jobs. Acceptable for now since these are short-lived creative reviews.
 
-Place a prominent button in the Connection Details section (just below the access token input) labeled **"Run All Steps Sequentially"**. Disabled when `isRunningAll` is true or any individual card is loading.
+For the large-image performance concern (UI layer, no schema impact):
+1. **Lazy-load** thumbnails with `loading="lazy"` and `decoding="async"`.
+2. **Skeleton/blur placeholder** shown until `onLoad` fires.
+3. **Thumbnail variant** — we'll add a `thumbnail_url` column so the grid loads small images and the lightbox loads full-res. If the service doesn't expose thumbnails, we fall back to the full URL.
+4. **Preload neighbors** in the lightbox so prev/next feels instant.
 
-**2. Sequential runner**
+If image load times are still unacceptable later, we can flip on bucket storage + on-the-fly resizing without changing the schema (just populate a `stored_image_url` later).
 
-Refactor the existing `runTest` so it returns the result instead of only writing to state. Add a new `runAll()` that:
+---
 
-```text
-1. validate() — same checks as today
-2. Reset all 5 card states to 'loading' visually pending
-3. For each step in [campaigns, adsets, ads, creatives, insights]:
-   a. setCurrentStep(n)
-   b. await runTest(fnName, setter)
-   c. If returned status === 'error', stop the loop, set overallStatus='error',
-      and leave the remaining cards in 'idle' (with a small "Skipped" badge)
-   d. Otherwise continue
-4. If all 5 succeed → overallStatus='success', overallMessage with totals summary
-```
+## Database schema (new tables)
 
-Between steps, wait ~500ms so the UI can update and Meta API doesn't get a thundering-herd burst.
+### `generation_jobs` — one row per "Generate" click
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `user_id` | uuid | RLS owner |
+| `ad_account_id` | uuid | nullable |
+| `goal` | text | sale-promo / product-highlight / etc. |
+| `promo_scope` | text | brand-wide / product-specific / null |
+| `product_input_method` | text | image / url / null |
+| `product_url` | text | nullable |
+| `product_image_url` | text | nullable |
+| `aspect_ratios` | text[] | e.g. {"1:1","9:16"} |
+| `promo_details` | jsonb | full PromoDetails object |
+| `service_request_payload` | jsonb | exact JSON sent to generation service |
+| `service_response_payload` | jsonb | raw response from service |
+| `status` | text | pending / generating / completed / failed |
+| `error_message` | text | nullable |
+| `created_at`, `updated_at` | timestamptz | |
 
-**3. Progress indicator**
+### `generated_creatives` — one row per output variant
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | |
+| `job_id` | uuid | references generation_jobs.id |
+| `user_id` | uuid | denormalized for RLS |
+| `variant_index` | int | order in the output |
+| `aspect_ratio` | text | "1:1", "9:16", etc. |
+| `image_url` | text | full-res URL from service |
+| `thumbnail_url` | text | nullable |
+| `headline` | text | nullable |
+| `primary_text` | text | nullable |
+| `description` | text | nullable |
+| `metadata` | jsonb | catch-all for service extras |
+| `created_at` | timestamptz | |
 
-Above the cards, when `isRunningAll === true`, render a thin progress strip:
-```text
-Step 2 of 5 — Running test-adsets...
-[████████░░░░░░░░░░░░] 40%
-```
+Both tables get RLS: `auth.uid() = user_id`.
 
-**4. "Skipped" state on cards**
+---
 
-Add a 5th visual status `skipped` (gray dashed border, gray dot, label "Skipped — previous step failed") so the user can see exactly where the chain broke.
+## Edge function: `generate-creatives` (stubbed)
 
-**5. Top-level summary banner**
+New `supabase/functions/generate-creatives/index.ts`:
+1. Validate JWT + parse the wizard payload (zod schema mirroring `CreateAdState`).
+2. Insert a `generation_jobs` row with `status='generating'` + full input payload.
+3. **Stub:** return N placeholder creatives (a few variants per aspect ratio) using picsum/placeholder URLs. Store the stub response in `service_response_payload`.
+4. Bulk-insert rows into `generated_creatives`.
+5. Update job to `status='completed'` and return `{ jobId, creatives }`.
 
-After `runAll` finishes, show a banner above the cards:
-- Green: "✅ All 5 steps completed successfully"
-- Red: "❌ Failed at Step N (test-creatives): {error message}"
+When the real service is ready, only step 3 changes — add `GENERATION_SERVICE_URL` + `GENERATION_SERVICE_API_KEY` secrets and replace the stub with a `fetch()` call.
 
-Includes a "Reset" button that clears all card states.
+---
 
-## What stays the same
+## Frontend wiring
 
-- Individual "Run Test" buttons on each card still work exactly as today
-- Edge function signatures unchanged (`{ adAccountId, accessToken }`)
-- Per-card result JSON, copy button, status dots — unchanged
-- No new dependencies, no new files, no DB changes
+### `CreateAdFlow.tsx` / `GeneratingStep.tsx`
+- Pass the assembled `CreateAdState` from `ReviewStep` → `GeneratingStep`.
+- On mount, `GeneratingStep` calls `supabase.functions.invoke('generate-creatives', { body: state })`.
+- Existing animated stages stay; final stage waits for the real response.
+- On success: navigate to `/output?jobId=<uuid>`. On failure: error state + retry.
 
-## Technical details
+### `OutputStep.tsx`
+- Read `jobId` from the URL query string.
+- Fetch `generated_creatives` for that job ordered by `variant_index`.
+- Replace `MOCK_CREATIVES` gradient grid with real `<img>` tags using lazy loading, skeleton placeholder, `thumbnail_url ?? image_url` in the grid, full `image_url` in the lightbox, and neighbor preloading.
+- **Remove the Edit feature entirely:** delete the pencil button on each card, the "Edit" button in the lightbox footer, the edit textarea panel, and all related state (`editingId`, `editText`, `handleEdit`, `submitEdit`).
+- Keep "Download" and "Regenerate All" buttons (Regenerate All can simply re-trigger generation with the same job inputs — happy to plan separately if you want it wired now).
+- Empty state if no `jobId` or no creatives: "No creatives yet" + button back to `/create-ad`.
 
-| Concern | Decision |
-|---|---|
-| Order | campaigns → adsets → ads → creatives → insights (matches existing UI order and dependency graph) |
-| Stop on error | Yes — `success: false` from the function, OR a thrown error, both halt the chain |
-| Inter-step delay | 500ms (cosmetic + light rate-limit guard) |
-| Insights date range | Whatever `test-insights` already uses (30 days, hardcoded in the function) — no change |
-| `dateRangeDays` for campaigns/adsets | Use the function defaults (90 days). Not exposed in this UI change. |
-| Concurrency | Strictly sequential — never parallel, since each step depends on the previous step's DB rows |
-| Disabled buttons | While `isRunningAll`, all individual "Run Test" buttons are disabled too |
+---
 
-## Validation
+## What ships in this change
 
-After the change:
-1. Open `/debug-sync`, paste your ad account ID + Meta access token
-2. Click "Run All Steps Sequentially"
-3. Watch the 5 cards turn yellow → green in order
-4. Inspect the final summary banner; expand individual cards for per-step JSON
-5. Force a failure (e.g., bad token) and confirm the chain stops with a red banner naming the failing step
+1. Migration creating `generation_jobs` + `generated_creatives` with RLS.
+2. New stubbed edge function `generate-creatives`.
+3. `GeneratingStep` calls the function and routes to `/output?jobId=...`.
+4. `OutputStep` fetches and renders real creatives with lazy loading + skeleton + preloaded neighbors.
+5. Edit creative UI fully removed from `OutputStep`.
+
+When the real generation service is ready: add the URL + API key as secrets and swap the stub block.
