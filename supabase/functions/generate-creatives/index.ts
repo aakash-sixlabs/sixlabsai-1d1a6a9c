@@ -145,6 +145,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 1a. Load brand kit for the selected ad account (if any)
+    let brandKit: BrandKit | null = null;
+    if (body.adAccountId) {
+      const { data: profile } = await supabase
+        .from("ad_account_profiles")
+        .select(
+          "brand_name, primary_color, secondary_color, accent_color, font_family, tone_of_voice, tagline, logo_url, product_categories, brand_kit_status",
+        )
+        .eq("ad_account_id", body.adAccountId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (profile && profile.brand_kit_status === "ready") {
+        brandKit = profile as BrandKit;
+      }
+    }
+
     // 1. Insert job row (status = generating)
     const { data: job, error: jobErr } = await supabase
       .from("generation_jobs")
@@ -158,7 +174,7 @@ Deno.serve(async (req) => {
         product_image_url: body.productImage || null,
         aspect_ratios: body.aspectRatios,
         promo_details: body.promoDetails ?? {},
-        service_request_payload: body,
+        service_request_payload: { ...body, brand_kit: brandKit },
         status: "generating",
       })
       .select()
@@ -174,7 +190,7 @@ Deno.serve(async (req) => {
     // 2. Call (stubbed) generation service
     let serviceResponse: { creatives: ReturnType<typeof stubGenerate>["creatives"] };
     try {
-      serviceResponse = stubGenerate(body);
+      serviceResponse = stubGenerate(body, brandKit);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await supabase
