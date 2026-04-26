@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
 import { DashboardBackground } from "@/components/wizard/DashboardBackground";
+import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +32,7 @@ interface AdAccount {
   timezone: string | null;
 }
 
-type Phase = "loading" | "select-account" | "pulling" | "complete";
+type Phase = "loading" | "select-account" | "brand-kit" | "pulling" | "complete";
 
 /* ─── Sync steps shown during data pull ─── */
 const PULL_STEPS = [
@@ -99,13 +100,12 @@ const OnboardingV2 = () => {
     init();
   }, []);
 
-  /* ── Start data pull ── */
-  const startPull = async () => {
+  /* ── Step 1: account selected → save default + show brand kit ── */
+  const handleAccountContinue = async () => {
     if (!selected) return;
     const account = accounts.find((a) => a.id === selected);
     if (!account) return;
 
-    // Save default ad account
     if (!isDevMode) {
       try {
         const {
@@ -128,6 +128,15 @@ const OnboardingV2 = () => {
       selectedMetaAccountId: account.account_id,
       dateRange: "90",
     });
+
+    setPhase("brand-kit");
+  };
+
+  /* ── Step 2: brand kit confirmed → start data pull ── */
+  const startPull = async () => {
+    if (!selected) return;
+    const account = accounts.find((a) => a.id === selected);
+    if (!account) return;
 
     setPhase("pulling");
     setSyncStarted(true);
@@ -268,13 +277,23 @@ const OnboardingV2 = () => {
               className="w-full gap-2"
               size="lg"
               disabled={!selected}
-              onClick={startPull}
+              onClick={handleAccountContinue}
             >
               Continue <ArrowRight className="w-4 h-4" />
             </Button>
           </motion.div>
         </DialogContent>
       </Dialog>
+
+      {/* Phase 1.5: Brand Kit */}
+      {phase === "brand-kit" && selected && (
+        <BrandKitStep
+          open
+          adAccountId={selected}
+          defaultBrandName={selectedAccountName}
+          onComplete={startPull}
+        />
+      )}
 
       {/* Phase 2: Pulling Data */}
       <Dialog open={phase === "pulling"} modal>

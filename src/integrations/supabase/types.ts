@@ -16,34 +16,73 @@ export type Database = {
     Tables: {
       ad_account_profiles: {
         Row: {
+          accent_color: string | null
           ad_account_id: string
+          brand_kit: Json | null
+          brand_kit_status: string | null
+          brand_kit_updated_at: string | null
+          brand_name: string | null
           confirmed: boolean
           created_at: string
           facebook_page_id: string | null
           facebook_page_name: string | null
+          font_family: string | null
           id: string
           industry: string | null
+          logo_url: string | null
+          primary_color: string | null
+          product_categories: string[] | null
+          secondary_color: string | null
+          tagline: string | null
+          tone_of_voice: string | null
           user_id: string
+          website_url: string | null
         }
         Insert: {
+          accent_color?: string | null
           ad_account_id: string
+          brand_kit?: Json | null
+          brand_kit_status?: string | null
+          brand_kit_updated_at?: string | null
+          brand_name?: string | null
           confirmed?: boolean
           created_at?: string
           facebook_page_id?: string | null
           facebook_page_name?: string | null
+          font_family?: string | null
           id?: string
           industry?: string | null
+          logo_url?: string | null
+          primary_color?: string | null
+          product_categories?: string[] | null
+          secondary_color?: string | null
+          tagline?: string | null
+          tone_of_voice?: string | null
           user_id: string
+          website_url?: string | null
         }
         Update: {
+          accent_color?: string | null
           ad_account_id?: string
+          brand_kit?: Json | null
+          brand_kit_status?: string | null
+          brand_kit_updated_at?: string | null
+          brand_name?: string | null
           confirmed?: boolean
           created_at?: string
           facebook_page_id?: string | null
           facebook_page_name?: string | null
+          font_family?: string | null
           id?: string
           industry?: string | null
+          logo_url?: string | null
+          primary_color?: string | null
+          product_categories?: string[] | null
+          secondary_color?: string | null
+          tagline?: string | null
+          tone_of_voice?: string | null
           user_id?: string
+          website_url?: string | null
         }
         Relationships: [
           {

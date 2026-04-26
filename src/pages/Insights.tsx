@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { isSuperAdmin } from "@/lib/superAdmin";
 import { InsightsStep } from "@/components/wizard/InsightsStep";
+import { BrandKitBanner } from "@/components/wizard/BrandKitBanner";
 import { Loader2 } from "lucide-react";
 
 const Insights = () => {
@@ -33,7 +34,12 @@ const Insights = () => {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   if (!authorized) return null;
-  return <InsightsStep />;
+  return (
+    <>
+      <BrandKitBanner />
+      <InsightsStep />
+    </>
+  );
 };
 
 export default Insights;

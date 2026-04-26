@@ -14,6 +14,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useWizard } from "@/context/WizardContext";
 import type { CreateAdState } from "../CreateAdFlow";
 
 interface GenerationStage {
@@ -45,6 +46,7 @@ interface GeneratingStepProps {
 
 export const GeneratingStep = ({ state }: GeneratingStepProps) => {
   const navigate = useNavigate();
+  const { state: wizardState } = useWizard();
   const [activeStage, setActiveStage] = useState(0);
   const [stageProgress, setStageProgress] = useState(0);
   const [completedStages, setCompletedStages] = useState<number[]>([]);
@@ -61,7 +63,7 @@ export const GeneratingStep = ({ state }: GeneratingStepProps) => {
 
     (async () => {
       const { data, error } = await supabase.functions.invoke("generate-creatives", {
-        body: state,
+        body: { ...state, adAccountId: wizardState.selectedAccount ?? null },
       });
       if (error) {
         setError(error.message ?? "Failed to generate creatives.");

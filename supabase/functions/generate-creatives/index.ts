@@ -32,9 +32,21 @@ interface CreateAdState {
   adAccountId?: string | null;
 }
 
+interface BrandKit {
+  brand_name?: string | null;
+  primary_color?: string | null;
+  secondary_color?: string | null;
+  accent_color?: string | null;
+  font_family?: string | null;
+  tone_of_voice?: string | null;
+  tagline?: string | null;
+  logo_url?: string | null;
+  product_categories?: string[] | null;
+}
+
 // ---- Stub generation service ----
 // Returns N placeholder creatives per aspect ratio. Swap with real fetch() call later.
-function stubGenerate(payload: CreateAdState) {
+function stubGenerate(payload: CreateAdState, brandKit: BrandKit | null) {
   const ratios = payload.aspectRatios?.length ? payload.aspectRatios : ["1:1"];
   const variantsPerRatio = 3;
 
@@ -51,6 +63,9 @@ function stubGenerate(payload: CreateAdState) {
         return { w: 1080, h: 1080 };
     }
   };
+
+  const brandLabel = brandKit?.brand_name ? `${brandKit.brand_name} · ` : "";
+  const tone = brandKit?.tone_of_voice ? ` (${brandKit.tone_of_voice})` : "";
 
   const creatives: Array<{
     variant_index: number;
@@ -73,10 +88,10 @@ function stubGenerate(payload: CreateAdState) {
         aspect_ratio: ratio,
         image_url: `https://picsum.photos/seed/${seed}/${w}/${h}`,
         thumbnail_url: `https://picsum.photos/seed/${seed}/${Math.round(w / 4)}/${Math.round(h / 4)}`,
-        headline: `Headline variant ${idx + 1}`,
-        primary_text: `Generated copy for ${payload.goal ?? "your ad"} (${ratio}).`,
+        headline: `${brandLabel}Headline variant ${idx + 1}`,
+        primary_text: `Generated copy for ${payload.goal ?? "your ad"} (${ratio})${tone}.`,
         description: "Stubbed generation result.",
-        metadata: { stub: true, ratio },
+        metadata: { stub: true, ratio, brandApplied: !!brandKit },
       });
       idx++;
     }
@@ -130,6 +145,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 1a. Load brand kit for the selected ad account (if any)
+    let brandKit: BrandKit | null = null;
+    if (body.adAccountId) {
+      const { data: profile } = await supabase
+        .from("ad_account_profiles")
+        .select(
+          "brand_name, primary_color, secondary_color, accent_color, font_family, tone_of_voice, tagline, logo_url, product_categories, brand_kit_status",
+        )
+        .eq("ad_account_id", body.adAccountId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (profile && profile.brand_kit_status === "ready") {
+        brandKit = profile as BrandKit;
+      }
+    }
+
     // 1. Insert job row (status = generating)
     const { data: job, error: jobErr } = await supabase
       .from("generation_jobs")
@@ -143,7 +174,7 @@ Deno.serve(async (req) => {
         product_image_url: body.productImage || null,
         aspect_ratios: body.aspectRatios,
         promo_details: body.promoDetails ?? {},
-        service_request_payload: body,
+        service_request_payload: { ...body, brand_kit: brandKit },
         status: "generating",
       })
       .select()
@@ -159,7 +190,7 @@ Deno.serve(async (req) => {
     // 2. Call (stubbed) generation service
     let serviceResponse: { creatives: ReturnType<typeof stubGenerate>["creatives"] };
     try {
-      serviceResponse = stubGenerate(body);
+      serviceResponse = stubGenerate(body, brandKit);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       await supabase

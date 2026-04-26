@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Globe, FileText, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { Building2, Globe, FileText, ArrowRight, Loader2, CheckCircle2, Sparkles, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -55,6 +55,11 @@ export const AdAccountProfileDialog = ({
   const [selectedPageName, setSelectedPageName] = useState("");
   const [pages, setPages] = useState<Page[]>([]);
   const [saving, setSaving] = useState(false);
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [brandKitStatus, setBrandKitStatus] = useState<string>("pending");
+  const [primaryColor, setPrimaryColor] = useState("");
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [buildingKit, setBuildingKit] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -80,7 +85,48 @@ export const AdAccountProfileDialog = ({
         if (match) setIndustry(match);
       }
     }
-  }, [open]);
+
+    // Load existing brand kit fields
+    (async () => {
+      const { data } = await supabase
+        .from("ad_account_profiles")
+        .select("website_url, brand_kit_status, primary_color, logo_url")
+        .eq("ad_account_id", accountId)
+        .maybeSingle();
+      if (data) {
+        setWebsiteUrl(data.website_url ?? "");
+        setBrandKitStatus(data.brand_kit_status ?? "pending");
+        setPrimaryColor(data.primary_color ?? "");
+        setLogoUrl(data.logo_url ?? null);
+      }
+    })();
+  }, [open, accountId]);
+
+  const handleBuildKit = async () => {
+    if (!websiteUrl.trim()) {
+      toast.error("Enter your brand website first");
+      return;
+    }
+    setBuildingKit(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("build-brand-kit", {
+        body: { adAccountId: accountId, websiteUrl: websiteUrl.trim(), brandName: accountName },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const kit = data?.kit;
+      if (kit) {
+        setPrimaryColor(kit.primary_color ?? "");
+        setLogoUrl(kit.logo_url ?? null);
+        setBrandKitStatus("ready");
+        toast.success("Brand kit updated!");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to build brand kit");
+    } finally {
+      setBuildingKit(false);
+    }
+  };
 
   const handlePageChange = (pageId: string) => {
     setSelectedPageId(pageId);
@@ -210,6 +256,56 @@ export const AdAccountProfileDialog = ({
               />
             </div>
           )}
+
+          {/* Brand Kit */}
+          <div className="space-y-2 pt-1 border-t border-border">
+            <Label className="flex items-center gap-1.5 text-sm pt-3">
+              <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+              Brand kit
+              {brandKitStatus === "ready" && (
+                <span className="ml-auto text-[10px] uppercase tracking-wide text-emerald-600">Ready</span>
+              )}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="yourbrand.com"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleBuildKit}
+                disabled={buildingKit || !websiteUrl.trim()}
+                className="gap-1.5 shrink-0"
+              >
+                {buildingKit ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" />
+                )}
+                {brandKitStatus === "ready" ? "Rebuild" : "Build"}
+              </Button>
+            </div>
+            {brandKitStatus === "ready" && (
+              <div className="flex items-center gap-2 pt-1">
+                {logoUrl && (
+                  <img src={logoUrl} alt="Brand logo" className="w-6 h-6 rounded object-contain bg-muted" />
+                )}
+                {primaryColor && (
+                  <div
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ background: primaryColor }}
+                    title={primaryColor}
+                  />
+                )}
+                <span className="text-xs text-muted-foreground">
+                  Used to keep generated creatives on-brand.
+                </span>
+              </div>
+            )}
+          </div>
 
           <div className="flex gap-3 pt-2">
             <Button
