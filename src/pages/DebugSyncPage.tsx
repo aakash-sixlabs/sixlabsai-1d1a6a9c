@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '@/integrations/supabase/client'
+import BrandKitTestCard from '@/components/debug/BrandKitTestCard'
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'skipped'
 interface CardState {
@@ -255,6 +256,8 @@ export default function DebugSyncPage() {
             Test each sync segment independently, or run the full chain. Order: Campaigns → Ad Sets → Ads → Creatives → Insights
           </p>
         </header>
+
+        <BrandKitTestCard />
 
         <section className="bg-white border border-gray-200 rounded-lg p-5 space-y-4">
           <h2 className="font-semibold text-gray-900">Connection Details</h2>
