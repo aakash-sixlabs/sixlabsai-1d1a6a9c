@@ -392,3 +392,11 @@ function BrandKitTestCardInner() {
     </section>
   )
 }
+
+export default function BrandKitTestCard() {
+  return (
+    <BrandKitErrorBoundary>
+      <BrandKitTestCardInner />
+    </BrandKitErrorBoundary>
+  )
+}
