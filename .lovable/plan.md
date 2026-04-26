@@ -1,95 +1,130 @@
-
 ## Goal
 
-Capture the brand's website URL **once per ad account** right after login, automatically derive a **brand kit** (logo, colors, fonts, tone, tagline, product categories), persist it, and pass it into every `generate-creatives` call so outputs stay on-brand.
+Build a real (non-stub) brand kit extractor that takes a single input — a website URL — scrapes the site, runs AI inference, and returns a complete brand kit. Add a dedicated test panel on `/debug-sync` to try it and visually render the result.
 
-## Why not capture it on `/login`
+This is a **standalone test tool**: it does NOT touch `ad_account_profiles`, does NOT require an ad account, and does NOT modify the existing `build-brand-kit` function. It's a sandbox to validate the real extraction pipeline before wiring it into onboarding.
 
-`/login` is a Meta OAuth handoff — there's no form there, and we don't yet know which ad account the user will work with. The natural collection point is **`OnboardingV2`**, immediately after the user picks their default ad account, and again as an editable field in the existing **`AdAccountProfileDialog`** so returning users / additional accounts can fill it in.
+## Prerequisite: connect Firecrawl
 
-## Where the brand kit lives
+The extraction relies on Firecrawl's `branding` + `markdown` formats. We'll prompt the user to connect the Firecrawl connector. `LOVABLE_API_KEY` is already configured for the AI inference step.
 
-Extend the existing `ad_account_profiles` table (already keyed by `user_id` + `ad_account_id`, already RLS'd) rather than introducing a new table. New columns:
+## New edge function: `test-brand-kit`
 
-- `website_url text`
-- `brand_name text`
-- `logo_url text`
-- `primary_color text`, `secondary_color text`, `accent_color text` (hex)
-- `font_family text`
-- `tone_of_voice text` (e.g. "playful", "premium", "technical")
-- `tagline text`
-- `product_categories text[]`
-- `brand_kit jsonb` — full raw payload from the scraper (extra colors, all fonts, social links, og:image variants, screenshots, etc.) for future use
-- `brand_kit_status text` — `pending | scraping | ready | failed`
-- `brand_kit_updated_at timestamptz`
+**Path:** `supabase/functions/test-brand-kit/index.ts`
+**Auth:** JWT validated (matches existing pattern), but writes nothing to the database — pure compute + return.
 
-`confirmed` (already on the table) gates whether the kit has been reviewed by the user.
-
-## Flow
-
-```text
-Meta OAuth (/login)
-        ↓
-OnboardingV2  ── pick default ad account ──┐
-                                            ↓
-                          NEW: "Tell us about your brand" step
-                          - prefill website from ad_account / Facebook page if available
-                          - input: website URL (required), brand name (prefilled from account)
-                          - on submit → invoke build-brand-kit edge function
-                                            ↓
-                          Show live preview as kit returns
-                          (logo, palette swatches, fonts, tone, tagline)
-                          User can edit any field, then "Confirm brand kit"
-                                            ↓
-                          /home
+**Input:**
+```json
+{ "websiteUrl": "https://nike.com" }
 ```
 
-For returning users with an account that has no kit yet, surface a soft banner on `/home` and inside `AdAccountProfileDialog` to complete it.
+**Pipeline:**
 
-## New edge function: `build-brand-kit`
+```text
+websiteUrl
+   │
+   ├─► 1. Normalize URL (add https://, strip path if needed)
+   │
+   ├─► 2. Firecrawl scrape (single call, multi-format)
+   │      formats: ['markdown', 'branding', 'screenshot', 'links']
+   │      onlyMainContent: true
+   │      Returns: logo, real color palette, fonts, typography,
+   │               page copy (markdown), hero screenshot, internal links
+   │
+   ├─► 3. Lovable AI inference (Gemini 2.5 Flash)
+   │      Input: page markdown (truncated to ~8k chars) + metadata
+   │      Output JSON schema:
+   │        - brand_name
+   │        - tagline
+   │        - tone_of_voice (3-5 adjectives)
+   │        - product_categories (array)
+   │        - target_audience (one line)
+   │        - value_propositions (3 bullet points)
+   │
+   └─► 4. Merge + return unified brand kit
+```
 
-Stubbed first, real later — same pattern as `generate-creatives`.
+**Response shape:**
+```json
+{
+  "brand_name": "Nike",
+  "website_url": "https://nike.com",
+  "logo_url": "https://...",
+  "favicon_url": "https://...",
+  "screenshot_url": "data:image/png;base64,..." or hosted URL,
+  "colors": {
+    "primary": "#111111",
+    "secondary": "#FFFFFF",
+    "accent": "#FA5400",
+    "background": "#FFFFFF",
+    "text_primary": "#111111",
+    "text_secondary": "#757575"
+  },
+  "fonts": {
+    "primary": "Helvetica Neue",
+    "heading": "Futura",
+    "all": ["Helvetica Neue", "Futura", "Arial"]
+  },
+  "tone_of_voice": "bold, motivational, athletic",
+  "tagline": "Just Do It",
+  "product_categories": ["footwear", "apparel", "equipment"],
+  "target_audience": "Athletes and active lifestyle consumers worldwide",
+  "value_propositions": ["Performance innovation", "Iconic design", "Trusted by pros"],
+  "raw": {
+    "firecrawl_branding": { ... },
+    "firecrawl_metadata": { ... },
+    "ai_inference_model": "google/gemini-2.5-flash",
+    "extracted_at": "2026-04-26T..."
+  }
+}
+```
 
-Input: `{ adAccountId, websiteUrl }`
-Steps:
-1. Auth via JWT → `userId`.
-2. Upsert `ad_account_profiles` row with `brand_kit_status = 'scraping'` and `website_url`.
-3. **Stub:** return mock palette/fonts/logo (use favicon + a deterministic palette from the domain).
-   **Real later:** fetch the page server-side, parse `<meta>` / og tags / theme-color, extract dominant colors from hero image + logo, pull Google Fonts from CSS, run Lovable AI (Gemini 2.5 Flash) on the page text to infer tone/tagline/categories.
-4. Update the row with derived fields and `brand_kit_status = 'ready'`.
-5. Return the kit to the client.
+If any step fails partially (e.g. AI inference fails but Firecrawl succeeded), return the partial kit with a `warnings` array — the test panel should still show what we got.
 
-Return shape mirrors the columns above so the UI can render immediately.
+## UI: new card on `/debug-sync`
 
-## Wiring the kit into generations
+Add a **"Brand Kit Extraction"** section above the existing Meta sync cards (or in a new tab — TBD when implementing; one section above is simpler). It contains:
 
-Extend `generate-creatives`:
-- Accept `adAccountId` (the wizard already tracks `selectedAccount`; thread it through `CreateAdState` → request body — currently dropped).
-- On entry, load the matching `ad_account_profiles` row.
-- Add a `brand_kit` block to `service_request_payload` (so it's auditable in `generation_jobs`) and forward it to the generation service stub.
-- The stub starts using `brand_name`, `primary_color`, `tone_of_voice` in mock copy so we can visually verify wiring before real generation goes live.
+**Inputs:**
+- Single text input: "Brand website URL" (e.g. `nike.com`)
+- "Extract Brand Kit" button
 
-## UI changes
+**Output panel** (renders below the input once results arrive):
+1. **Header strip:** logo, brand name, tagline, website link
+2. **Color palette:** swatches for each color with hex labels (clickable to copy)
+3. **Typography:** primary/heading font names rendered in their actual font (with Google Fonts fallback)
+4. **Voice & Audience:** tone_of_voice chips, target audience paragraph
+5. **Product categories:** chips
+6. **Value propositions:** bulleted list
+7. **Screenshot preview:** hero image of the scraped site (collapsed by default)
+8. **Raw JSON:** collapsible `<details>` with copy-to-clipboard (matches the existing TestCard pattern)
 
-- **`OnboardingV2`** — add a new `"brand-kit"` phase between `select-account` and `pulling`. New component `BrandKitStep.tsx` handles URL entry, loading state, editable preview, confirm.
-- **`AdAccountProfileDialog`** — add Brand Kit section (website URL, editable kit fields, "Rebuild from website" button).
-- **`/home`** — non-blocking banner: "Add your brand kit to improve generations" linking to the dialog, shown when the active ad account's `brand_kit_status != 'ready'` or `confirmed = false`.
-- **`CreateAdFlow`** — pass `selectedAccount` (the ad account UUID) into the `generate-creatives` invoke body.
+Status states reuse the existing pattern: idle / loading (with steps: "Scraping site..." → "Inferring brand voice..." → "Done") / success / error.
 
-## Migration
+## Files to create / edit
 
-Single migration adding the new columns (all nullable, safe defaults) to `ad_account_profiles`. No backfill needed — `brand_kit_status` defaults to `pending` for existing rows, banner prompts users to fill it in.
+**Create:**
+- `supabase/functions/test-brand-kit/index.ts` — new edge function
+- `src/components/debug/BrandKitTestCard.tsx` — encapsulates the input + rich output renderer
 
-## Out of scope (call out for later)
+**Edit:**
+- `src/pages/DebugSyncPage.tsx` — mount `BrandKitTestCard` at the top of the page
 
-- Real scraping/AI extraction (stubbed for now).
-- Storing logos in the `ad-creatives` bucket vs. hot-linking from the source site — stub uses the source URL; can mirror to storage when we productionize.
-- Multiple brand kits per ad account / kit versioning.
-- Using the kit to constrain real image generation (depends on the generation service contract).
+**No DB migration.** No changes to `build-brand-kit`, `ad_account_profiles`, or the onboarding flow.
 
 ## Technical notes
 
-- Reuse the existing `auth.getUser(token)` pattern from `generate-creatives` for the new function.
-- RLS on `ad_account_profiles` already enforces per-user access; no new policies needed.
-- Keep `brand_kit jsonb` as the source of truth for anything we don't promote to a typed column, mirroring how `generation_jobs` keeps `service_request_payload`.
-- Add `aspect_account_id` plumbing in `CreateAdState` (currently `selectedAccount` exists in `WizardContext` but isn't forwarded into the create-ad request body).
+- **Firecrawl call:** server-side only; reads `FIRECRAWL_API_KEY` from env. Use REST `POST https://api.firecrawl.dev/v2/scrape` with `Authorization: Bearer <key>`.
+- **AI call:** `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`, model `google/gemini-2.5-flash`, `response_format: { type: "json_object" }`, system prompt instructing strict JSON shape.
+- **Color fallback:** if Firecrawl `branding` format returns empty (some sites have no theme metadata), fall back to a screenshot-based extraction prompt to Gemini vision (`gemini-2.5-flash` accepts images) asking for a 5-color palette. Keep this as a clearly-labeled fallback in the response.
+- **Logo handling:** hot-link from the source URL in the test panel (no bucket mirroring — this is a test tool).
+- **CORS:** standard headers, OPTIONS handler, errors include CORS headers.
+- **Validation:** zod schema on `websiteUrl` (string, must parse as URL after normalization).
+- **Timeout safety:** Firecrawl scrape with `timeout: 30000`; AI call with reasonable max_tokens (~800). Total well under Supabase's 60s limit.
+
+## Out of scope
+
+- Persisting results to `ad_account_profiles` (this is a sandbox).
+- Replacing the stub in `build-brand-kit` — that's a follow-up once we're happy with the extraction quality here.
+- Logo/screenshot mirroring to storage.
+- Auth on the debug page itself (it stays super-admin gated as today).
