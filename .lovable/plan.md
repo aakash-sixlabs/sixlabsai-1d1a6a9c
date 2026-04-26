@@ -1,107 +1,95 @@
+
 ## Goal
 
-Replace the mock creatives on `/output` with real generated creatives, and persist every input + output of the generation flow into the database. The external generation service is stubbed for now (returns placeholder image URLs) so we can wire the full pipeline end-to-end and swap in the real endpoint later.
+Capture the brand's website URL **once per ad account** right after login, automatically derive a **brand kit** (logo, colors, fonts, tone, tagline, product categories), persist it, and pass it into every `generate-creatives` call so outputs stay on-brand.
 
-The "Edit creative" feature is dropped from both the schema and the UI.
+## Why not capture it on `/login`
 
----
+`/login` is a Meta OAuth handoff — there's no form there, and we don't yet know which ad account the user will work with. The natural collection point is **`OnboardingV2`**, immediately after the user picks their default ad account, and again as an editable field in the existing **`AdAccountProfileDialog`** so returning users / additional accounts can fill it in.
 
-## On your storage question
+## Where the brand kit lives
 
-Yes — option 1 (storing the URLs as-is) works. The browser fetches the image directly from the external URL via a standard `<img src="...">` tag at runtime. No proxy needed.
+Extend the existing `ad_account_profiles` table (already keyed by `user_id` + `ad_account_id`, already RLS'd) rather than introducing a new table. New columns:
 
-Trade-offs:
-- **Pros:** zero storage cost, no download step, faster generation flow.
-- **Cons:** if the service ever expires/rotates URLs, our `/output` page breaks for old jobs. Acceptable for now since these are short-lived creative reviews.
+- `website_url text`
+- `brand_name text`
+- `logo_url text`
+- `primary_color text`, `secondary_color text`, `accent_color text` (hex)
+- `font_family text`
+- `tone_of_voice text` (e.g. "playful", "premium", "technical")
+- `tagline text`
+- `product_categories text[]`
+- `brand_kit jsonb` — full raw payload from the scraper (extra colors, all fonts, social links, og:image variants, screenshots, etc.) for future use
+- `brand_kit_status text` — `pending | scraping | ready | failed`
+- `brand_kit_updated_at timestamptz`
 
-For the large-image performance concern (UI layer, no schema impact):
-1. **Lazy-load** thumbnails with `loading="lazy"` and `decoding="async"`.
-2. **Skeleton/blur placeholder** shown until `onLoad` fires.
-3. **Thumbnail variant** — we'll add a `thumbnail_url` column so the grid loads small images and the lightbox loads full-res. If the service doesn't expose thumbnails, we fall back to the full URL.
-4. **Preload neighbors** in the lightbox so prev/next feels instant.
+`confirmed` (already on the table) gates whether the kit has been reviewed by the user.
 
-If image load times are still unacceptable later, we can flip on bucket storage + on-the-fly resizing without changing the schema (just populate a `stored_image_url` later).
+## Flow
 
----
+```text
+Meta OAuth (/login)
+        ↓
+OnboardingV2  ── pick default ad account ──┐
+                                            ↓
+                          NEW: "Tell us about your brand" step
+                          - prefill website from ad_account / Facebook page if available
+                          - input: website URL (required), brand name (prefilled from account)
+                          - on submit → invoke build-brand-kit edge function
+                                            ↓
+                          Show live preview as kit returns
+                          (logo, palette swatches, fonts, tone, tagline)
+                          User can edit any field, then "Confirm brand kit"
+                                            ↓
+                          /home
+```
 
-## Database schema (new tables)
+For returning users with an account that has no kit yet, surface a soft banner on `/home` and inside `AdAccountProfileDialog` to complete it.
 
-### `generation_jobs` — one row per "Generate" click
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid PK | |
-| `user_id` | uuid | RLS owner |
-| `ad_account_id` | uuid | nullable |
-| `goal` | text | sale-promo / product-highlight / etc. |
-| `promo_scope` | text | brand-wide / product-specific / null |
-| `product_input_method` | text | image / url / null |
-| `product_url` | text | nullable |
-| `product_image_url` | text | nullable |
-| `aspect_ratios` | text[] | e.g. {"1:1","9:16"} |
-| `promo_details` | jsonb | full PromoDetails object |
-| `service_request_payload` | jsonb | exact JSON sent to generation service |
-| `service_response_payload` | jsonb | raw response from service |
-| `status` | text | pending / generating / completed / failed |
-| `error_message` | text | nullable |
-| `created_at`, `updated_at` | timestamptz | |
+## New edge function: `build-brand-kit`
 
-### `generated_creatives` — one row per output variant
-| Column | Type | Notes |
-|---|---|---|
-| `id` | uuid PK | |
-| `job_id` | uuid | references generation_jobs.id |
-| `user_id` | uuid | denormalized for RLS |
-| `variant_index` | int | order in the output |
-| `aspect_ratio` | text | "1:1", "9:16", etc. |
-| `image_url` | text | full-res URL from service |
-| `thumbnail_url` | text | nullable |
-| `headline` | text | nullable |
-| `primary_text` | text | nullable |
-| `description` | text | nullable |
-| `metadata` | jsonb | catch-all for service extras |
-| `created_at` | timestamptz | |
+Stubbed first, real later — same pattern as `generate-creatives`.
 
-Both tables get RLS: `auth.uid() = user_id`.
+Input: `{ adAccountId, websiteUrl }`
+Steps:
+1. Auth via JWT → `userId`.
+2. Upsert `ad_account_profiles` row with `brand_kit_status = 'scraping'` and `website_url`.
+3. **Stub:** return mock palette/fonts/logo (use favicon + a deterministic palette from the domain).
+   **Real later:** fetch the page server-side, parse `<meta>` / og tags / theme-color, extract dominant colors from hero image + logo, pull Google Fonts from CSS, run Lovable AI (Gemini 2.5 Flash) on the page text to infer tone/tagline/categories.
+4. Update the row with derived fields and `brand_kit_status = 'ready'`.
+5. Return the kit to the client.
 
----
+Return shape mirrors the columns above so the UI can render immediately.
 
-## Edge function: `generate-creatives` (stubbed)
+## Wiring the kit into generations
 
-New `supabase/functions/generate-creatives/index.ts`:
-1. Validate JWT + parse the wizard payload (zod schema mirroring `CreateAdState`).
-2. Insert a `generation_jobs` row with `status='generating'` + full input payload.
-3. **Stub:** return N placeholder creatives (a few variants per aspect ratio) using picsum/placeholder URLs. Store the stub response in `service_response_payload`.
-4. Bulk-insert rows into `generated_creatives`.
-5. Update job to `status='completed'` and return `{ jobId, creatives }`.
+Extend `generate-creatives`:
+- Accept `adAccountId` (the wizard already tracks `selectedAccount`; thread it through `CreateAdState` → request body — currently dropped).
+- On entry, load the matching `ad_account_profiles` row.
+- Add a `brand_kit` block to `service_request_payload` (so it's auditable in `generation_jobs`) and forward it to the generation service stub.
+- The stub starts using `brand_name`, `primary_color`, `tone_of_voice` in mock copy so we can visually verify wiring before real generation goes live.
 
-When the real service is ready, only step 3 changes — add `GENERATION_SERVICE_URL` + `GENERATION_SERVICE_API_KEY` secrets and replace the stub with a `fetch()` call.
+## UI changes
 
----
+- **`OnboardingV2`** — add a new `"brand-kit"` phase between `select-account` and `pulling`. New component `BrandKitStep.tsx` handles URL entry, loading state, editable preview, confirm.
+- **`AdAccountProfileDialog`** — add Brand Kit section (website URL, editable kit fields, "Rebuild from website" button).
+- **`/home`** — non-blocking banner: "Add your brand kit to improve generations" linking to the dialog, shown when the active ad account's `brand_kit_status != 'ready'` or `confirmed = false`.
+- **`CreateAdFlow`** — pass `selectedAccount` (the ad account UUID) into the `generate-creatives` invoke body.
 
-## Frontend wiring
+## Migration
 
-### `CreateAdFlow.tsx` / `GeneratingStep.tsx`
-- Pass the assembled `CreateAdState` from `ReviewStep` → `GeneratingStep`.
-- On mount, `GeneratingStep` calls `supabase.functions.invoke('generate-creatives', { body: state })`.
-- Existing animated stages stay; final stage waits for the real response.
-- On success: navigate to `/output?jobId=<uuid>`. On failure: error state + retry.
+Single migration adding the new columns (all nullable, safe defaults) to `ad_account_profiles`. No backfill needed — `brand_kit_status` defaults to `pending` for existing rows, banner prompts users to fill it in.
 
-### `OutputStep.tsx`
-- Read `jobId` from the URL query string.
-- Fetch `generated_creatives` for that job ordered by `variant_index`.
-- Replace `MOCK_CREATIVES` gradient grid with real `<img>` tags using lazy loading, skeleton placeholder, `thumbnail_url ?? image_url` in the grid, full `image_url` in the lightbox, and neighbor preloading.
-- **Remove the Edit feature entirely:** delete the pencil button on each card, the "Edit" button in the lightbox footer, the edit textarea panel, and all related state (`editingId`, `editText`, `handleEdit`, `submitEdit`).
-- Keep "Download" and "Regenerate All" buttons (Regenerate All can simply re-trigger generation with the same job inputs — happy to plan separately if you want it wired now).
-- Empty state if no `jobId` or no creatives: "No creatives yet" + button back to `/create-ad`.
+## Out of scope (call out for later)
 
----
+- Real scraping/AI extraction (stubbed for now).
+- Storing logos in the `ad-creatives` bucket vs. hot-linking from the source site — stub uses the source URL; can mirror to storage when we productionize.
+- Multiple brand kits per ad account / kit versioning.
+- Using the kit to constrain real image generation (depends on the generation service contract).
 
-## What ships in this change
+## Technical notes
 
-1. Migration creating `generation_jobs` + `generated_creatives` with RLS.
-2. New stubbed edge function `generate-creatives`.
-3. `GeneratingStep` calls the function and routes to `/output?jobId=...`.
-4. `OutputStep` fetches and renders real creatives with lazy loading + skeleton + preloaded neighbors.
-5. Edit creative UI fully removed from `OutputStep`.
-
-When the real generation service is ready: add the URL + API key as secrets and swap the stub block.
+- Reuse the existing `auth.getUser(token)` pattern from `generate-creatives` for the new function.
+- RLS on `ad_account_profiles` already enforces per-user access; no new policies needed.
+- Keep `brand_kit jsonb` as the source of truth for anything we don't promote to a typed column, mirroring how `generation_jobs` keeps `service_request_payload`.
+- Add `aspect_account_id` plumbing in `CreateAdState` (currently `selectedAccount` exists in `WizardContext` but isn't forwarded into the create-ad request body).
