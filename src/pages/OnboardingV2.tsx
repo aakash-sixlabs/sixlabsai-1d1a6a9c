@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
 import { DashboardBackground } from "@/components/wizard/DashboardBackground";
+import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import {
   Dialog,
   DialogContent,
@@ -31,7 +32,7 @@ interface AdAccount {
   timezone: string | null;
 }
 
-type Phase = "loading" | "select-account" | "pulling" | "complete";
+type Phase = "loading" | "select-account" | "brand-kit" | "pulling" | "complete";
 
 /* ─── Sync steps shown during data pull ─── */
 const PULL_STEPS = [
