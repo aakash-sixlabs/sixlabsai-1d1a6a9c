@@ -208,7 +208,35 @@ function BrandKitTestCardInner() {
               if (currentEvent === 'log') {
                 appendLog(parsed as LogEntry)
               } else if (currentEvent === 'result') {
-                setKit(parsed as BrandKit)
+                // Defensive normalization — never trust shape
+                const safeKit: BrandKit = {
+                  brand_name: parsed?.brand_name ?? null,
+                  tagline: parsed?.tagline ?? null,
+                  website_url: parsed?.website_url ?? '',
+                  logo_url: parsed?.logo_url ?? null,
+                  favicon_url: parsed?.favicon_url ?? null,
+                  screenshot_url: parsed?.screenshot_url ?? null,
+                  colors: {
+                    primary: parsed?.colors?.primary ?? null,
+                    secondary: parsed?.colors?.secondary ?? null,
+                    accent: parsed?.colors?.accent ?? null,
+                    background: parsed?.colors?.background ?? null,
+                    text_primary: parsed?.colors?.text_primary ?? null,
+                    text_secondary: parsed?.colors?.text_secondary ?? null,
+                  },
+                  fonts: {
+                    primary: parsed?.fonts?.primary ?? null,
+                    heading: parsed?.fonts?.heading ?? null,
+                    all: Array.isArray(parsed?.fonts?.all) ? parsed.fonts.all : [],
+                  },
+                  tone_of_voice: parsed?.tone_of_voice ?? null,
+                  product_categories: Array.isArray(parsed?.product_categories) ? parsed.product_categories : [],
+                  target_audience: parsed?.target_audience ?? null,
+                  value_propositions: Array.isArray(parsed?.value_propositions) ? parsed.value_propositions : [],
+                  raw: parsed?.raw ?? {},
+                  warnings: Array.isArray(parsed?.warnings) ? parsed.warnings : [],
+                }
+                setKit(safeKit)
                 setStatus('success')
                 done = true
               } else if (currentEvent === 'error') {
