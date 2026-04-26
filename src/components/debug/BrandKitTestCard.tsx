@@ -1,6 +1,33 @@
-import { useRef, useState } from 'react'
+import { Component, ReactNode, useRef, useState } from 'react'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
+
+class BrandKitErrorBoundary extends Component<{ children: ReactNode }, { error: Error | null }> {
+  state = { error: null as Error | null }
+  static getDerivedStateFromError(error: Error) { return { error } }
+  componentDidCatch(error: Error, info: any) {
+    console.error('[BrandKitTestCard] render error:', error, info)
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <section className="bg-white border-2 border-red-300 rounded-lg p-5">
+          <h2 className="font-semibold text-red-900">Brand Kit card crashed</h2>
+          <pre className="mt-2 text-xs text-red-800 bg-red-50 p-3 rounded overflow-auto max-h-60">
+            {this.state.error.message}
+            {'\n\n'}
+            {this.state.error.stack}
+          </pre>
+          <button
+            onClick={() => this.setState({ error: null })}
+            className="mt-3 bg-red-600 text-white text-sm rounded px-3 py-1.5"
+          >Reset</button>
+        </section>
+      )
+    }
+    return this.props.children
+  }
+}
 
 interface LogEntry {
   ts: string
