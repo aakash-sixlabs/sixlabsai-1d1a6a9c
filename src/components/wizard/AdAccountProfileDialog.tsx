@@ -257,6 +257,56 @@ export const AdAccountProfileDialog = ({
             </div>
           )}
 
+          {/* Brand Kit */}
+          <div className="space-y-2 pt-1 border-t border-border">
+            <Label className="flex items-center gap-1.5 text-sm pt-3">
+              <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+              Brand kit
+              {brandKitStatus === "ready" && (
+                <span className="ml-auto text-[10px] uppercase tracking-wide text-emerald-600">Ready</span>
+              )}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Input
+                value={websiteUrl}
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="yourbrand.com"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleBuildKit}
+                disabled={buildingKit || !websiteUrl.trim()}
+                className="gap-1.5 shrink-0"
+              >
+                {buildingKit ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="w-3.5 h-3.5" />
+                )}
+                {brandKitStatus === "ready" ? "Rebuild" : "Build"}
+              </Button>
+            </div>
+            {brandKitStatus === "ready" && (
+              <div className="flex items-center gap-2 pt-1">
+                {logoUrl && (
+                  <img src={logoUrl} alt="Brand logo" className="w-6 h-6 rounded object-contain bg-muted" />
+                )}
+                {primaryColor && (
+                  <div
+                    className="w-6 h-6 rounded border border-border"
+                    style={{ background: primaryColor }}
+                    title={primaryColor}
+                  />
+                )}
+                <span className="text-xs text-muted-foreground">
+                  Used to keep generated creatives on-brand.
+                </span>
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3 pt-2">
             <Button
               variant="outline"
