@@ -125,7 +125,7 @@ function LogLine({ entry }: { entry: LogEntry }) {
   )
 }
 
-export default function BrandKitTestCard() {
+function BrandKitTestCardInner() {
   const [url, setUrl] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string>('')
