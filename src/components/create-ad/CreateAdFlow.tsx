@@ -115,7 +115,7 @@ export const CreateAdFlow = () => {
   const PHASES = ["Goal", "Details", "Review"];
 
   if (isGenerating) {
-    return <GeneratingStep />;
+    return <GeneratingStep state={state} />;
   }
 
   const progressIndicator = (
