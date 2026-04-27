@@ -722,7 +722,7 @@ export const BrandKitStep = ({
                   ) : (
                     <ArrowRight className="w-4 h-4" />
                   )}
-                  {saving ? "Saving…" : "Confirm brand kit"}
+                  {saving ? (uploadingGuidelines ? "Uploading…" : "Saving…") : "Confirm brand kit"}
                 </Button>
               </div>
             </motion.div>
