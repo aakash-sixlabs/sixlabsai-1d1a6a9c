@@ -205,6 +205,9 @@ export const BrandKitStep = ({
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [guidelinesFile, setGuidelinesFile] = useState<File | null>(null);
+  const [uploadingGuidelines, setUploadingGuidelines] = useState(false);
+  const guidelinesInputRef = useRef<HTMLInputElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
