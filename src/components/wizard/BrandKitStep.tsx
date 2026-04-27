@@ -190,6 +190,38 @@ function friendlyLog(message: string): string {
   return message.replace(/^[▶→✓✅⚠✗]\s*/, "");
 }
 
+/* ── Font display: loads Google Font and renders name in that face ── */
+const loadedFonts = new Set<string>();
+function loadGoogleFont(family: string) {
+  if (!family) return;
+  const key = family.trim();
+  if (!key || loadedFonts.has(key)) return;
+  loadedFonts.add(key);
+  const id = `gf-${key.replace(/\s+/g, "-").toLowerCase()}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(
+    key,
+  )}:wght@400;600&display=swap`;
+  document.head.appendChild(link);
+}
+
+const FontDisplay = ({ name }: { name: string }) => {
+  useEffect(() => {
+    loadGoogleFont(name);
+  }, [name]);
+  const display = name?.trim() || "—";
+  return (
+    <div className="h-10 px-3 flex items-center rounded-md border border-input bg-background text-sm">
+      <span style={{ fontFamily: `"${display}", system-ui, sans-serif` }} className="truncate">
+        {display}
+      </span>
+    </div>
+  );
+};
+
 /* ── Main component ─────────────────────────────────────────── */
 export const BrandKitStep = ({
   open,
@@ -604,20 +636,14 @@ export const BrandKitStep = ({
                     <TypeIcon className="w-3.5 h-3.5 text-muted-foreground" />
                     Heading font
                   </Label>
-                  <Input
-                    value={edits.heading_font}
-                    onChange={(e) => updateField("heading_font", e.target.value)}
-                  />
+                  <FontDisplay name={edits.heading_font} />
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1.5 text-sm">
                     <TypeIcon className="w-3.5 h-3.5 text-muted-foreground" />
                     Body font
                   </Label>
-                  <Input
-                    value={edits.body_font}
-                    onChange={(e) => updateField("body_font", e.target.value)}
-                  />
+                  <FontDisplay name={edits.body_font} />
                 </div>
               </div>
 
