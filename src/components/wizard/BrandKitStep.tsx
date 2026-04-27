@@ -631,6 +631,71 @@ export const BrandKitStep = ({
                 />
               </div>
 
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5 text-sm">
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                  Brand guidelines (optional)
+                </Label>
+                <input
+                  ref={guidelinesInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0] ?? null;
+                    if (f && f.type !== "application/pdf" && !f.name.toLowerCase().endsWith(".pdf")) {
+                      toast.error("Please upload a PDF file.");
+                      e.target.value = "";
+                      return;
+                    }
+                    if (f && f.size > 20 * 1024 * 1024) {
+                      toast.error("File too large. Max 20MB.");
+                      e.target.value = "";
+                      return;
+                    }
+                    setGuidelinesFile(f);
+                  }}
+                />
+                {guidelinesFile ? (
+                  <div className="flex items-center gap-2 p-2.5 rounded-md border border-border bg-muted/30">
+                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium truncate">{guidelinesFile.name}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {(guidelinesFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => {
+                        setGuidelinesFile(null);
+                        if (guidelinesInputRef.current) guidelinesInputRef.current.value = "";
+                      }}
+                      disabled={saving}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full gap-2 h-auto py-3 border-dashed"
+                    onClick={() => guidelinesInputRef.current?.click()}
+                    disabled={saving}
+                  >
+                    <Upload className="w-4 h-4" />
+                    Upload brand guidelines PDF
+                  </Button>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                  Optional. We'll keep this on file for future reference.
+                </p>
+              </div>
+
               {kit.warnings.length > 0 && (
                 <div className="text-xs text-muted-foreground italic">
                   Note: some details were inferred — please review before confirming.
