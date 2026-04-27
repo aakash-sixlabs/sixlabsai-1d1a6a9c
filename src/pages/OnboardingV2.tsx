@@ -291,6 +291,7 @@ const OnboardingV2 = () => {
           open
           adAccountId={selected}
           defaultBrandName={selectedAccountName}
+          isDevMode={isDevMode}
           onComplete={startPull}
         />
       )}
