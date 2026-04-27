@@ -284,8 +284,8 @@ export const BrandKitStep = ({
     });
   };
 
-  const handleBuild = async () => {
-    const trimmed = website.trim();
+  const handleBuild = async (override?: string) => {
+    const trimmed = (override ?? website).trim();
     if (!trimmed) return;
     setError(null);
     setLogs([]);
