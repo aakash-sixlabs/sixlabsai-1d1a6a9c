@@ -1,130 +1,92 @@
 ## Goal
 
-Build a real (non-stub) brand kit extractor that takes a single input — a website URL — scrapes the site, runs AI inference, and returns a complete brand kit. Add a dedicated test panel on `/debug-sync` to try it and visually render the result.
+Wire the real brand kit confirmation step into **both** onboarding flows (`/onboarding-v2` and `/onboarding`), powered by the production-grade Firecrawl + Lovable AI extractor. Keep the existing `ad_account_profiles` schema. Hide three fields from the user (still extracted and persisted silently): **product categories, target audience, tone of voice**.
 
-This is a **standalone test tool**: it does NOT touch `ad_account_profiles`, does NOT require an ad account, and does NOT modify the existing `build-brand-kit` function. It's a sandbox to validate the real extraction pipeline before wiring it into onboarding.
+## Where it plugs in
 
-## Prerequisite: connect Firecrawl
+- **`/onboarding-v2`** (default flow, all users): already has `select-account → brand-kit → pulling → complete`. Just upgrade the `BrandKitStep` itself.
+- **`/onboarding`** (super-admin only v1): currently `profile → account-select → tool-explanation → data-sync`. Insert `brand-kit` between `account-select` and `tool-explanation`.
 
-The extraction relies on Firecrawl's `branding` + `markdown` formats. We'll prompt the user to connect the Firecrawl connector. `LOVABLE_API_KEY` is already configured for the AI inference step.
+## Changes
 
-## New edge function: `test-brand-kit`
+### 1. New edge function: `extract-brand-kit`
 
-**Path:** `supabase/functions/test-brand-kit/index.ts`
-**Auth:** JWT validated (matches existing pattern), but writes nothing to the database — pure compute + return.
+Production version of `test-brand-kit`, kept separate so the debug sandbox is untouched.
 
-**Input:**
-```json
-{ "websiteUrl": "https://nike.com" }
-```
+- `supabase/functions/extract-brand-kit/index.ts`
+- SSE streaming: `log` events for live progress, `result` event with the full kit, `error` event on failure.
+- Pipeline: Firecrawl `/v2/scrape` (markdown + branding + screenshot + links) → Lovable AI Gateway (`google/gemini-2.5-flash`, JSON mode) for tone, tagline, categories, audience, value props.
+- Requires `Authorization: Bearer <jwt>`; validates with `supabase.auth.getUser`.
+- Returns the same payload shape as `test-brand-kit`'s `result` event.
 
-**Pipeline:**
+### 2. Rewrite `src/components/wizard/BrandKitStep.tsx`
 
-```text
-websiteUrl
-   │
-   ├─► 1. Normalize URL (add https://, strip path if needed)
-   │
-   ├─► 2. Firecrawl scrape (single call, multi-format)
-   │      formats: ['markdown', 'branding', 'screenshot', 'links']
-   │      onlyMainContent: true
-   │      Returns: logo, real color palette, fonts, typography,
-   │               page copy (markdown), hero screenshot, internal links
-   │
-   ├─► 3. Lovable AI inference (Gemini 2.5 Flash)
-   │      Input: page markdown (truncated to ~8k chars) + metadata
-   │      Output JSON schema:
-   │        - brand_name
-   │        - tagline
-   │        - tone_of_voice (3-5 adjectives)
-   │        - product_categories (array)
-   │        - target_audience (one line)
-   │        - value_propositions (3 bullet points)
-   │
-   └─► 4. Merge + return unified brand kit
-```
+Three internal phases inside one dialog:
 
-**Response shape:**
-```json
-{
-  "brand_name": "Nike",
-  "website_url": "https://nike.com",
-  "logo_url": "https://...",
-  "favicon_url": "https://...",
-  "screenshot_url": "data:image/png;base64,..." or hosted URL,
-  "colors": {
-    "primary": "#111111",
-    "secondary": "#FFFFFF",
-    "accent": "#FA5400",
-    "background": "#FFFFFF",
-    "text_primary": "#111111",
-    "text_secondary": "#757575"
-  },
-  "fonts": {
-    "primary": "Helvetica Neue",
-    "heading": "Futura",
-    "all": ["Helvetica Neue", "Futura", "Arial"]
-  },
-  "tone_of_voice": "bold, motivational, athletic",
-  "tagline": "Just Do It",
-  "product_categories": ["footwear", "apparel", "equipment"],
-  "target_audience": "Athletes and active lifestyle consumers worldwide",
-  "value_propositions": ["Performance innovation", "Iconic design", "Trusted by pros"],
-  "raw": {
-    "firecrawl_branding": { ... },
-    "firecrawl_metadata": { ... },
-    "ai_inference_model": "google/gemini-2.5-flash",
-    "extracted_at": "2026-04-26T..."
-  }
-}
-```
+**A. Input** — single field (brand website URL), "Build my brand kit" button.
 
-If any step fails partially (e.g. AI inference fails but Firecrawl succeeded), return the partial kit with a `warnings` array — the test panel should still show what we got.
+**B. Building (live)** — opens SSE stream from `${VITE_SUPABASE_URL}/functions/v1/extract-brand-kit` with the user's JWT. Shows a small live log feed (latest 5–6 lines, fading) plus spinner. Backend logs are mapped to friendly headlines ("Scanning your site…", "Reading brand colors…", "Analyzing voice…"). Raw logs kept for console only.
 
-## UI: new card on `/debug-sync`
+**C. Confirm** — visible & editable:
+- Brand name
+- Logo (preview + URL)
+- Color palette: Primary / Secondary / Accent (swatch + hex)
+- Heading font + Body font
+- Tagline
 
-Add a **"Brand Kit Extraction"** section above the existing Meta sync cards (or in a new tab — TBD when implementing; one section above is simpler). It contains:
+**Hidden from UI** (extracted + saved silently):
+- `tone_of_voice`
+- `product_categories`
+- `target_audience`, `value_propositions`, `favicon_url`, `screenshot_url`, extra colors, `fonts.all`, full raw payload
 
-**Inputs:**
-- Single text input: "Brand website URL" (e.g. `nike.com`)
-- "Extract Brand Kit" button
+Buttons: "Try a different URL" and "Confirm brand kit". Confirm disabled until extraction completes. Inline error with retry on extractor failure. Error boundary + defensive normalization (same pattern that fixed the debug-page crash).
 
-**Output panel** (renders below the input once results arrive):
-1. **Header strip:** logo, brand name, tagline, website link
-2. **Color palette:** swatches for each color with hex labels (clickable to copy)
-3. **Typography:** primary/heading font names rendered in their actual font (with Google Fonts fallback)
-4. **Voice & Audience:** tone_of_voice chips, target audience paragraph
-5. **Product categories:** chips
-6. **Value propositions:** bulleted list
-7. **Screenshot preview:** hero image of the scraped site (collapsed by default)
-8. **Raw JSON:** collapsible `<details>` with copy-to-clipboard (matches the existing TestCard pattern)
+### 3. Save shape (no schema change)
 
-Status states reuse the existing pattern: idle / loading (with steps: "Scraping site..." → "Inferring brand voice..." → "Done") / success / error.
+On confirm, upsert `ad_account_profiles` for `(ad_account_id, user_id)`:
 
-## Files to create / edit
+| Column | Source |
+|---|---|
+| `brand_name`, `logo_url`, `primary_color`, `secondary_color`, `accent_color`, `font_family`, `tagline` | Edited values |
+| `tone_of_voice`, `product_categories` | Extracted, hidden |
+| `website_url` | Normalized URL |
+| `brand_kit` (jsonb) | Full extractor result (target_audience, value_propositions, favicon, screenshot, heading font, all fonts, all colors, raw) |
+| `brand_kit_status` | `'ready'` |
+| `brand_kit_updated_at` | `now()` |
+| `confirmed` | `true` |
 
-**Create:**
-- `supabase/functions/test-brand-kit/index.ts` — new edge function
-- `src/components/debug/BrandKitTestCard.tsx` — encapsulates the input + rich output renderer
+### 4. Insert step into v1 onboarding (`src/pages/Onboarding.tsx`)
 
-**Edit:**
-- `src/pages/DebugSyncPage.tsx` — mount `BrandKitTestCard` at the top of the page
+- Add `"brand-kit"` to `OnboardingPhase` type.
+- After `handleAccountSelected`, set phase to `"brand-kit"` instead of `"tool-explanation"`.
+- Render `<BrandKitStep open={phase === "brand-kit"} adAccountId={state.selectedAccount} defaultBrandName={state.selectedAccountName} onComplete={() => setPhase("tool-explanation")} />`.
+- Dev mode: `BrandKitStep` accepts an `isDevMode` prop and short-circuits to a stubbed kit so super-admin testing isn't blocked.
 
-**No DB migration.** No changes to `build-brand-kit`, `ad_account_profiles`, or the onboarding flow.
+### 5. v2 onboarding (`src/pages/OnboardingV2.tsx`)
 
-## Technical notes
+No structural changes — already mounts `BrandKitStep`. The rewritten component just behaves better. Pass `isDevMode={isDevMode}`.
 
-- **Firecrawl call:** server-side only; reads `FIRECRAWL_API_KEY` from env. Use REST `POST https://api.firecrawl.dev/v2/scrape` with `Authorization: Bearer <key>`.
-- **AI call:** `https://ai.gateway.lovable.dev/v1/chat/completions` with `LOVABLE_API_KEY`, model `google/gemini-2.5-flash`, `response_format: { type: "json_object" }`, system prompt instructing strict JSON shape.
-- **Color fallback:** if Firecrawl `branding` format returns empty (some sites have no theme metadata), fall back to a screenshot-based extraction prompt to Gemini vision (`gemini-2.5-flash` accepts images) asking for a 5-color palette. Keep this as a clearly-labeled fallback in the response.
-- **Logo handling:** hot-link from the source URL in the test panel (no bucket mirroring — this is a test tool).
-- **CORS:** standard headers, OPTIONS handler, errors include CORS headers.
-- **Validation:** zod schema on `websiteUrl` (string, must parse as URL after normalization).
-- **Timeout safety:** Firecrawl scrape with `timeout: 30000`; AI call with reasonable max_tokens (~800). Total well under Supabase's 60s limit.
+## Files
 
-## Out of scope
+**Created**
+- `supabase/functions/extract-brand-kit/index.ts`
 
-- Persisting results to `ad_account_profiles` (this is a sandbox).
-- Replacing the stub in `build-brand-kit` — that's a follow-up once we're happy with the extraction quality here.
-- Logo/screenshot mirroring to storage.
-- Auth on the debug page itself (it stays super-admin gated as today).
+**Edited**
+- `src/components/wizard/BrandKitStep.tsx` — full rewrite (streaming extractor, hide 3 fields, error boundary, dev-mode stub)
+- `src/pages/Onboarding.tsx` — insert brand-kit phase between account-select and tool-explanation
+- `src/pages/OnboardingV2.tsx` — pass `isDevMode` prop to `BrandKitStep`
+
+**Untouched**
+- `ad_account_profiles` schema
+- `test-brand-kit` function and `/debug-sync` page
+- `build-brand-kit` (legacy stub left alone for now)
+
+## What the user sees (both flows)
+
+1. Pick ad account → Continue.
+2. "Tell us about your brand" dialog → enter website → "Build my brand kit".
+3. ~5–15s of friendly live progress.
+4. Edit brand name, logo, 3 colors, 2 fonts, tagline → Confirm.
+5. Onboarding continues (data pull on v2, tool explanation → data sync on v1).
+
+Tone, product categories, and target audience are extracted, stored, and available for downstream creative generation — never shown in the onboarding UI.

@@ -5,10 +5,11 @@ import { DashboardBackground } from "@/components/wizard/DashboardBackground";
 import { ProfileOverlay, AccountSelectOverlay } from "@/components/wizard/OnboardingOverlay";
 import { ToolExplanationOverlay } from "@/components/wizard/ToolExplanationOverlay";
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
+import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import { supabase } from "@/integrations/supabase/client";
 import { isSuperAdmin } from "@/lib/superAdmin";
 
-type OnboardingPhase = "loading" | "profile" | "account-select" | "tool-explanation" | "data-sync";
+type OnboardingPhase = "loading" | "profile" | "account-select" | "brand-kit" | "tool-explanation" | "data-sync";
 
 const Onboarding = () => {
   const { state, updateState } = useWizard();
@@ -91,7 +92,11 @@ const Onboarding = () => {
   };
 
   const handleAccountSelected = () => {
-    // After selecting default ad account, show tool explanation
+    // After selecting default ad account, confirm brand kit before continuing.
+    setPhase("brand-kit");
+  };
+
+  const handleBrandKitComplete = () => {
     setPhase("tool-explanation");
   };
 
@@ -113,6 +118,15 @@ const Onboarding = () => {
         isDevMode={isDevMode}
         saveAsDefault
       />
+      {phase === "brand-kit" && state.selectedAccount && (
+        <BrandKitStep
+          open
+          adAccountId={state.selectedAccount}
+          defaultBrandName={state.selectedAccountName ?? undefined}
+          isDevMode={isDevMode}
+          onComplete={handleBrandKitComplete}
+        />
+      )}
       <ToolExplanationOverlay
         open={phase === "tool-explanation"}
         onContinue={handleToolExplanationContinue}
