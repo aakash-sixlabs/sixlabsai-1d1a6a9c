@@ -537,7 +537,7 @@ export const BrandKitStep = ({
                 className="w-full gap-2"
                 size="lg"
                 disabled={!website.trim()}
-                onClick={handleBuild}
+                onClick={() => handleBuild()}
               >
                 Build my brand kit <ArrowRight className="w-4 h-4" />
               </Button>
