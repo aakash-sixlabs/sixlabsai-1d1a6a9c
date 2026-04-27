@@ -19,6 +19,9 @@ import {
   Palette,
   Type as TypeIcon,
   AlertCircle,
+  FileText,
+  Upload,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
