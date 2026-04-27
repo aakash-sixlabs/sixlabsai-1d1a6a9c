@@ -72,6 +72,7 @@ interface BrandKitStepProps {
   open: boolean;
   adAccountId: string;
   defaultBrandName?: string;
+  initialWebsite?: string;
   isDevMode?: boolean;
   onComplete: () => void;
 }
@@ -227,11 +228,12 @@ export const BrandKitStep = ({
   open,
   adAccountId,
   defaultBrandName,
+  initialWebsite,
   isDevMode = false,
   onComplete,
 }: BrandKitStepProps) => {
   const [phase, setPhase] = useState<Phase>("input");
-  const [website, setWebsite] = useState("");
+  const [website, setWebsite] = useState(initialWebsite ?? "");
   const [kit, setKit] = useState<ExtractedKit | null>(null);
   const [edits, setEdits] = useState<EditableFields | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
@@ -241,10 +243,24 @@ export const BrandKitStep = ({
   const [uploadingGuidelines, setUploadingGuidelines] = useState(false);
   const guidelinesInputRef = useRef<HTMLInputElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const autoStartedRef = useRef(false);
 
   useEffect(() => {
     return () => abortRef.current?.abort();
   }, []);
+
+  // Auto-start extraction if website was provided up front (e.g. from profile step).
+  useEffect(() => {
+    if (!open || autoStartedRef.current) return;
+    const seed = (initialWebsite ?? "").trim();
+    if (seed) {
+      autoStartedRef.current = true;
+      setWebsite(seed);
+      // defer to next tick so state is set before handleBuild reads it
+      setTimeout(() => handleBuild(seed), 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialWebsite]);
 
   const resetToInput = () => {
     abortRef.current?.abort();
