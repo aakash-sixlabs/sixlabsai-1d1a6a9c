@@ -604,20 +604,14 @@ export const BrandKitStep = ({
                     <TypeIcon className="w-3.5 h-3.5 text-muted-foreground" />
                     Heading font
                   </Label>
-                  <Input
-                    value={edits.heading_font}
-                    onChange={(e) => updateField("heading_font", e.target.value)}
-                  />
+                  <FontDisplay name={edits.heading_font} />
                 </div>
                 <div className="space-y-2">
                   <Label className="flex items-center gap-1.5 text-sm">
                     <TypeIcon className="w-3.5 h-3.5 text-muted-foreground" />
                     Body font
                   </Label>
-                  <Input
-                    value={edits.body_font}
-                    onChange={(e) => updateField("body_font", e.target.value)}
-                  />
+                  <FontDisplay name={edits.body_font} />
                 </div>
               </div>
 
