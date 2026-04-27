@@ -27,6 +27,7 @@ interface WizardState {
   objective: string;
   formatPreference: string;
   notes: string;
+  brandWebsite: string;
 }
 
 interface WizardContextType {
@@ -50,6 +51,7 @@ const initial: WizardState = {
   objective: "conversions",
   formatPreference: "single",
   notes: "",
+  brandWebsite: "",
 };
 
 const WizardContext = createContext<WizardContextType | null>(null);

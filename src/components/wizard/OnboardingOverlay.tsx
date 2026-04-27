@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { User, Mail, Building2, ArrowRight, Loader2, Star } from "lucide-react";
+import { User, Mail, Building2, ArrowRight, Loader2, Star, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,8 +13,10 @@ import { useWizard } from "@/context/WizardContext";
 /* ─── Profile completion overlay ─── */
 
 export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: boolean; onComplete: () => void; isDevMode?: boolean }) => {
+  const { updateState } = useWizard();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [brandWebsite, setBrandWebsite] = useState("");
   const [accounts, setAccounts] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -39,6 +41,9 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Persist website into wizard state so the Brand Kit step can auto-extract from it.
+      updateState({ brandWebsite: brandWebsite.trim() });
+
       if (isDevMode) {
         await new Promise((r) => setTimeout(r, 500));
         toast.success("Profile saved!");
@@ -70,7 +75,7 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
             </div>
             Complete Your Profile
           </DialogTitle>
-          <DialogDescription>We've pulled your details from Meta. Confirm everything looks right.</DialogDescription>
+          <DialogDescription>We've pulled your details from Meta. Confirm everything looks right and add your brand website.</DialogDescription>
         </DialogHeader>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-5 pt-2">
           <div className="space-y-2">
@@ -80,6 +85,11 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
           <div className="space-y-2">
             <Label htmlFor="email" className="flex items-center gap-1.5 text-sm"><Mail className="w-3.5 h-3.5 text-muted-foreground" />Email</Label>
             <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" type="email" />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="brandWebsite" className="flex items-center gap-1.5 text-sm"><Globe className="w-3.5 h-3.5 text-muted-foreground" />Brand Website</Label>
+            <Input id="brandWebsite" value={brandWebsite} onChange={(e) => setBrandWebsite(e.target.value)} placeholder="yourbrand.com" />
+            <p className="text-xs text-muted-foreground">We'll use this to build your brand kit (logo, colors, fonts).</p>
           </div>
           {accounts.length > 0 && (
             <div className="space-y-2">
@@ -91,7 +101,7 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
               </div>
             </div>
           )}
-          <Button className="w-full gap-2" size="lg" onClick={handleSave} disabled={saving || !fullName.trim() || !email.trim()}>
+          <Button className="w-full gap-2" size="lg" onClick={handleSave} disabled={saving || !fullName.trim() || !email.trim() || !brandWebsite.trim()}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
             {saving ? "Saving…" : "Continue"}
           </Button>

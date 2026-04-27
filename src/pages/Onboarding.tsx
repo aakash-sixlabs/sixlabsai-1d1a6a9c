@@ -9,7 +9,7 @@ import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import { supabase } from "@/integrations/supabase/client";
 import { isSuperAdmin } from "@/lib/superAdmin";
 
-type OnboardingPhase = "loading" | "profile" | "account-select" | "brand-kit" | "tool-explanation" | "data-sync";
+type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "data-sync";
 
 const Onboarding = () => {
   const { state, updateState } = useWizard();
@@ -88,19 +88,22 @@ const Onboarding = () => {
   const handleProfileComplete = () => {
     setShowProfileDialog(false);
     updateState({ profileComplete: true });
-    setPhase("account-select");
-  };
-
-  const handleAccountSelected = () => {
-    // After selecting default ad account, confirm brand kit before continuing.
-    setPhase("brand-kit");
-  };
-
-  const handleBrandKitComplete = () => {
+    // After profile, show the education / "what happens next" overlay.
     setPhase("tool-explanation");
   };
 
   const handleToolExplanationContinue = () => {
+    // Then pick the default ad account.
+    setPhase("account-select");
+  };
+
+  const handleAccountSelected = () => {
+    // Then confirm the brand kit (auto-extracts from website captured in profile step).
+    setPhase("brand-kit");
+  };
+
+  const handleBrandKitComplete = () => {
+    // Finally pull the ad data.
     setPhase("data-sync");
   };
 
@@ -123,6 +126,7 @@ const Onboarding = () => {
           open
           adAccountId={state.selectedAccount}
           defaultBrandName={state.selectedAccountName ?? undefined}
+          initialWebsite={state.brandWebsite}
           isDevMode={isDevMode}
           onComplete={handleBrandKitComplete}
         />
