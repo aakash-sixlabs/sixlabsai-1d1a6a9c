@@ -42,7 +42,9 @@ export const ToolExplanationOverlay = ({ open, onContinue }: ToolExplanationOver
       <DialogContent className="sm:max-w-lg [&>button]:hidden max-h-[90vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="text-xl">Here's what CreativeGen will do for you</DialogTitle>
-          <DialogDescription>We're about to sync your ad data. Here's what happens next.</DialogDescription>
+          <DialogDescription>
+            Next, we'll ask you to (1) pick your default ad account, (2) confirm your brand kit, and (3) sync your ad data so we can get to work.
+          </DialogDescription>
         </DialogHeader>
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 pt-2">
           {features.map((feature, i) => (
