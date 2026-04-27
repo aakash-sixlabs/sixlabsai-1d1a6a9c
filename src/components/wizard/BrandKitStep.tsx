@@ -364,6 +364,24 @@ export const BrandKitStep = ({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      // Optional: upload brand guidelines PDF to private storage
+      if (guidelinesFile) {
+        setUploadingGuidelines(true);
+        try {
+          const safeName = guidelinesFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const path = `${user.id}/${adAccountId}/${Date.now()}-${safeName}`;
+          const { error: uploadErr } = await supabase.storage
+            .from("brand-guidelines")
+            .upload(path, guidelinesFile, {
+              contentType: guidelinesFile.type || "application/pdf",
+              upsert: false,
+            });
+          if (uploadErr) throw uploadErr;
+        } finally {
+          setUploadingGuidelines(false);
+        }
+      }
+
       // Compose the full jsonb payload — everything we extracted, including hidden fields.
       const brandKitJson = {
         ...kit.raw,
