@@ -284,7 +284,20 @@ Deno.serve(async (req) => {
             },
             { onConflict: "user_id,meta_creative_id" },
           );
+
+          // Keep ads.media_type consistent with creative_type
+          await admin
+            .from("ads")
+            .update({ media_type: creativeType })
+            .eq("id", storedAd.id);
+
+          creativesStored++;
         }
+
+        console.log(
+          `Creatives processed: ${processed} total | stored: ${creativesStored} | videos skipped: ${videosSkipped} | by type:`,
+          typeCounts,
+        );
 
         await updateStep("Pulling performance data", {
           phase: "insights",
