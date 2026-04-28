@@ -1,40 +1,66 @@
 ## Goal
 
-Increase the per-entity sync ceiling in the Meta data-pull pipeline from **10** to **500**, so onboarding pulls a meaningful slice of the user's account instead of a tiny smoke-test sample.
+Port the active + paused-with-impressions filter from the `/debug-sync` test functions into the production `meta-sync-accounts` edge function so onboarding only stores campaigns, ad sets, and ads that actually delivered.
 
-## Change
+## Filter rule (per stage)
 
-**File:** `supabase/functions/meta-sync-accounts/index.ts` (line 167)
+For each level of the Meta hierarchy:
 
-```diff
-- // TEST MODE: cap each entity to keep Meta API calls minimal during debugging.
-- const TEST_MODE_LIMIT = 10;
-+ // Per-entity safety ceiling — caps each level of the Meta hierarchy
-+ // (campaigns, ad sets, ads) at 500 to bound downstream Meta API cost.
-+ const TEST_MODE_LIMIT = 500;
+- **ACTIVE** entities → always kept
+- **PAUSED** entities → kept only if they had ≥1 impression in the user's selected date range
+- **Ads only:** also accept `WITH_ISSUES` as "active" (matches `test-ads`)
+- Everything else (`ARCHIVED`, `DELETED`, `DISAPPROVED`, etc.) → excluded
+- Hierarchical filter (`campaignMap` / `adsetMap` membership) and the `TEST_MODE_LIMIT = 500` cap remain in place, applied **after** the merge
+
+## Implementation
+
+**File:** `supabase/functions/meta-sync-accounts/index.ts` — replace lines 170–274 (the `runPhase` body up to the chain-to-creatives block).
+
+### Per-stage pattern (3 stages: campaigns, ad sets, ads)
+
+```
+1. Fetch ACTIVE entities    → /{actId}/{entity}?effective_status=["ACTIVE"]
+2. Fetch insights at level  → /{actId}/insights?level={...}&fields={id,impressions}
+                              &time_range={since,until}
+   → build Set of IDs that delivered
+3. Fetch PAUSED entities    → /{actId}/{entity}?effective_status=["PAUSED"]
+4. Filter PAUSED to set     → relevantPaused = paused.filter(p => set.has(p.id))
+5. Merge + dedupe by id     → [...active, ...relevantPaused]
+6. Apply parent-membership filter (existing logic)
+7. Apply slice(0, 500)      → existing TEST_MODE_LIMIT cap
+8. Upsert to DB
 ```
 
-That's the only line change. The constant is already referenced at all three stages (campaigns, ad sets, ads) so bumping the value automatically lifts the cap everywhere.
+Date range comes from existing `dateStart` / `dateEnd` (already computed from `dateRangeDays`). Use `since`/`until` formatted as `YYYY-MM-DD`.
 
-## Effect
+### New helpers (added once, reused 3×)
 
-| Stage | Before | After |
-|---|---|---|
-| Campaigns kept | 10 | 500 |
-| Ad sets kept (within kept campaigns) | 10 | 500 |
-| Ads kept (within kept ad sets) | 10 | 500 |
-| Creatives hydrated by `meta-sync-creatives` | up to 10 | up to 500 |
-| Daily insights pulled by `meta-sync-insights` | up to 10 ads × N days | up to 500 ads × N days |
+- `since`, `until` strings derived from existing `dateStart`/`dateEnd`
+- `dedupeById<T>(rows: T[])` to merge active + paused without duplicate IDs
 
-The Meta API page-size (`limit=500` in the URL) is unrelated and untouched — it just controls pagination chunk size, not totals.
+### Logging
 
-## Considerations
+Each stage logs counts: active, paused-with-impressions, paused-excluded, final kept. Replaces the old `TEST MODE: X → using Y` lines.
 
-- **Sync time:** A sync that previously finished in seconds will now take longer. `meta-sync-insights` is the dominant cost (it makes one call per day in the date range, per page of ads). For 500 ads over 30 days this is still well within Meta's per-hour rate limits but the user should expect the data-sync step in onboarding to take a couple of minutes instead of seconds.
-- **No schema or UI changes** required — the realtime `sync_jobs` progress UI in `DataSyncStep.tsx` already handles longer-running syncs.
-- **Deployment:** Only `meta-sync-accounts` needs to redeploy; the cap only lives there.
+### Net Meta API calls per sync
+
+| Before | After |
+|---|---|
+| 3 calls (1 per stage) | **9 calls** (3 per stage: active, paused, insights) |
+
+Insights probes only request `id,impressions` so payloads stay small. Well within Meta rate limits for any practical account size.
+
+## Unchanged
+
+- `fetchAllPages` retry/backoff logic
+- Auth, brand upsert, sync_jobs lifecycle
+- Hierarchical filtering via `campaignMap` / `adsetMap`
+- `TEST_MODE_LIMIT = 500` ceiling
+- Chain-to-`meta-sync-creatives` at the end
+- All downstream functions (`meta-sync-creatives`, `meta-sync-insights`) — they already operate on whatever ads exist in the DB
 
 ## Out of scope
 
-- Making the cap configurable via env var or request body (offered earlier — skipping per your decision to just raise the number).
-- Touching `meta-sync-creatives` or `meta-sync-insights` (no caps live in them; they process whatever ads exist in the DB).
+- Touching the `/debug-sync` test functions (already correct)
+- Backfilling/cleaning existing rows in the DB that were synced under the old "pull everything" logic — only future syncs will respect the filter
+- Changes to insights date range or per-day fetch loop in `meta-sync-insights`

@@ -167,15 +167,59 @@ Deno.serve(async (req) => {
     // (campaigns, ad sets, ads) at 500 to bound downstream Meta API cost.
     const TEST_MODE_LIMIT = 500;
 
+    // Date range for impressions probe (used to keep PAUSED entities that ran during the window)
+    const since = dateStart.toISOString().split("T")[0];
+    const until = dateEnd.toISOString().split("T")[0];
+    const dedupeById = <T extends { id: string }>(rows: T[]): T[] => {
+      const seen = new Set<string>();
+      return rows.filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+    };
+
     const runPhase = async () => {
       try {
-        // 1. Campaigns
+        // ============================================================
+        // 1. CAMPAIGNS — ACTIVE always; PAUSED only if had impressions
+        // ============================================================
         await updateStep("Pulling campaigns");
-        const allCampaigns = await fetchAllPages(
-          `https://graph.facebook.com/v21.0/${actId}/campaigns?fields=id,name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time&limit=500&access_token=${accessToken}`,
+
+        const activeCampaigns = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/campaigns` +
+            `?fields=id,name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time` +
+            `&effective_status=["ACTIVE"]&limit=500&access_token=${accessToken}`,
         );
-        const campaigns = allCampaigns.slice(0, TEST_MODE_LIMIT);
-        console.log(`TEST MODE: ${allCampaigns.length} campaigns → using ${campaigns.length}`);
+
+        const campaignInsights = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/insights` +
+            `?level=campaign&fields=campaign_id,impressions` +
+            `&time_range={"since":"${since}","until":"${until}"}` +
+            `&limit=500&access_token=${accessToken}`,
+        );
+        const campaignsWithImpressions = new Set(
+          campaignInsights.map((r: any) => r.campaign_id),
+        );
+
+        const pausedCampaigns = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/campaigns` +
+            `?fields=id,name,status,effective_status,objective,daily_budget,lifetime_budget,start_time,stop_time` +
+            `&effective_status=["PAUSED"]&limit=500&access_token=${accessToken}`,
+        );
+        const relevantPausedCampaigns = pausedCampaigns.filter((c: any) =>
+          campaignsWithImpressions.has(c.id),
+        );
+
+        const mergedCampaigns = dedupeById([
+          ...activeCampaigns,
+          ...relevantPausedCampaigns,
+        ]);
+        const campaigns = mergedCampaigns.slice(0, TEST_MODE_LIMIT);
+        console.log(
+          `Campaigns: ${activeCampaigns.length} active + ${relevantPausedCampaigns.length} paused-with-impressions ` +
+            `(${pausedCampaigns.length - relevantPausedCampaigns.length} paused excluded) → using ${campaigns.length}`,
+        );
 
         const campaignRecords = campaigns.map((c: any) => ({
           ad_account_id: adAccountId,
@@ -204,15 +248,47 @@ Deno.serve(async (req) => {
           (storedCampaigns || []).map((c: any) => [c.meta_campaign_id, c.id]),
         );
 
-        // 2. Adsets
+        // ============================================================
+        // 2. AD SETS — ACTIVE always; PAUSED only if had impressions
+        // ============================================================
         await updateStep("Pulling ad sets", { total_campaigns: campaigns.length });
-        const allAdsets = await fetchAllPages(
-          `https://graph.facebook.com/v21.0/${actId}/adsets?fields=id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget,optimization_goal,billing_event,targeting,start_time,end_time&limit=500&access_token=${accessToken}`,
+
+        const activeAdsets = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/adsets` +
+            `?fields=id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget,optimization_goal,billing_event,targeting,start_time,end_time` +
+            `&effective_status=["ACTIVE"]&limit=500&access_token=${accessToken}`,
         );
-        const adsets = allAdsets
+
+        const adsetInsights = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/insights` +
+            `?level=adset&fields=adset_id,impressions` +
+            `&time_range={"since":"${since}","until":"${until}"}` +
+            `&limit=500&access_token=${accessToken}`,
+        );
+        const adsetsWithImpressions = new Set(
+          adsetInsights.map((r: any) => r.adset_id),
+        );
+
+        const pausedAdsets = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/adsets` +
+            `?fields=id,name,status,effective_status,campaign_id,daily_budget,lifetime_budget,optimization_goal,billing_event,targeting,start_time,end_time` +
+            `&effective_status=["PAUSED"]&limit=500&access_token=${accessToken}`,
+        );
+        const relevantPausedAdsets = pausedAdsets.filter((a: any) =>
+          adsetsWithImpressions.has(a.id),
+        );
+
+        const mergedAdsets = dedupeById([
+          ...activeAdsets,
+          ...relevantPausedAdsets,
+        ]);
+        const adsets = mergedAdsets
           .filter((as: any) => campaignMap.has(as.campaign_id))
           .slice(0, TEST_MODE_LIMIT);
-        console.log(`TEST MODE: ${allAdsets.length} adsets → using ${adsets.length}`);
+        console.log(
+          `Ad sets: ${activeAdsets.length} active + ${relevantPausedAdsets.length} paused-with-impressions ` +
+            `(${pausedAdsets.length - relevantPausedAdsets.length} paused excluded) → using ${adsets.length}`,
+        );
 
         const adsetRecords = adsets.map((as: any) => ({
           campaign_id: campaignMap.get(as.campaign_id),
@@ -243,15 +319,44 @@ Deno.serve(async (req) => {
           (storedAdsets || []).map((a: any) => [a.meta_adset_id, a.id]),
         );
 
-        // 3. Ads (lightweight skeleton) — id, name, status, adset_id, creative.id only
+        // ============================================================
+        // 3. ADS — ACTIVE/WITH_ISSUES always; PAUSED only if had impressions
+        // ============================================================
         await updateStep("Pulling ads", { total_adsets: adsets.length });
-        const allRawAds = await fetchAllPages(
-          `https://graph.facebook.com/v21.0/${actId}/ads?fields=id,name,status,effective_status,adset_id,creative{id}&limit=100&access_token=${accessToken}`,
+
+        const adInsights = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/insights` +
+            `?level=ad&fields=ad_id,impressions` +
+            `&time_range={"since":"${since}","until":"${until}"}` +
+            `&limit=500&access_token=${accessToken}`,
         );
-        const rawAds = allRawAds
+        const adsWithImpressions = new Set(
+          adInsights.map((r: any) => r.ad_id),
+        );
+
+        const activeAds = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/ads` +
+            `?fields=id,name,status,effective_status,adset_id,creative{id}` +
+            `&effective_status=["ACTIVE","WITH_ISSUES"]&limit=100&access_token=${accessToken}`,
+        );
+
+        const pausedAds = await fetchAllPages(
+          `https://graph.facebook.com/v21.0/${actId}/ads` +
+            `?fields=id,name,status,effective_status,adset_id,creative{id}` +
+            `&effective_status=["PAUSED"]&limit=100&access_token=${accessToken}`,
+        );
+        const relevantPausedAds = pausedAds.filter((ad: any) =>
+          adsWithImpressions.has(ad.id),
+        );
+
+        const mergedAds = dedupeById([...activeAds, ...relevantPausedAds]);
+        const rawAds = mergedAds
           .filter((ad: any) => adsetMap.has(ad.adset_id))
           .slice(0, TEST_MODE_LIMIT);
-        console.log(`TEST MODE: ${allRawAds.length} ads → using ${rawAds.length}`);
+        console.log(
+          `Ads: ${activeAds.length} active/with-issues + ${relevantPausedAds.length} paused-with-impressions ` +
+            `(${pausedAds.length - relevantPausedAds.length} paused excluded) → using ${rawAds.length}`,
+        );
 
         const adRecords = rawAds.map((ad: any) => ({
           ad_set_id: adsetMap.get(ad.adset_id),
