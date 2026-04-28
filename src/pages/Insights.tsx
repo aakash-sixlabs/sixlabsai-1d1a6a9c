@@ -14,7 +14,7 @@ const Insights = () => {
   useEffect(() => {
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { navigate("/login"); return; }
+      if (!user) { navigate("/loginvcollect"); return; }
 
       const { data: profile } = await supabase
         .from("profiles")

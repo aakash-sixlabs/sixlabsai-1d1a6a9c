@@ -24,7 +24,7 @@ const Onboarding = () => {
       // Gate: only super admin can access v1 onboarding
       if (!isDevMode) {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) { navigate("/login"); return; }
+        if (!user) { navigate("/loginv1"); return; }
         const { data: profile } = await supabase.from("profiles").select("email").eq("id", user.id).single();
         if (!isSuperAdmin(profile?.email)) { navigate("/onboarding-v2"); return; }
       }

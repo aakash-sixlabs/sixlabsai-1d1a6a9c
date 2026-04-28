@@ -33,7 +33,7 @@ export const HeroSection = () => {
           <Button
             size="lg"
             className="font-semibold rounded-xl px-10 h-13 text-base gap-2 shadow-lg shadow-primary/25"
-            onClick={() => navigate("/login")}
+            onClick={() => navigate("/loginvcollect")}
           >
             Get Started <ArrowRight className="w-4 h-4" />
           </Button>

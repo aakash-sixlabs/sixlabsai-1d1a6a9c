@@ -6,7 +6,7 @@ const PrivacyPolicy = () => {
     <div className="min-h-screen bg-background">
       <div className="max-w-3xl mx-auto px-6 py-12">
         <Link
-          to="/login"
+          to="/loginvcollect"
           className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8"
         >
           <ArrowLeft className="w-4 h-4" />

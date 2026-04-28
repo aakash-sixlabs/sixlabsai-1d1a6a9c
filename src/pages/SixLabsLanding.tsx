@@ -20,7 +20,7 @@ export default function SixLabsLanding() {
     if (sessionStorage.getItem("easter_egg_access") === "true") {
       setAllowed(true);
     } else {
-      navigate("/login", { replace: true });
+      navigate("/loginvcollect", { replace: true });
     }
   }, [navigate]);
 
