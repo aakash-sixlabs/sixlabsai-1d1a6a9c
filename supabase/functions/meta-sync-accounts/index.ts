@@ -163,8 +163,9 @@ Deno.serve(async (req) => {
         .eq("id", syncId);
     };
 
-    // TEST MODE: cap each entity to keep Meta API calls minimal during debugging.
-    const TEST_MODE_LIMIT = 10;
+    // Per-entity safety ceiling — caps each level of the Meta hierarchy
+    // (campaigns, ad sets, ads) at 500 to bound downstream Meta API cost.
+    const TEST_MODE_LIMIT = 500;
 
     const runPhase = async () => {
       try {
