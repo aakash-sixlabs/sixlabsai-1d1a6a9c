@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WizardProvider } from "@/context/WizardContext";
 import Landing from "./pages/Landing";
+import LandingV1 from "./pages/LandingV1";
 import SixLabsLanding from "./pages/SixLabsLanding";
 import Onboarding from "./pages/Onboarding";
 import OnboardingV2 from "./pages/OnboardingV2";
@@ -31,7 +32,8 @@ const App = () => (
         <WizardProvider>
           <Routes>
             <Route path="/" element={<SixLabsLanding />} />
-            <Route path="/login" element={<Landing />} />
+            <Route path="/loginvcollect" element={<Landing />} />
+            <Route path="/loginv1" element={<LandingV1 />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/onboarding-v2" element={<OnboardingV2 />} />
             <Route path="/data-review" element={<DataReview />} />

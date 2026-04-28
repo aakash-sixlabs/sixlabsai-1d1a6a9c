@@ -20,7 +20,7 @@ export const CTASection = () => {
         <Button
           size="lg"
           className="mt-8 font-semibold rounded-xl px-10 h-12 text-[15px] gap-2 shadow-lg shadow-primary/30"
-          onClick={() => navigate("/login")}
+          onClick={() => navigate("/loginvcollect")}
         >
           Create Your Next Winning Ad <ArrowRight className="w-4 h-4" />
         </Button>

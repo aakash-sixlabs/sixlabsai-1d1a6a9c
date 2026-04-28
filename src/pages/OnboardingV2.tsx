@@ -81,7 +81,7 @@ const OnboardingV2 = () => {
         data: { session },
       } = await supabase.auth.getSession();
       if (!session) {
-        navigate("/login");
+        navigate("/loginvcollect");
         return;
       }
 
