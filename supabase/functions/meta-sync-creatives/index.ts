@@ -64,8 +64,19 @@ async function fetchCreativesInBatches(
 
 function classifyCreative(creative: any): string {
   const objStorySpec = creative.object_story_spec;
-  if (creative.asset_feed_spec) return "dco";
-  if (objStorySpec?.video_data || creative.video_id) return "video";
+  const afs = creative.asset_feed_spec;
+
+  // Detect video assets FIRST (covers standard video and video DCO).
+  // Otherwise an asset_feed_spec containing only videos would be misclassified
+  // as "dco" and produce ad_creatives rows with null image_hash.
+  const hasVideoAssets = Array.isArray(afs?.videos) && afs.videos.length > 0;
+  const hasVideoId =
+    !!creative.video_id ||
+    !!objStorySpec?.video_data ||
+    !!objStorySpec?.video_data?.video_id;
+  if (hasVideoAssets || hasVideoId) return "video";
+
+  if (afs) return "dco";
   if (!objStorySpec) return "unknown";
   if (objStorySpec.link_data) {
     const linkData = objStorySpec.link_data;
