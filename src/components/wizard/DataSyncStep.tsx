@@ -195,7 +195,7 @@ export const DataSyncStep = ({
     <div className="container max-w-lg py-16">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground mb-2">Syncing Historical Data</h2>
-        <p className="text-muted-foreground mb-10">{error ? "An error occurred during sync." : "Analyzing your ad account performance…"}</p>
+        <p className="text-muted-foreground mb-10">{error ? "An error occurred during sync." : "Analyzing your ad account performance… the process might take time to complete."}</p>
         {content}
       </div>
     </div>
