@@ -33,9 +33,25 @@ export const DataSyncStep = ({
   const [simulatedIdx, setSimulatedIdx] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
-  const realIdx = SYNC_STEPS.indexOf(currentStep);
-  // Use whichever is further along: real backend progress or simulated progress
-  const currentIdx = isComplete ? SYNC_STEPS.length - 1 : Math.max(realIdx, simulatedIdx);
+  // Map dynamic backend step labels (e.g. "Processing creatives (12/380)",
+  // "Pulling performance (2026-03-09)") to one of our 6 visible UI steps.
+  const mapBackendStep = (raw: string): number => {
+    const s = (raw || "").toLowerCase();
+    if (s.includes("complete")) return SYNC_STEPS.length - 1;
+    if (s.includes("performance") || s.includes("insights")) return 3; // Pulling ad performance
+    if (s.includes("creative")) return 2; // Pulling ads and creatives
+    if (s.includes("ad set") || s.includes("adset") || s.includes("pulling ads")) return 2;
+    if (s.includes("campaign")) return 1; // Pulling campaigns and ad sets
+    if (s.includes("connect")) return 0;
+    const exact = SYNC_STEPS.indexOf(raw);
+    return exact;
+  };
+  const realIdx = mapBackendStep(currentStep);
+  // Use whichever is further along: real backend progress or simulated progress.
+  // Cap simulated at step 3 (performance) so it can't claim "Filtering / Preparing"
+  // before the backend actually reaches those phases.
+  const cappedSimulated = Math.min(simulatedIdx, realIdx >= 0 ? Math.max(realIdx, 3) : 3);
+  const currentIdx = isComplete ? SYNC_STEPS.length - 1 : Math.max(realIdx, cappedSimulated);
 
   const handleComplete = () => {
     if (onComplete) {
