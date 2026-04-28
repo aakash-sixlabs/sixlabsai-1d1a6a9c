@@ -183,7 +183,7 @@ export const DataSyncStep = ({
               </div>
               Syncing Historical Data
             </DialogTitle>
-            <DialogDescription>{error ? "An error occurred during sync." : "Analyzing your ad account performance…"}</DialogDescription>
+            <DialogDescription>{error ? "An error occurred during sync." : "Analyzing your ad account performance… the process might take time to complete."}</DialogDescription>
           </DialogHeader>
           {content}
         </DialogContent>
