@@ -188,6 +188,9 @@ Deno.serve(async (req) => {
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         let processed = 0;
         let imagesDownloaded = 0;
+        let videosSkipped = 0;
+        let creativesStored = 0;
+        const typeCounts: Record<string, number> = {};
         const total = (storedAds || []).length;
 
         for (const storedAd of storedAds || []) {
@@ -202,6 +205,18 @@ Deno.serve(async (req) => {
             ? creativeMap[storedAd.meta_creative_id] || {}
             : {};
           const creativeType = classifyCreative(creative);
+          typeCounts[creativeType] = (typeCounts[creativeType] || 0) + 1;
+
+          // Videos: tag the ads row but skip ad_creatives entirely (matches test-creatives)
+          if (creativeType === "video") {
+            await admin
+              .from("ads")
+              .update({ media_type: "video" })
+              .eq("id", storedAd.id);
+            videosSkipped++;
+            continue;
+          }
+
           const oss = creative.object_story_spec || {};
           const linkData = oss.link_data || {};
 
@@ -269,7 +284,20 @@ Deno.serve(async (req) => {
             },
             { onConflict: "user_id,meta_creative_id" },
           );
+
+          // Keep ads.media_type consistent with creative_type
+          await admin
+            .from("ads")
+            .update({ media_type: creativeType })
+            .eq("id", storedAd.id);
+
+          creativesStored++;
         }
+
+        console.log(
+          `Creatives processed: ${processed} total | stored: ${creativesStored} | videos skipped: ${videosSkipped} | by type:`,
+          typeCounts,
+        );
 
         await updateStep("Pulling performance data", {
           phase: "insights",

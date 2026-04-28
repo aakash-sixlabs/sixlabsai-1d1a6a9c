@@ -1,66 +1,53 @@
 ## Goal
 
-Port the active + paused-with-impressions filter from the `/debug-sync` test functions into the production `meta-sync-accounts` edge function so onboarding only stores campaigns, ad sets, and ads that actually delivered.
+1. Update prod `meta-sync-creatives` to skip video upserts (match `test-creatives`) while still tagging `ads.media_type='video'`.
+2. Backfill: purge existing video rows from `ad_creatives`, and tag pre-existing video ads in the `ads` table.
 
-## Filter rule (per stage)
+## Change scope
 
-For each level of the Meta hierarchy:
+- **File:** `supabase/functions/meta-sync-creatives/index.ts`
+- **Migration:** one-time SQL to clean current state.
 
-- **ACTIVE** entities → always kept
-- **PAUSED** entities → kept only if they had ≥1 impression in the user's selected date range
-- **Ads only:** also accept `WITH_ISSUES` as "active" (matches `test-ads`)
-- Everything else (`ARCHIVED`, `DELETED`, `DISAPPROVED`, etc.) → excluded
-- Hierarchical filter (`campaignMap` / `adsetMap` membership) and the `TEST_MODE_LIMIT = 500` cap remain in place, applied **after** the merge
+## Edits to `meta-sync-creatives/index.ts`
 
-## Implementation
+Inside the per-ad loop in `runPhase` (around lines 193–272):
 
-**File:** `supabase/functions/meta-sync-accounts/index.ts` — replace lines 170–274 (the `runPhase` body up to the chain-to-creatives block).
+1. After `classifyCreative(creative)` returns `creativeType`, branch:
+   - **If `creativeType === "video"`:**
+     - `await admin.from("ads").update({ media_type: "video" }).eq("id", storedAd.id);`
+     - `continue;` — skip image extraction, download loop, and `ad_creatives` upsert.
+   - **Otherwise (dco / static_single / static_carousel / unknown):**
+     - Existing flow unchanged: extract images, download/rehost, upsert `ad_creatives`.
+     - Also write `media_type` to `ads` matching `creative_type`, so both tables stay consistent.
 
-### Per-stage pattern (3 stages: campaigns, ad sets, ads)
+2. Add lightweight counters (`videosSkipped`, `creativesStored`, by-type breakdown) and a `console.log` at the end of the loop for log/audit visibility. No schema change.
 
+## Backfill migration
+
+One migration with two statements, scoped to current data:
+
+```sql
+-- 1. Tag existing video ads in the ads table (before deleting the source of truth)
+UPDATE public.ads a
+SET media_type = 'video'
+FROM public.ad_creatives c
+WHERE c.ad_id = a.id
+  AND c.creative_type = 'video';
+
+-- 2. Purge video rows from ad_creatives (now redundant)
+DELETE FROM public.ad_creatives
+WHERE creative_type = 'video';
 ```
-1. Fetch ACTIVE entities    → /{actId}/{entity}?effective_status=["ACTIVE"]
-2. Fetch insights at level  → /{actId}/insights?level={...}&fields={id,impressions}
-                              &time_range={since,until}
-   → build Set of IDs that delivered
-3. Fetch PAUSED entities    → /{actId}/{entity}?effective_status=["PAUSED"]
-4. Filter PAUSED to set     → relevantPaused = paused.filter(p => set.has(p.id))
-5. Merge + dedupe by id     → [...active, ...relevantPaused]
-6. Apply parent-membership filter (existing logic)
-7. Apply slice(0, 500)      → existing TEST_MODE_LIMIT cap
-8. Upsert to DB
-```
 
-Date range comes from existing `dateStart` / `dateEnd` (already computed from `dateRangeDays`). Use `since`/`until` formatted as `YYYY-MM-DD`.
-
-### New helpers (added once, reused 3×)
-
-- `since`, `until` strings derived from existing `dateStart`/`dateEnd`
-- `dedupeById<T>(rows: T[])` to merge active + paused without duplicate IDs
-
-### Logging
-
-Each stage logs counts: active, paused-with-impressions, paused-excluded, final kept. Replaces the old `TEST MODE: X → using Y` lines.
-
-### Net Meta API calls per sync
-
-| Before | After |
-|---|---|
-| 3 calls (1 per stage) | **9 calls** (3 per stage: active, paused, insights) |
-
-Insights probes only request `id,impressions` so payloads stay small. Well within Meta rate limits for any practical account size.
-
-## Unchanged
-
-- `fetchAllPages` retry/backoff logic
-- Auth, brand upsert, sync_jobs lifecycle
-- Hierarchical filtering via `campaignMap` / `adsetMap`
-- `TEST_MODE_LIMIT = 500` ceiling
-- Chain-to-`meta-sync-creatives` at the end
-- All downstream functions (`meta-sync-creatives`, `meta-sync-insights`) — they already operate on whatever ads exist in the DB
+Order matters: tag `ads` first, then delete from `ad_creatives` — otherwise we lose the join needed to identify which ads were videos.
 
 ## Out of scope
 
-- Touching the `/debug-sync` test functions (already correct)
-- Backfilling/cleaning existing rows in the DB that were synced under the old "pull everything" logic — only future syncs will respect the filter
-- Changes to insights date range or per-day fetch loop in `meta-sync-insights`
+- Other gaps from the earlier review (missing `video_id`/`url_tags` fields in fetch, DCO image-hash resolution via `/adimages`) — separate plan.
+- `meta-sync-accounts` and `meta-sync-insights` — untouched.
+
+## Net effect
+
+- `ads`: every video ad correctly tagged `media_type='video'` (both historical and future).
+- `ad_creatives`: zero video rows after migration; future syncs never add them.
+- Sync runtime: faster on video-heavy accounts.
