@@ -161,7 +161,12 @@ export const DataSyncStep = ({
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <motion.div className="h-full bg-primary rounded-full" initial={{ width: "0%" }} animate={{ width: `${((effectiveIdx + 1) / SYNC_STEPS.length) * 100}%` }} transition={{ duration: 0.5 }} />
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5 text-center">{Math.round(((effectiveIdx + 1) / SYNC_STEPS.length) * 100)}% complete</p>
+          <p className="text-xs text-muted-foreground mt-1.5 text-center">
+            {Math.round(((effectiveIdx + 1) / SYNC_STEPS.length) * 100)}% complete
+            {currentStep && SYNC_STEPS.indexOf(currentStep) === -1 && currentStep !== "Complete" && (
+              <span className="ml-1.5 opacity-70">· {currentStep}</span>
+            )}
+          </p>
         </div>
       )}
     </motion.div>
