@@ -57,9 +57,20 @@ async function fetchCreativesInBatches(
         break;
       }
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 150));
   }
   return results;
+}
+
+// Fetch with timeout — prevents one slow Meta CDN image from stalling the whole batch
+async function fetchWithTimeout(url: string, timeoutMs = 10_000): Promise<Response> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(t);
+  }
 }
 
 function classifyCreative(creative: any): string {
