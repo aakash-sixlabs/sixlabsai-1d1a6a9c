@@ -1,4 +1,4 @@
-import { Search, Bell, Zap } from "lucide-react";
+import { Search, Bell, Zap, RefreshCw, Check, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,12 +31,20 @@ interface InsightsTopBarProps {
   onSearchChange: (q: string) => void;
   onFilterClick: () => void;
   userName?: string;
+  onResync?: () => void;
+  syncStatus?: "idle" | "syncing" | "complete" | "error";
+  syncStep?: string;
+  canResync?: boolean;
 }
 
 export const InsightsTopBar = ({
   searchQuery,
   onSearchChange,
   userName,
+  onResync,
+  syncStatus = "idle",
+  syncStep,
+  canResync = true,
 }: InsightsTopBarProps) => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
@@ -89,6 +97,42 @@ export const InsightsTopBar = ({
 
       {/* Actions */}
       <div className="flex items-center gap-2 shrink-0">
+        {/* Resync */}
+        {onResync && canResync && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onResync}
+            disabled={syncStatus === "syncing"}
+            className="h-8 px-2.5 rounded-lg gap-1.5 text-white/80 hover:text-white hover:bg-white/10 disabled:opacity-70 disabled:cursor-not-allowed"
+            title={syncStatus === "syncing" ? syncStep || "Syncing…" : "Resync this account"}
+          >
+            {syncStatus === "syncing" ? (
+              <>
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                <span className="text-[11px] font-medium max-w-[180px] truncate">
+                  {syncStep || "Syncing…"}
+                </span>
+              </>
+            ) : syncStatus === "complete" ? (
+              <>
+                <Check className="w-3.5 h-3.5 text-success" />
+                <span className="text-[11px] font-medium">Synced</span>
+              </>
+            ) : syncStatus === "error" ? (
+              <>
+                <AlertCircle className="w-3.5 h-3.5 text-destructive" />
+                <span className="text-[11px] font-medium">Retry sync</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-medium">Resync</span>
+              </>
+            )}
+          </Button>
+        )}
+
         {/* Notifications */}
         <Popover>
           <PopoverTrigger asChild>
