@@ -303,8 +303,10 @@ export const InsightsStep = () => {
       .subscribe();
 
     try {
+      // Resync only the last 30 days — Meta's attribution windows close by 28 days,
+      // so older days won't change. Keeps repulls fast and bounded.
       const { data, error } = await supabase.functions.invoke("meta-sync-accounts", {
-        body: { adAccountId: accountId, dateRangeDays: state.dateRange || "90" },
+        body: { adAccountId: accountId, dateRangeDays: "30" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
