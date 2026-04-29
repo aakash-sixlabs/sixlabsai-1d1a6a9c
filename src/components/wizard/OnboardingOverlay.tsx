@@ -130,13 +130,17 @@ interface MockAdAccount {
 export const AccountSelectOverlay = ({
   open,
   onStartSync,
+  onReturningAccountSelected,
   isDevMode = false,
   saveAsDefault = false,
+  skipCompletedAccountSetup = false,
 }: {
   open: boolean;
   onStartSync: () => void;
+  onReturningAccountSelected?: () => void;
   isDevMode?: boolean;
   saveAsDefault?: boolean;
+  skipCompletedAccountSetup?: boolean;
 }) => {
   const { updateState } = useWizard();
   const [selected, setSelected] = useState<string | null>(null);
@@ -191,11 +195,19 @@ export const AccountSelectOverlay = ({
     const account = accounts.find((a) => a.id === selected);
     if (!account) return;
 
-    // Save as default ad account
+    let previousDefaultAccountId: string | null = null;
+
     if (saveAsDefault) {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("default_ad_account_id")
+            .eq("id", user.id)
+            .maybeSingle();
+          previousDefaultAccountId = profile?.default_ad_account_id ?? null;
+
           await supabase
             .from("profiles")
             .update({ default_ad_account_id: account.id })
@@ -212,6 +224,24 @@ export const AccountSelectOverlay = ({
       selectedMetaAccountId: account.account_id,
       dateRange: "90",
     });
+
+    if (skipCompletedAccountSetup && onReturningAccountSelected) {
+      const { data: accountProfile } = await supabase
+        .from("ad_account_profiles")
+        .select("brand_kit_status, confirmed")
+        .eq("ad_account_id", account.id)
+        .maybeSingle();
+
+      if (
+        previousDefaultAccountId === account.id ||
+        accountProfile?.brand_kit_status === "ready" ||
+        accountProfile?.confirmed
+      ) {
+        onReturningAccountSelected();
+        return;
+      }
+    }
+
     onStartSync();
   };
 
