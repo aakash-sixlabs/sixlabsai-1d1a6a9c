@@ -47,7 +47,7 @@ export const BrandKitBanner = () => {
       .maybeSingle();
 
     setAccount({ id: acct.id, name: acct.account_name, metaId: acct.account_id });
-    setShow(!aap || aap.brand_kit_status !== "ready");
+    setShow(Boolean(aap && aap.brand_kit_status !== "ready"));
   };
 
   useEffect(() => {
