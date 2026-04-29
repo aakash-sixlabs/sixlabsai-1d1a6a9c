@@ -1,53 +1,17 @@
-## Goal
+# Populate `cost_per_purchase` in insights sync
 
-1. Update prod `meta-sync-creatives` to skip video upserts (match `test-creatives`) while still tagging `ads.media_type='video'`.
-2. Backfill: purge existing video rows from `ad_creatives`, and tag pre-existing video ads in the `ads` table.
+## Change
+In `supabase/functions/meta-sync-insights/index.ts`, derive `cost_per_purchase` at write time as `spend / purchases` (0 when `purchases === 0`) and include it in each `perfRows` upsert payload.
 
-## Change scope
-
-- **File:** `supabase/functions/meta-sync-creatives/index.ts`
-- **Migration:** one-time SQL to clean current state.
-
-## Edits to `meta-sync-creatives/index.ts`
-
-Inside the per-ad loop in `runPhase` (around lines 193–272):
-
-1. After `classifyCreative(creative)` returns `creativeType`, branch:
-   - **If `creativeType === "video"`:**
-     - `await admin.from("ads").update({ media_type: "video" }).eq("id", storedAd.id);`
-     - `continue;` — skip image extraction, download loop, and `ad_creatives` upsert.
-   - **Otherwise (dco / static_single / static_carousel / unknown):**
-     - Existing flow unchanged: extract images, download/rehost, upsert `ad_creatives`.
-     - Also write `media_type` to `ads` matching `creative_type`, so both tables stay consistent.
-
-2. Add lightweight counters (`videosSkipped`, `creativesStored`, by-type breakdown) and a `console.log` at the end of the loop for log/audit visibility. No schema change.
-
-## Backfill migration
-
-One migration with two statements, scoped to current data:
-
-```sql
--- 1. Tag existing video ads in the ads table (before deleting the source of truth)
-UPDATE public.ads a
-SET media_type = 'video'
-FROM public.ad_creatives c
-WHERE c.ad_id = a.id
-  AND c.creative_type = 'video';
-
--- 2. Purge video rows from ad_creatives (now redundant)
-DELETE FROM public.ad_creatives
-WHERE creative_type = 'video';
-```
-
-Order matters: tag `ads` first, then delete from `ad_creatives` — otherwise we lose the join needed to identify which ads were videos.
+## Implementation
+- After computing `purchases`, `spend`, `revenue`, `roas`, add:
+  ```ts
+  const costPerPurchase = purchases > 0 ? spend / purchases : 0;
+  ```
+- Add `cost_per_purchase: costPerPurchase` to the row object pushed into `perfRows`.
+- No schema change needed — column already exists on `ad_performance_daily` with default `0`.
+- No backfill of historical rows in this change; only newly-synced/upserted rows will be populated. (Re-running a sync for a date range will overwrite via the existing `user_id,ad_id,date` upsert conflict target.)
 
 ## Out of scope
-
-- Other gaps from the earlier review (missing `video_id`/`url_tags` fields in fetch, DCO image-hash resolution via `/adimages`) — separate plan.
-- `meta-sync-accounts` and `meta-sync-insights` — untouched.
-
-## Net effect
-
-- `ads`: every video ad correctly tagged `media_type='video'` (both historical and future).
-- `ad_creatives`: zero video rows after migration; future syncs never add them.
-- Sync runtime: faster on video-heavy accounts.
+- Pulling Meta's native `cost_per_action_type` field (would match Ads Manager exactly but requires a wider API change).
+- Backfilling existing rows via SQL.

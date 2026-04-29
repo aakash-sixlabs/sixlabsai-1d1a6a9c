@@ -197,6 +197,7 @@ Deno.serve(async (req) => {
             const frequency = parseFloat(insight.frequency || "0");
             const reach = parseInt(insight.reach || "0");
             const roas = spend > 0 ? revenue / spend : 0;
+            const costPerPurchase = purchases > 0 ? spend / purchases : 0;
 
             perfRows.push({
               user_id: userId,
