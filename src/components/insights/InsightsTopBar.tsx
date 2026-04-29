@@ -1,4 +1,4 @@
-import { Search, Bell, Zap } from "lucide-react";
+import { Search, Bell, Zap, RefreshCw, Check, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -31,12 +31,20 @@ interface InsightsTopBarProps {
   onSearchChange: (q: string) => void;
   onFilterClick: () => void;
   userName?: string;
+  onResync?: () => void;
+  syncStatus?: "idle" | "syncing" | "complete" | "error";
+  syncStep?: string;
+  canResync?: boolean;
 }
 
 export const InsightsTopBar = ({
   searchQuery,
   onSearchChange,
   userName,
+  onResync,
+  syncStatus = "idle",
+  syncStep,
+  canResync = true,
 }: InsightsTopBarProps) => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
