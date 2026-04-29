@@ -76,6 +76,42 @@ interface EnrichedAd {
   impressions: number | null;
 }
 
+// ─── Sort options ────────────────────────────────────────────────
+
+type SortKey = "score" | "spend" | "roas" | "ctr" | "impressions" | "decay" | "name";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "score", label: "Score" },
+  { key: "spend", label: "Spend" },
+  { key: "roas", label: "ROAS" },
+  { key: "ctr", label: "CTR" },
+  { key: "impressions", label: "Impressions" },
+  { key: "decay", label: "Decay score" },
+  { key: "name", label: "Ad name (A→Z)" },
+];
+
+function sortAds(list: EnrichedAd[], key: SortKey): EnrichedAd[] {
+  const out = [...list];
+  const numDesc = (getter: (a: EnrichedAd) => number | null | undefined) =>
+    out.sort((a, b) => {
+      const av = getter(a);
+      const bv = getter(b);
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (bv as number) - (av as number);
+    });
+  switch (key) {
+    case "score": return numDesc((a) => a.score);
+    case "spend": return numDesc((a) => a.spend);
+    case "roas": return numDesc((a) => a.roas);
+    case "ctr": return numDesc((a) => a.ctr);
+    case "impressions": return numDesc((a) => a.impressions);
+    case "decay": return numDesc((a) => a.decayScore);
+    case "name": return out.sort((a, b) => a.adName.localeCompare(b.adName));
+  }
+}
+
 // ─── Mock Data ───────────────────────────────────────────────────
 
 const MOCK_IMAGES = [
