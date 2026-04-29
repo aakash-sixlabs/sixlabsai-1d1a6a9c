@@ -290,6 +290,29 @@ Deno.serve(async (req) => {
         });
         const creativeMap = await fetchCreativesInBatches(creativeIds, accessToken);
 
+        // DCO creatives only expose image hashes (not URLs) inside asset_feed_spec.
+        // Resolve those hashes to CDN URLs in one bulk pass via /act_{id}/adimages
+        // so the per-ad download loop has something to fetch.
+        const dcoHashes: string[] = [];
+        for (const cid of Object.keys(creativeMap)) {
+          const c = creativeMap[cid];
+          const afsImages = c?.asset_feed_spec?.images;
+          if (Array.isArray(afsImages)) {
+            for (const img of afsImages) {
+              if (img?.hash && !img?.url) dcoHashes.push(img.hash);
+            }
+          }
+        }
+        let hashUrlMap = new Map<string, string>();
+        if (dcoHashes.length > 0) {
+          await updateStep(`Resolving ${dcoHashes.length} DCO image hashes`);
+          hashUrlMap = await resolveImageHashesToUrls(
+            adAccount.account_id,
+            dcoHashes,
+            accessToken,
+          );
+        }
+
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         let processed = 0;
         let imagesDownloaded = 0;
