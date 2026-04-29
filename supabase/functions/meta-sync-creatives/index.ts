@@ -356,7 +356,7 @@ Deno.serve(async (req) => {
           const oss = creative.object_story_spec || {};
           const linkData = oss.link_data || {};
 
-          const { hashes, urls } = extractImages(creative);
+          const { hashes, urls } = extractImages(creative, hashUrlMap);
 
           // Skip download if we already have this exact creative stored
           const existing = existingMap.get(
