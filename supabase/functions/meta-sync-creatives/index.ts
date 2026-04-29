@@ -212,16 +212,6 @@ Deno.serve(async (req) => {
         let imagesDownloaded = 0;
         let videosSkipped = 0;
         let creativesStored = 0;
-        const typeCounts: Record<string, number> = {};
-        const total = (storedAds || []).length;
-
-        for (const storedAd of storedAds || []) {
-          processed++;
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        let processed = 0;
-        let imagesDownloaded = 0;
-        let videosSkipped = 0;
-        let creativesStored = 0;
         let imagesSkipped = 0;
         const typeCounts: Record<string, number> = {};
         const total = (storedAds || []).length;
