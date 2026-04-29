@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, ArrowRight, Sparkles, Wand2, Trophy, Target, TrendingUp } from "lucide-react";
+import { Loader2, ArrowRight, Sparkles, Wand2, Trophy, Target, TrendingUp, ArrowUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
@@ -68,6 +74,42 @@ interface EnrichedAd {
   roas: number | null;
   ctr: number | null;
   impressions: number | null;
+}
+
+// ─── Sort options ────────────────────────────────────────────────
+
+type SortKey = "score" | "spend" | "roas" | "ctr" | "impressions" | "decay" | "name";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "score", label: "Score" },
+  { key: "spend", label: "Spend" },
+  { key: "roas", label: "ROAS" },
+  { key: "ctr", label: "CTR" },
+  { key: "impressions", label: "Impressions" },
+  { key: "decay", label: "Decay score" },
+  { key: "name", label: "Ad name (A→Z)" },
+];
+
+function sortAds(list: EnrichedAd[], key: SortKey): EnrichedAd[] {
+  const out = [...list];
+  const numDesc = (getter: (a: EnrichedAd) => number | null | undefined) =>
+    out.sort((a, b) => {
+      const av = getter(a);
+      const bv = getter(b);
+      if (av == null && bv == null) return 0;
+      if (av == null) return 1;
+      if (bv == null) return -1;
+      return (bv as number) - (av as number);
+    });
+  switch (key) {
+    case "score": return numDesc((a) => a.score);
+    case "spend": return numDesc((a) => a.spend);
+    case "roas": return numDesc((a) => a.roas);
+    case "ctr": return numDesc((a) => a.ctr);
+    case "impressions": return numDesc((a) => a.impressions);
+    case "decay": return numDesc((a) => a.decayScore);
+    case "name": return out.sort((a, b) => a.adName.localeCompare(b.adName));
+  }
 }
 
 // ─── Mock Data ───────────────────────────────────────────────────
@@ -153,6 +195,7 @@ export const InsightsStep = () => {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "complete" | "error">("idle");
   const [syncStep, setSyncStep] = useState<string>("");
+  const [sortKey, setSortKey] = useState<SortKey>("score");
 
   const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
     const insightByAd = new Map<string, Insight>();
@@ -387,7 +430,8 @@ export const InsightsStep = () => {
 
   // Derived data
   const filteredAds = useMemo(() => {
-    let result = ads;
+    // Always start from a score-sorted baseline so "top" slicing is meaningful
+    let result = sortAds(ads, "score");
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -398,15 +442,20 @@ export const InsightsStep = () => {
       result = result.slice(0, Math.max(1, Math.ceil(ads.length * 0.2)));
     }
     if (activeView === "opportunities") {
-      // Ads with decent spend but below-average ROAS — room to improve
-      result = [...result].filter((a) => (a.spend ?? 0) > 1000 && (a.roas ?? 0) < 2).sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0));
+      result = result.filter((a) => (a.spend ?? 0) > 1000 && (a.roas ?? 0) < 2);
     }
     if (activeView === "needs-review") {
-      // Ads with high decay / poor performance needing attention
-      result = [...result].filter((a) => a.decayScore > 50).sort((a, b) => b.decayScore - a.decayScore);
+      result = result.filter((a) => a.decayScore > 50);
     }
-    return result;
-  }, [ads, searchQuery, activeView]);
+    // Apply user-selected sort. For opinionated views, default sort key falls back
+    // to that view's natural ranking.
+    if (sortKey === "score") {
+      if (activeView === "opportunities") return sortAds(result, "spend");
+      if (activeView === "needs-review") return sortAds(result, "decay");
+      return result;
+    }
+    return sortAds(result, sortKey);
+  }, [ads, searchQuery, activeView, sortKey]);
 
   const campaignBoards = useMemo(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
@@ -544,7 +593,33 @@ export const InsightsStep = () => {
             {/* Section header */}
             <div className="flex items-center justify-between mb-5 mt-2">
               <h2 className="font-display font-bold text-xl text-foreground tracking-tight">{viewTitle}</h2>
-              <span className="text-xs text-muted-foreground bg-secondary/80 px-3 py-1 rounded-full font-medium">{filteredAds.length} creatives</span>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg"
+                    >
+                      <ArrowUpDown className="w-3.5 h-3.5" />
+                      Sort: {SORT_OPTIONS.find((o) => o.key === sortKey)?.label}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                    {SORT_OPTIONS.map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.key}
+                        className="text-xs rounded-lg flex items-center justify-between"
+                        onClick={() => setSortKey(opt.key)}
+                      >
+                        {opt.label}
+                        {sortKey === opt.key && <Check className="w-3.5 h-3.5 text-accent" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <span className="text-xs text-muted-foreground bg-secondary/80 px-3 py-1 rounded-full font-medium">{filteredAds.length} creatives</span>
+              </div>
             </div>
 
             {/* Top performers — on Home */}

@@ -1,44 +1,68 @@
-## Why images are missing
+# Sort Structure & New Sort Controls
 
-All "No preview" cards in Top Performers are **DCO** (Dynamic Creative Optimization) ads. Verified against the DB: every such row has `creative_type = 'dco'`, `image_hashes` populated, but `image_url = null` and `stored_image_urls = []`. Static creatives render fine.
+## Current sort behavior (today)
 
-Meta's `asset_feed_spec.images[]` returns only `{ hash }` — never a `url`. The current `extractImages()` in `meta-sync-creatives` pushes the hashes but ends up with an empty `urls` array, so nothing is downloaded into the `ad-creatives` storage bucket and the UI has no image to render.
+All ads are loaded once and globally sorted by a computed **Score** (descending) in `InsightsStep.tsx`:
 
-## Fix
+```
+score = min(100, round(roas * 15 + ctr * 20))
+```
 
-Resolve DCO hashes to CDN URLs by calling Meta's `/act_{accountId}/adimages` endpoint, then run them through the existing download → Supabase Storage path.
+Then the view-specific filtering picks from that pre-sorted list:
 
-### Changes to `supabase/functions/meta-sync-creatives/index.ts`
+| Section / View | Source | Sort applied |
+|---|---|---|
+| **Top Performers** (Home `🔥` block) | `filteredAds.slice(0, ceil(20%))` | Inherits global **Score desc** |
+| **All Ads** (Home, `discover`) | `filteredAds` | **Score desc** |
+| **Top Performers view** (`top` in sidebar) | top 20% by score | **Score desc** |
+| **Opportunities** (`opportunities`) | `spend > 1000 AND roas < 2` | **Spend desc** |
+| **Needs Review** (`needs-review`) | `decayScore > 50` | **Decay desc** |
 
-1. **Pre-pass: collect all unique DCO hashes** from this sync batch (any creative where `asset_feed_spec.images` exists and the hash isn't already paired with a direct URL).
+Search filter is applied before sort/slice; no user control over sort order.
 
-2. **Bulk-resolve hashes → URLs** via Meta:
-   ```
-   GET /v21.0/act_{accountId}/adimages
-       ?hashes=["h1","h2",...]
-       &fields=hash,url,url_128,permalink_url,width,height
-   ```
-   Batch in chunks of 50 hashes per call. Page through results. Build a `Map<hash, string>` keyed by `hash`, value = `url` (fall back to `permalink_url` if needed). Use the same `fetchAllPages` retry/backoff helper already in this function.
+## What we'll add
 
-3. **Update `extractImages(creative, hashUrlMap)`** — for `asset_feed_spec.images[]` items without `img.url`, look up `hashUrlMap.get(img.hash)` and push that. Keep the existing dedupe.
+A small **Sort by** dropdown in the section header (next to the "N creatives" pill) on the Home view, controlling **both** the Top Performers grid and the All Ads grid (single shared sort, since Top Performers is just the top slice of the same list).
 
-4. **Persistence stays as-is** — once `urls` is non-empty, the existing parallel download/upload block writes JPEGs to the `ad-creatives` bucket and populates `stored_image_urls` + `stored_image_url`.
+### Sort options
 
-5. **Edge cases**
-   - If a hash can't be resolved (deleted asset, permission issue), log and continue — store the hash but leave URL slots null for that one.
-   - Skip the resolve call entirely when there are zero unresolved DCO hashes (keeps re-syncs fast — they short-circuit on `hashesMatch` before reaching this anyway).
-   - Video-only DCO (`asset_feed_spec.videos` but no `images`) — already handled by the existing `creative_type === "video"` early-return; no change.
+- Score (default) — `roas*15 + ctr*20`
+- Spend — highest first
+- ROAS — highest first
+- CTR — highest first
+- Impressions — highest first
+- Decay score — highest first (worst first, useful for triage)
+- Ad name — A→Z
 
-### Backfill existing rows
+Each is descending by default except Ad name (A→Z). Nulls always sort last.
 
-Existing 300+ DCO rows in `ad_creatives` already have `image_hashes` but empty `stored_image_urls`. After the function fix ships, trigger one resync for the affected account — the per-ad logic will detect `existingUrls.length === 0` and run the new download path, populating storage and URLs without reprocessing static creatives unnecessarily.
+Opportunities and Needs Review keep their opinionated sorts (spend desc / decay desc) since those views are defined by their ranking — but the dropdown will still be visible and override when changed.
 
-### Out of scope
+## Implementation
 
-- No DB schema changes (columns already exist).
-- No frontend changes — `AdCreativeGrid` already renders `imageUrl` when present.
-- No changes to `meta-sync-accounts` or other sync stages.
+**File: `src/components/wizard/InsightsStep.tsx`**
 
-## Files
+1. Add `sortKey` state: `"score" | "spend" | "roas" | "ctr" | "impressions" | "decay" | "name"`, default `"score"`.
+2. Remove the hard-coded `enriched.sort(...)` calls in `enrichAndSet` and `fetchData` (sort moves to the memo).
+3. In `filteredAds` useMemo, after filtering, apply sort based on `sortKey`. Keep the existing override sorts for `opportunities` / `needs-review` only when `sortKey === "score"` (default); otherwise honor the user's choice.
+4. Top slice (`topAds`) keeps using `filteredAds.slice(0, ceil(20%))` so it follows the same sort.
 
-- **Edit**: `supabase/functions/meta-sync-creatives/index.ts` (add hash-resolution pre-pass + thread map into `extractImages`)
+**File: `src/components/insights/AdCreativeGrid.tsx`** — no changes needed (sort happens upstream).
+
+**UI: Sort dropdown**
+
+Place a compact `DropdownMenu` (already imported via shadcn) in the section header at line ~545, replacing the current right-side pill area:
+
+```text
+[ Section title ]              [ Sort by: Score ▾ ]  [ N creatives ]
+```
+
+- Trigger: ghost button, small text, `ArrowUpDown` icon, current label.
+- Items: the 7 options above; selected item shows a check.
+- Styling matches existing rounded-xl, text-xs, muted foreground patterns.
+
+## Out of scope
+
+- Per-grid independent sort (Top Performers vs All Ads use the same order — this is intentional so "Top" remains the head of the same ranking).
+- Ascending/descending toggle (defaults are the meaningful direction for each metric).
+- Persisting sort choice across sessions.
