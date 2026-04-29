@@ -430,7 +430,8 @@ export const InsightsStep = () => {
 
   // Derived data
   const filteredAds = useMemo(() => {
-    let result = ads;
+    // Always start from a score-sorted baseline so "top" slicing is meaningful
+    let result = sortAds(ads, "score");
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -441,13 +442,20 @@ export const InsightsStep = () => {
       result = result.slice(0, Math.max(1, Math.ceil(ads.length * 0.2)));
     }
     if (activeView === "opportunities") {
-      // Ads with decent spend but below-average ROAS — room to improve
-      result = [...result].filter((a) => (a.spend ?? 0) > 1000 && (a.roas ?? 0) < 2).sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0));
+      result = result.filter((a) => (a.spend ?? 0) > 1000 && (a.roas ?? 0) < 2);
     }
     if (activeView === "needs-review") {
-      // Ads with high decay / poor performance needing attention
-      result = [...result].filter((a) => a.decayScore > 50).sort((a, b) => b.decayScore - a.decayScore);
+      result = result.filter((a) => a.decayScore > 50);
     }
+    // Apply user-selected sort. For opinionated views, default sort key falls back
+    // to that view's natural ranking.
+    if (sortKey === "score") {
+      if (activeView === "opportunities") return sortAds(result, "spend");
+      if (activeView === "needs-review") return sortAds(result, "decay");
+      return result;
+    }
+    return sortAds(result, sortKey);
+  }, [ads, searchQuery, activeView, sortKey]);
     return result;
   }, [ads, searchQuery, activeView]);
 
