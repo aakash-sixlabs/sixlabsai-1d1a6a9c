@@ -191,7 +191,8 @@ Deno.serve(async (req) => {
       }));
 
       if (accounts.length > 0) {
-        await adminClient.from("ad_accounts").delete().eq("user_id", userId);
+        // Preserve existing account row IDs so saved defaults, brand kits, and
+        // synced data tied to those accounts are not lost on every re-login.
         await adminClient.from("ad_accounts").upsert(accounts, {
           onConflict: "account_id",
         });

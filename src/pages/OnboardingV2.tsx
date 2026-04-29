@@ -86,10 +86,9 @@ const OnboardingV2 = () => {
       }
 
       try {
-        // Returning-user shortcut: if the user already has a default ad
-        // account with a confirmed brand kit, skip onboarding entirely and
-        // send them to /home. The /home page will trigger a non-blocking
-        // 30-day resync on landing.
+        // Returning-user shortcut: once a default ad account exists, onboarding
+        // has already been completed for this user. The /home page triggers a
+        // non-blocking 30-day resync on landing.
         const { data: profile } = await supabase
           .from("profiles")
           .select("default_ad_account_id")
@@ -97,16 +96,8 @@ const OnboardingV2 = () => {
           .maybeSingle();
 
         if (profile?.default_ad_account_id) {
-          const { data: aap } = await supabase
-            .from("ad_account_profiles")
-            .select("brand_kit_status")
-            .eq("ad_account_id", profile.default_ad_account_id)
-            .maybeSingle();
-
-          if (aap?.brand_kit_status === "ready") {
-            navigate("/home", { replace: true });
-            return;
-          }
+          navigate("/home", { replace: true });
+          return;
         }
 
         const { data, error } = await supabase
@@ -151,6 +142,17 @@ const OnboardingV2 = () => {
       selectedMetaAccountId: account.account_id,
       dateRange: "90",
     });
+
+    const { data: accountProfile } = await supabase
+      .from("ad_account_profiles")
+      .select("brand_kit_status, confirmed")
+      .eq("ad_account_id", account.id)
+      .maybeSingle();
+
+    if (accountProfile?.brand_kit_status === "ready" || accountProfile?.confirmed) {
+      navigate("/home", { replace: true });
+      return;
+    }
 
     setPhase("brand-kit");
   };

@@ -42,9 +42,9 @@ const Onboarding = () => {
         return;
       }
 
-      // Returning-user shortcut: if the user already has a default ad account
-      // with a confirmed brand kit, skip onboarding entirely and send them to
-      // /home. /home will trigger a non-blocking 30-day resync on landing.
+      // Returning-user shortcut: once a default ad account exists, onboarding
+      // has already been completed for this user. /home triggers the non-blocking
+      // 30-day resync on landing.
       const { data: profile } = await supabase
         .from("profiles")
         .select("default_ad_account_id")
@@ -52,16 +52,8 @@ const Onboarding = () => {
         .maybeSingle();
 
       if (profile?.default_ad_account_id) {
-        const { data: aap } = await supabase
-          .from("ad_account_profiles")
-          .select("brand_kit_status")
-          .eq("ad_account_id", profile.default_ad_account_id)
-          .maybeSingle();
-
-        if (aap?.brand_kit_status === "ready") {
-          navigate("/home", { replace: true });
-          return;
-        }
+        navigate("/home", { replace: true });
+        return;
       }
 
       if (searchParams.get("meta") === "connected") {
@@ -140,8 +132,10 @@ const Onboarding = () => {
       <AccountSelectOverlay
         open={phase === "account-select" && !showProfileDialog}
         onStartSync={handleAccountSelected}
+        onReturningAccountSelected={() => navigate("/home", { replace: true })}
         isDevMode={isDevMode}
         saveAsDefault
+        skipCompletedAccountSetup
       />
       {phase === "brand-kit" && state.selectedAccount && (
         <BrandKitStep
