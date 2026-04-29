@@ -9,7 +9,7 @@ import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
 import { DigestCards } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
-import { SyncNotificationBar } from "@/components/insights/SyncNotificationBar";
+
 import { useWizard } from "@/context/WizardContext";
 
 // ─── Types ───────────────────────────────────────────────────────
