@@ -159,6 +159,7 @@ export const InsightsStep = () => {
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "complete" | "error">("idle");
   const [syncStep, setSyncStep] = useState<string>("");
+  const [sortKey, setSortKey] = useState<SortKey>("score");
 
   const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
     const insightByAd = new Map<string, Insight>();
