@@ -217,26 +217,44 @@ Deno.serve(async (req) => {
 
         for (const storedAd of storedAds || []) {
           processed++;
-          if (processed % 25 === 0) {
-            await updateStep(`Processing creatives (${processed}/${total})`, {
-              images_downloaded: imagesDownloaded,
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        let processed = 0;
+        let imagesDownloaded = 0;
+        let videosSkipped = 0;
+        let creativesStored = 0;
+        let imagesSkipped = 0;
+        const typeCounts: Record<string, number> = {};
+        const total = (storedAds || []).length;
+
+        // Preload existing ad_creatives so we can skip re-downloading unchanged images
+        const { data: existingCreatives } = await admin
+          .from("ad_creatives")
+          .select("meta_creative_id, image_hashes, stored_image_urls")
+          .eq("user_id", userId);
+        const existingMap = new Map<string, { image_hashes: any; stored_image_urls: any }>();
+        for (const ec of existingCreatives || []) {
+          if (ec.meta_creative_id) {
+            existingMap.set(ec.meta_creative_id, {
+              image_hashes: ec.image_hashes,
+              stored_image_urls: ec.stored_image_urls,
             });
           }
+        }
 
+        const processOneAd = async (storedAd: any) => {
           const creative = storedAd.meta_creative_id
             ? creativeMap[storedAd.meta_creative_id] || {}
             : {};
           const creativeType = classifyCreative(creative);
           typeCounts[creativeType] = (typeCounts[creativeType] || 0) + 1;
 
-          // Videos: tag the ads row but skip ad_creatives entirely (matches test-creatives)
           if (creativeType === "video") {
             await admin
               .from("ads")
               .update({ media_type: "video" })
               .eq("id", storedAd.id);
             videosSkipped++;
-            continue;
+            return;
           }
 
           const oss = creative.object_story_spec || {};
@@ -244,39 +262,60 @@ Deno.serve(async (req) => {
 
           const { hashes, urls } = extractImages(creative);
 
-          // Download + rehost each image to Supabase Storage
-          const storedImageUrls: string[] = [];
-          for (let imgIdx = 0; imgIdx < urls.length; imgIdx++) {
-            try {
-              const imgRes = await fetch(urls[imgIdx]);
-              if (!imgRes.ok) continue;
-              const contentType = imgRes.headers.get("content-type") || "image/jpeg";
-              const imgBuffer = await imgRes.arrayBuffer();
-              const ext = contentType.includes("png")
-                ? "png"
-                : contentType.includes("webp")
-                ? "webp"
-                : "jpg";
-              const storagePath = `${userId}/${storedAd.id}_${imgIdx}.${ext}`;
-              const { error: uploadError } = await admin.storage
-                .from("ad-creatives")
-                .upload(storagePath, imgBuffer, { contentType, upsert: true });
-              if (!uploadError) {
-                storedImageUrls.push(
-                  `${supabaseUrl}/storage/v1/object/public/ad-creatives/${storagePath}`,
-                );
-                imagesDownloaded++;
-              }
-            } catch (imgErr) {
-              console.error(`Image ${imgIdx} failed for ad ${storedAd.meta_ad_id}:`, imgErr);
-            }
+          // Skip download if we already have this exact creative stored
+          const existing = existingMap.get(
+            creative.id || storedAd.meta_creative_id || "",
+          );
+          let storedImageUrls: string[] = [];
+          const existingHashes = Array.isArray(existing?.image_hashes)
+            ? (existing!.image_hashes as string[])
+            : [];
+          const existingUrls = Array.isArray(existing?.stored_image_urls)
+            ? (existing!.stored_image_urls as string[])
+            : [];
+          const hashesMatch =
+            existingHashes.length > 0 &&
+            hashes.length > 0 &&
+            existingHashes.length === hashes.length &&
+            existingHashes.every((h, i) => h === hashes[i]);
+
+          if (hashesMatch && existingUrls.length > 0) {
+            storedImageUrls = existingUrls;
+            imagesSkipped += existingUrls.length;
+          } else {
+            // Download + upload all images for this ad in parallel
+            const uploads = await Promise.all(
+              urls.map(async (url, imgIdx) => {
+                try {
+                  const imgRes = await fetchWithTimeout(url, 10_000);
+                  if (!imgRes.ok) return null;
+                  const contentType = imgRes.headers.get("content-type") || "image/jpeg";
+                  const imgBuffer = await imgRes.arrayBuffer();
+                  const ext = contentType.includes("png")
+                    ? "png"
+                    : contentType.includes("webp")
+                    ? "webp"
+                    : "jpg";
+                  const storagePath = `${userId}/${storedAd.id}_${imgIdx}.${ext}`;
+                  const { error: uploadError } = await admin.storage
+                    .from("ad-creatives")
+                    .upload(storagePath, imgBuffer, { contentType, upsert: true });
+                  if (uploadError) return null;
+                  return `${supabaseUrl}/storage/v1/object/public/ad-creatives/${storagePath}`;
+                } catch (imgErr) {
+                  console.error(`Image ${imgIdx} failed for ad ${storedAd.meta_ad_id}:`, imgErr);
+                  return null;
+                }
+              }),
+            );
+            storedImageUrls = uploads.filter((u): u is string => !!u);
+            imagesDownloaded += storedImageUrls.length;
           }
 
           const primaryHash = hashes[0] || null;
           const primaryFbUrl = urls[0] || null;
           const primaryStoredUrl = storedImageUrls[0] || null;
 
-          // Upsert into new ad_creatives schema
           await admin.from("ad_creatives").upsert(
             {
               user_id: userId,
@@ -307,17 +346,30 @@ Deno.serve(async (req) => {
             { onConflict: "user_id,meta_creative_id" },
           );
 
-          // Keep ads.media_type consistent with creative_type
           await admin
             .from("ads")
             .update({ media_type: creativeType })
             .eq("id", storedAd.id);
 
           creativesStored++;
+        };
+
+        // Run ads in parallel chunks of 10
+        const CONCURRENCY = 10;
+        const ads = storedAds || [];
+        for (let i = 0; i < ads.length; i += CONCURRENCY) {
+          const chunk = ads.slice(i, i + CONCURRENCY);
+          await Promise.all(chunk.map(processOneAd));
+          processed += chunk.length;
+          if (processed % 25 < CONCURRENCY || processed >= ads.length) {
+            await updateStep(`Processing creatives (${processed}/${total})`, {
+              images_downloaded: imagesDownloaded,
+            });
+          }
         }
 
         console.log(
-          `Creatives processed: ${processed} total | stored: ${creativesStored} | videos skipped: ${videosSkipped} | by type:`,
+          `Creatives processed: ${processed} total | stored: ${creativesStored} | videos skipped: ${videosSkipped} | images downloaded: ${imagesDownloaded} | images reused: ${imagesSkipped} | by type:`,
           typeCounts,
         );
 
