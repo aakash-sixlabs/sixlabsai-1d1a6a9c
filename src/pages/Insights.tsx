@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { isSuperAdmin } from "@/lib/superAdmin";
+import { useWizard } from "@/context/WizardContext";
 import { InsightsStep } from "@/components/wizard/InsightsStep";
 import { BrandKitBanner } from "@/components/wizard/BrandKitBanner";
 import { Loader2 } from "lucide-react";
 
 const Insights = () => {
   const navigate = useNavigate();
+  const { state, updateState } = useWizard();
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -16,17 +17,39 @@ const Insights = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/loginvcollect"); return; }
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("id", user.id)
-        .single();
+      // Hydrate wizard state from profile so background resync can run
+      // for returning users who land here directly.
+      if (!state.selectedAccount) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("default_ad_account_id")
+          .eq("id", user.id)
+          .maybeSingle();
 
-      if (isSuperAdmin(profile?.email)) {
-        setAuthorized(true);
-      } else {
-        navigate("/onboarding-v2");
+        if (!profile?.default_ad_account_id) {
+          navigate("/onboarding-v2");
+          return;
+        }
+
+        const { data: acct } = await supabase
+          .from("ad_accounts")
+          .select("id, account_id, account_name")
+          .eq("id", profile.default_ad_account_id)
+          .maybeSingle();
+
+        if (!acct) {
+          navigate("/onboarding-v2");
+          return;
+        }
+
+        updateState({
+          selectedAccount: acct.id,
+          selectedAccountName: acct.account_name,
+          selectedMetaAccountId: acct.account_id,
+        });
       }
+
+      setAuthorized(true);
       setLoading(false);
     };
     check();
