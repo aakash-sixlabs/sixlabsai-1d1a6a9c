@@ -456,8 +456,6 @@ export const InsightsStep = () => {
     }
     return sortAds(result, sortKey);
   }, [ads, searchQuery, activeView, sortKey]);
-    return result;
-  }, [ads, searchQuery, activeView]);
 
   const campaignBoards = useMemo(() => {
     const map = new Map<string, { id: string; name: string; count: number }>();
