@@ -1,56 +1,44 @@
-## Why it's slow
+## Why images are missing
 
-Your screenshot shows "Processing creatives (175/377)". The `meta-sync-creatives` edge function is the bottleneck. For each of 377 ads it does the following **sequentially, one ad at a time**:
+All "No preview" cards in Top Performers are **DCO** (Dynamic Creative Optimization) ads. Verified against the DB: every such row has `creative_type = 'dco'`, `image_hashes` populated, but `image_url = null` and `stored_image_urls = []`. Static creatives render fine.
 
-1. Downloads the creative image from Meta's CDN (~300–800ms)
-2. Uploads it to your storage bucket (~200–500ms)
-3. Writes a row to `ad_creatives`
-4. Updates the `ads` row
+Meta's `asset_feed_spec.images[]` returns only `{ hash }` — never a `url`. The current `extractImages()` in `meta-sync-creatives` pushes the hashes but ends up with an empty `urls` array, so nothing is downloaded into the `ad-creatives` storage bucket and the UI has no image to render.
 
-At ~1.5–2.5s per ad serially, 377 ads = **10–15 minutes**. That matches what you're seeing. Some ads have multiple images (carousels, DCO), making it worse.
+## Fix
 
-There is **no parallelism** today — every image download blocks the next ad.
+Resolve DCO hashes to CDN URLs by calling Meta's `/act_{accountId}/adimages` endpoint, then run them through the existing download → Supabase Storage path.
 
-## What to change
+### Changes to `supabase/functions/meta-sync-creatives/index.ts`
 
-### 1. Process ads in parallel batches (biggest win)
+1. **Pre-pass: collect all unique DCO hashes** from this sync batch (any creative where `asset_feed_spec.images` exists and the hash isn't already paired with a direct URL).
 
-In `supabase/functions/meta-sync-creatives/index.ts`, replace the `for (const storedAd of storedAds)` serial loop with a batched parallel runner:
+2. **Bulk-resolve hashes → URLs** via Meta:
+   ```
+   GET /v21.0/act_{accountId}/adimages
+       ?hashes=["h1","h2",...]
+       &fields=hash,url,url_128,permalink_url,width,height
+   ```
+   Batch in chunks of 50 hashes per call. Page through results. Build a `Map<hash, string>` keyed by `hash`, value = `url` (fall back to `permalink_url` if needed). Use the same `fetchAllPages` retry/backoff helper already in this function.
 
-- Process **10 ads concurrently** using `Promise.all` over chunks of 10
-- Within each ad, also parallelize the per-image download/upload loop (carousels with 5 images currently take 5x longer than they should)
-- Keep the progress-update cadence (every 25 ads) but compute it from a shared counter
+3. **Update `extractImages(creative, hashUrlMap)`** — for `asset_feed_spec.images[]` items without `img.url`, look up `hashUrlMap.get(img.hash)` and push that. Keep the existing dedupe.
 
-Expected speedup: **5–8x**. 377 ads should finish in ~90–120 seconds instead of 10+ minutes.
+4. **Persistence stays as-is** — once `urls` is non-empty, the existing parallel download/upload block writes JPEGs to the `ad-creatives` bucket and populates `stored_image_urls` + `stored_image_url`.
 
-### 2. Skip re-downloading images we already have
+5. **Edge cases**
+   - If a hash can't be resolved (deleted asset, permission issue), log and continue — store the hash but leave URL slots null for that one.
+   - Skip the resolve call entirely when there are zero unresolved DCO hashes (keeps re-syncs fast — they short-circuit on `hashesMatch` before reaching this anyway).
+   - Video-only DCO (`asset_feed_spec.videos` but no `images`) — already handled by the existing `creative_type === "video"` early-return; no change.
 
-Right now every resync re-downloads and re-uploads every image, even when the creative hasn't changed. Add a guard at the top of the per-ad block:
+### Backfill existing rows
 
-- Look up the existing `ad_creatives` row for `(user_id, meta_creative_id)`
-- If it exists and `stored_image_urls` is non-empty and `image_hashes` matches what Meta returned, skip the download/upload entirely — just refresh the metadata fields
+Existing 300+ DCO rows in `ad_creatives` already have `image_hashes` but empty `stored_image_urls`. After the function fix ships, trigger one resync for the affected account — the per-ad logic will detect `existingUrls.length === 0` and run the new download path, populating storage and URLs without reprocessing static creatives unnecessarily.
 
-Expected speedup on **subsequent syncs**: most ads skip the network entirely, finishing in ~10–20 seconds.
+### Out of scope
 
-### 3. Tighten the Meta batch pacing
+- No DB schema changes (columns already exist).
+- No frontend changes — `AdCreativeGrid` already renders `imageUrl` when present.
+- No changes to `meta-sync-accounts` or other sync stages.
 
-`fetchCreativesInBatches` sleeps **500ms between every batch of 50** creatives. For 377 ads that's 8 batches = 4s of pure waiting. Drop to 150ms — Meta's batch endpoint comfortably handles this and the existing rate-limit retry logic catches any 429s.
+## Files
 
-### 4. Add a per-image timeout
-
-Some Meta CDN images hang for 30+ seconds before failing. Wrap each `fetch(urls[imgIdx])` in an `AbortController` with a 10s timeout so one slow image doesn't stall the whole batch.
-
-## Files to edit
-
-- `supabase/functions/meta-sync-creatives/index.ts` — all four changes above
-
-No schema changes, no frontend changes. The `Processing creatives (X/Y)` chip will simply count up much faster.
-
-## Expected result
-
-| Sync type | Today | After |
-|---|---|---|
-| First sync of 377 ads | 10–15 min | ~90–120 sec |
-| Re-sync (most images already stored) | 10–15 min | 10–30 sec |
-
-If you want even more speed later, we could move to a true job-queue model with multiple workers, but the parallelization above will already make this feel near-instant for typical accounts.
+- **Edit**: `supabase/functions/meta-sync-creatives/index.ts` (add hash-resolution pre-pass + thread map into `extractImages`)

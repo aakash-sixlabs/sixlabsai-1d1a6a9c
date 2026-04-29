@@ -101,35 +101,52 @@ function classifyCreative(creative: any): string {
   return "unknown";
 }
 
-// Extract all image hashes + CDN URLs we can find from a creative payload
-function extractImages(creative: any): { hashes: string[]; urls: string[] } {
+// Extract all image hashes + CDN URLs we can find from a creative payload.
+// hashUrlMap (optional) lets us resolve DCO image hashes -> CDN URLs that Meta
+// only exposes via the /act_{id}/adimages endpoint.
+function extractImages(
+  creative: any,
+  hashUrlMap?: Map<string, string>,
+): { hashes: string[]; urls: string[] } {
   const hashes: string[] = [];
   const urls: string[] = [];
 
-  if (creative.image_hash) hashes.push(creative.image_hash);
+  const pushHashAndResolve = (hash: string | undefined | null) => {
+    if (!hash) return;
+    hashes.push(hash);
+    const resolved = hashUrlMap?.get(hash);
+    if (resolved) urls.push(resolved);
+  };
+
+  if (creative.image_hash) pushHashAndResolve(creative.image_hash);
   if (creative.image_url) urls.push(creative.image_url);
 
   const oss = creative.object_story_spec || {};
   const linkData = oss.link_data || {};
-  if (linkData.image_hash) hashes.push(linkData.image_hash);
+  if (linkData.image_hash) pushHashAndResolve(linkData.image_hash);
   if (linkData.picture) urls.push(linkData.picture);
   if (linkData.image_url) urls.push(linkData.image_url);
   if (Array.isArray(linkData.child_attachments)) {
     for (const child of linkData.child_attachments) {
-      if (child.image_hash) hashes.push(child.image_hash);
+      if (child.image_hash) pushHashAndResolve(child.image_hash);
       if (child.picture) urls.push(child.picture);
       if (child.image_url) urls.push(child.image_url);
     }
   }
-  if (oss.photo_data?.image_hash) hashes.push(oss.photo_data.image_hash);
+  if (oss.photo_data?.image_hash) pushHashAndResolve(oss.photo_data.image_hash);
   if (oss.photo_data?.url) urls.push(oss.photo_data.url);
 
-  // DCO asset_feed_spec
+  // DCO asset_feed_spec — Meta returns ONLY {hash} here, no url. We must
+  // resolve via /adimages (see resolveImageHashesToUrls).
   const afs = creative.asset_feed_spec;
   if (afs?.images && Array.isArray(afs.images)) {
     for (const img of afs.images) {
-      if (img.hash) hashes.push(img.hash);
-      if (img.url) urls.push(img.url);
+      if (img.url) {
+        if (img.hash) hashes.push(img.hash);
+        urls.push(img.url);
+      } else if (img.hash) {
+        pushHashAndResolve(img.hash);
+      }
     }
   }
 
@@ -137,6 +154,72 @@ function extractImages(creative: any): { hashes: string[]; urls: string[] } {
     hashes: [...new Set(hashes)],
     urls: [...new Set(urls)],
   };
+}
+
+// Resolve Meta image hashes -> permanent CDN URLs via /act_{id}/adimages.
+// Meta's asset_feed_spec.images returns only { hash }, never a url, so DCO
+// creatives need this extra round-trip before we can download/rehost them.
+async function resolveImageHashesToUrls(
+  accountId: string, // raw, no "act_" prefix
+  hashes: string[],
+  accessToken: string,
+): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  const unique = [...new Set(hashes.filter(Boolean))];
+  if (unique.length === 0) return map;
+
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < unique.length; i += BATCH_SIZE) {
+    const batch = unique.slice(i, i + BATCH_SIZE);
+    const hashesParam = encodeURIComponent(JSON.stringify(batch));
+    const url =
+      `https://graph.facebook.com/v21.0/act_${accountId}/adimages` +
+      `?hashes=${hashesParam}` +
+      `&fields=hash,url,permalink_url,url_128` +
+      `&limit=500` +
+      `&access_token=${accessToken}`;
+
+    let attempt = 0;
+    while (true) {
+      try {
+        const response = await fetch(url);
+        const data = await response.json().catch(() => ({}));
+        const err = data?.error;
+        const isRateLimited =
+          response.status === 429 ||
+          [4, 17, 32, 613].includes(err?.code) ||
+          err?.code_subcode === 2446079 ||
+          err?.error_subcode === 2446079 ||
+          /rate limit|too many calls|user request limit/i.test(err?.message || "");
+        if (isRateLimited && attempt < 5) {
+          const waitMs = 10_000 * Math.pow(2, attempt);
+          console.warn(`adimages batch rate limited (attempt ${attempt + 1}), waiting ${waitMs}ms`);
+          await new Promise((r) => setTimeout(r, waitMs));
+          attempt++;
+          continue;
+        }
+        if (err) {
+          console.error(`adimages batch ${Math.floor(i / BATCH_SIZE)} failed:`, err);
+          break;
+        }
+        const rows = Array.isArray(data?.data) ? data.data : [];
+        for (const row of rows) {
+          if (row?.hash) {
+            const u = row.url || row.permalink_url || row.url_128;
+            if (u) map.set(row.hash, u);
+          }
+        }
+        break;
+      } catch (fetchErr) {
+        console.error(`adimages batch ${Math.floor(i / BATCH_SIZE)} threw:`, fetchErr);
+        break;
+      }
+    }
+    await new Promise((r) => setTimeout(r, 150));
+  }
+
+  console.log(`Resolved ${map.size}/${unique.length} image hashes via /adimages`);
+  return map;
 }
 
 Deno.serve(async (req) => {
@@ -207,6 +290,29 @@ Deno.serve(async (req) => {
         });
         const creativeMap = await fetchCreativesInBatches(creativeIds, accessToken);
 
+        // DCO creatives only expose image hashes (not URLs) inside asset_feed_spec.
+        // Resolve those hashes to CDN URLs in one bulk pass via /act_{id}/adimages
+        // so the per-ad download loop has something to fetch.
+        const dcoHashes: string[] = [];
+        for (const cid of Object.keys(creativeMap)) {
+          const c = creativeMap[cid];
+          const afsImages = c?.asset_feed_spec?.images;
+          if (Array.isArray(afsImages)) {
+            for (const img of afsImages) {
+              if (img?.hash && !img?.url) dcoHashes.push(img.hash);
+            }
+          }
+        }
+        let hashUrlMap = new Map<string, string>();
+        if (dcoHashes.length > 0) {
+          await updateStep(`Resolving ${dcoHashes.length} DCO image hashes`);
+          hashUrlMap = await resolveImageHashesToUrls(
+            adAccount.account_id,
+            dcoHashes,
+            accessToken,
+          );
+        }
+
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         let processed = 0;
         let imagesDownloaded = 0;
@@ -250,7 +356,7 @@ Deno.serve(async (req) => {
           const oss = creative.object_story_spec || {};
           const linkData = oss.link_data || {};
 
-          const { hashes, urls } = extractImages(creative);
+          const { hashes, urls } = extractImages(creative, hashUrlMap);
 
           // Skip download if we already have this exact creative stored
           const existing = existingMap.get(
