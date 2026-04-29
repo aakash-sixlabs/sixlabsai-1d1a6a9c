@@ -214,6 +214,7 @@ Deno.serve(async (req) => {
               purchases,
               revenue,
               roas,
+              cost_per_purchase: costPerPurchase,
               platform: "facebook",
             });
           }
