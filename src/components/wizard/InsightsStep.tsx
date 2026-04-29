@@ -1,9 +1,15 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, ArrowRight, Sparkles, Wand2, Trophy, Target, TrendingUp } from "lucide-react";
+import { Loader2, ArrowRight, Sparkles, Wand2, Trophy, Target, TrendingUp, ArrowUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
