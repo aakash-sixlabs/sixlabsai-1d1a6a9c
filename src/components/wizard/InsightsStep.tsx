@@ -452,12 +452,6 @@ export const InsightsStep = () => {
         syncStep={syncStep}
         canResync={!!state.selectedAccount}
       />
-      <SyncNotificationBar
-        status={syncStatus}
-        currentStep={syncStep}
-        onDismiss={() => setSyncStatus("idle")}
-        onRetry={triggerBackgroundSync}
-      />
       {/* Sidebar + Main content as one card */}
       <div className="flex flex-1 overflow-hidden bg-card rounded-t-2xl">
         <InsightsSidebar
