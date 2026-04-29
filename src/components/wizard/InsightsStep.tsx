@@ -9,7 +9,7 @@ import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
 import { DigestCards } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
-import { SyncNotificationBar } from "@/components/insights/SyncNotificationBar";
+
 import { useWizard } from "@/context/WizardContext";
 
 // ─── Types ───────────────────────────────────────────────────────
@@ -276,31 +276,60 @@ export const InsightsStep = () => {
   const triggerBackgroundSync = useCallback(async () => {
     const accountId = state.selectedAccount;
     if (!accountId) return;
-    // Prevent overlapping syncs
+    // Prevent overlapping syncs in this tab
     if (syncStatus === "syncing") return;
 
     setSyncStatus("syncing");
     setSyncStep("Connecting to Meta");
 
-    // Listen for sync progress via realtime
+    // 1. Check for an in-flight sync_job for this account (avoid duplicate Meta API load).
+    //    If one is active and progressing, latch onto it instead of kicking off a new one.
+    const STALE_MS = 5 * 60 * 1000;
+    const { data: existingJobs } = await supabase
+      .from("sync_jobs")
+      .select("id, status, current_step, updated_at")
+      .eq("ad_account_id", accountId)
+      .in("status", ["syncing", "pending"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+    const existing = existingJobs?.[0];
+    const isFresh = existing && (Date.now() - new Date(existing.updated_at).getTime()) < STALE_MS;
+
+    let activeJobId: string | null = isFresh ? existing!.id : null;
+    if (isFresh && existing?.current_step) setSyncStep(existing.current_step);
+
+    // 2. Subscribe to realtime BEFORE invoking the function so we never miss the
+    //    first progress update.
     const channel = supabase
       .channel(`bg-sync-progress-${Date.now()}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "sync_jobs" }, (payload) => {
-        const job = payload.new as any;
-        if (job.current_step) setSyncStep(job.current_step);
-        if (job.status === "complete") {
-          setSyncStatus("complete");
-          fetchData();
-          supabase.removeChannel(channel);
-          // Auto-revert to idle so the resync button is reusable
-          setTimeout(() => setSyncStatus("idle"), 2500);
-        }
-        if (job.status === "error") {
-          setSyncStatus("error");
-          supabase.removeChannel(channel);
-        }
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sync_jobs", filter: `ad_account_id=eq.${accountId}` },
+        (payload) => {
+          const job = payload.new as any;
+          if (!job) return;
+          // Only react to our active job once we know which one it is
+          if (activeJobId && job.id !== activeJobId) return;
+          if (!activeJobId) activeJobId = job.id;
+
+          if (job.current_step) setSyncStep(job.current_step);
+          if (job.status === "complete") {
+            setSyncStatus("complete");
+            fetchData();
+            supabase.removeChannel(channel);
+            setTimeout(() => setSyncStatus("idle"), 2500);
+          }
+          if (job.status === "error") {
+            setSyncStatus("error");
+            setSyncStep(job.error_message || "Sync failed");
+            supabase.removeChannel(channel);
+          }
+        },
+      )
       .subscribe();
+
+    // If we latched onto an existing job, don't re-invoke.
+    if (isFresh) return;
 
     try {
       // Resync only the last 30 days — Meta's attribution windows close by 28 days,
@@ -310,9 +339,11 @@ export const InsightsStep = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
+      if (data?.syncJobId) activeJobId = data.syncJobId;
     } catch (err: any) {
       console.error("Background sync error:", err);
       setSyncStatus("error");
+      setSyncStep(err?.message || "Sync failed");
       supabase.removeChannel(channel);
     }
   }, [state.selectedAccount, state.dateRange, fetchData, syncStatus]);

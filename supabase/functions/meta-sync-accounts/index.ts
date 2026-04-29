@@ -27,10 +27,12 @@ async function fetchAllPages(url: string) {
         err?.error_subcode === 2446079 ||
         /rate limit|too many calls|user request limit/i.test(err?.message || "");
       if (!isRateLimited) break;
-      if (attempt >= 5) {
+      // Up to 8 attempts with exponential backoff capped at 2 minutes per wait.
+      // Total worst-case wait ≈ 8.5 min — long enough to clear most Meta hourly buckets.
+      if (attempt >= 8) {
         throw new Error(`Meta rate limit hit after ${attempt} retries: ${err?.message || res.status}`);
       }
-      const waitMs = 10_000 * Math.pow(2, attempt);
+      const waitMs = Math.min(120_000, 15_000 * Math.pow(2, attempt));
       console.warn(`Rate limited by Meta (attempt ${attempt + 1}), waiting ${waitMs}ms`);
       await new Promise((r) => setTimeout(r, waitMs));
       attempt++;
@@ -39,7 +41,8 @@ async function fetchAllPages(url: string) {
     results.push(...(data.data || []));
     nextUrl = data.paging?.next || null;
     if (results.length > 5000) break;
-    if (nextUrl) await new Promise((r) => setTimeout(r, 250));
+    // Pace requests so we don't burn through Meta's per-user-per-hour quota
+    if (nextUrl) await new Promise((r) => setTimeout(r, 600));
   }
   return results;
 }
