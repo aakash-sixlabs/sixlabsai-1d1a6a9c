@@ -272,25 +272,28 @@ export const InsightsStep = () => {
     setLoading(false);
   }, [selectedAccountId]);
 
-  // Background sync for returning users
+  // Background sync for returning users (and manual resync)
   const triggerBackgroundSync = useCallback(async () => {
     const accountId = state.selectedAccount;
     if (!accountId) return;
+    // Prevent overlapping syncs
+    if (syncStatus === "syncing") return;
 
     setSyncStatus("syncing");
     setSyncStep("Connecting to Meta");
 
     // Listen for sync progress via realtime
     const channel = supabase
-      .channel("bg-sync-progress")
+      .channel(`bg-sync-progress-${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "sync_jobs" }, (payload) => {
         const job = payload.new as any;
         if (job.current_step) setSyncStep(job.current_step);
         if (job.status === "complete") {
           setSyncStatus("complete");
-          // Refresh data
           fetchData();
           supabase.removeChannel(channel);
+          // Auto-revert to idle so the resync button is reusable
+          setTimeout(() => setSyncStatus("idle"), 2500);
         }
         if (job.status === "error") {
           setSyncStatus("error");
@@ -305,18 +308,12 @@ export const InsightsStep = () => {
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
-      // If sync completes before realtime fires
-      if (data?.success) {
-        setSyncStatus("complete");
-        fetchData();
-        supabase.removeChannel(channel);
-      }
     } catch (err: any) {
       console.error("Background sync error:", err);
       setSyncStatus("error");
       supabase.removeChannel(channel);
     }
-  }, [state.selectedAccount, state.dateRange, fetchData]);
+  }, [state.selectedAccount, state.dateRange, fetchData, syncStatus]);
 
   // Initial load: fetch existing data immediately, then sync in background
   useEffect(() => {
