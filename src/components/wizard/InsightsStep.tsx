@@ -593,7 +593,33 @@ export const InsightsStep = () => {
             {/* Section header */}
             <div className="flex items-center justify-between mb-5 mt-2">
               <h2 className="font-display font-bold text-xl text-foreground tracking-tight">{viewTitle}</h2>
-              <span className="text-xs text-muted-foreground bg-secondary/80 px-3 py-1 rounded-full font-medium">{filteredAds.length} creatives</span>
+              <div className="flex items-center gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground rounded-lg"
+                    >
+                      <ArrowUpDown className="w-3.5 h-3.5" />
+                      Sort: {SORT_OPTIONS.find((o) => o.key === sortKey)?.label}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44 rounded-xl">
+                    {SORT_OPTIONS.map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.key}
+                        className="text-xs rounded-lg flex items-center justify-between"
+                        onClick={() => setSortKey(opt.key)}
+                      >
+                        {opt.label}
+                        {sortKey === opt.key && <Check className="w-3.5 h-3.5 text-accent" />}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <span className="text-xs text-muted-foreground bg-secondary/80 px-3 py-1 rounded-full font-medium">{filteredAds.length} creatives</span>
+              </div>
             </div>
 
             {/* Top performers — on Home */}
