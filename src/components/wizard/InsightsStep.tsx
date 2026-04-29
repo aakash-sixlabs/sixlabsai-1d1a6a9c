@@ -445,6 +445,10 @@ export const InsightsStep = () => {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onFilterClick={() => setShowFilters(!showFilters)}
+        onResync={triggerBackgroundSync}
+        syncStatus={syncStatus}
+        syncStep={syncStep}
+        canResync={!!state.selectedAccount}
       />
       <SyncNotificationBar
         status={syncStatus}
