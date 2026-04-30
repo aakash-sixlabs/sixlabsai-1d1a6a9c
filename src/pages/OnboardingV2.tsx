@@ -179,7 +179,7 @@ const OnboardingV2 = () => {
         } else {
           clearInterval(interval);
           updateState({ syncComplete: true });
-          setPhase("complete");
+          setPhase("add-icp");
         }
       }, 1200);
       return;
@@ -196,7 +196,7 @@ const OnboardingV2 = () => {
           if (job.current_step) setCurrentStep(job.current_step);
           if (job.status === "complete") {
             updateState({ syncComplete: true });
-            setPhase("complete");
+            setPhase("add-icp");
           }
           if (job.status === "error")
             setError(job.error_message || "Sync failed");
