@@ -16,6 +16,7 @@ import Insights from "./pages/Insights";
 import CreateAd from "./pages/CreateAd";
 import PdpScrape from "./pages/PdpScrape";
 import Output from "./pages/Output";
+import Settings from "./pages/Settings";
 import MetaCallback from "./pages/MetaCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DebugSyncPage from "./pages/DebugSyncPage";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/create-ad" element={<CreateAd />} />
             <Route path="/pdp-scrape" element={<PdpScrape />} />
             <Route path="/output" element={<Output />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/auth/callback" element={<MetaCallback />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/debug-sync" element={<DebugSyncPage />} />

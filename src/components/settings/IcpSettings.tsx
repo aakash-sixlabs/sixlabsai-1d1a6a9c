@@ -82,8 +82,8 @@ export const IcpSettings = ({ adAccountId }: Props) => {
       return await file.text();
     }
     if (ext === "pdf") {
-      // Use pdfjs-dist via CDN
-      const pdfjsLib: any = await import(/* @vite-ignore */ "https://esm.sh/pdfjs-dist@4.0.379/build/pdf.min.mjs");
+      const pdfUrl = "https://esm.sh/pdfjs-dist@4.0.379/build/pdf.min.mjs";
+      const pdfjsLib: any = await import(/* @vite-ignore */ pdfUrl);
       pdfjsLib.GlobalWorkerOptions.workerSrc =
         "https://esm.sh/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
       const buf = await file.arrayBuffer();
@@ -97,7 +97,8 @@ export const IcpSettings = ({ adAccountId }: Props) => {
       return out;
     }
     if (ext === "docx") {
-      const mammoth: any = await import(/* @vite-ignore */ "https://esm.sh/mammoth@1.8.0/mammoth.browser.min.js");
+      const mammothUrl = "https://esm.sh/mammoth@1.8.0/mammoth.browser.min.js";
+      const mammoth: any = await import(/* @vite-ignore */ mammothUrl);
       const buf = await file.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer: buf });
       return result.value;
