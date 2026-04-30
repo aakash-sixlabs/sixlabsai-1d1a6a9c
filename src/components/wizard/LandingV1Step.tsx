@@ -257,6 +257,7 @@ export const LandingV1Step = () => {
       ],
     };
     sessionStorage.setItem("meta_connection", JSON.stringify(mockConnectionData));
+    enableDevSession();
     updateState({ metaConnected: true });
     navigate(`${ONBOARDING_V1_PATH}?dev=true&meta=connected&new=true`);
   };
