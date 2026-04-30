@@ -13,8 +13,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
-import { DigestCards } from "@/components/insights/DigestCards";
+import { DigestCards, TopPerformerSlide } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
+import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
 
 import { useWizard } from "@/context/WizardContext";
 
