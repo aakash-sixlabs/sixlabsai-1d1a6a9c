@@ -270,59 +270,90 @@ export const InsightsStep = () => {
 
     // Primary source: campaign_ad_data materialized view (flattened, denormalized)
     const { data: cadData } = await supabase.from("campaign_ad_data").select("*");
-    const cadRows = cadData || [];
+    const rows = cadData || [];
 
-    if (cadRows.length > 0) {
-      // Build enriched ads from production data — aggregate daily rows per ad
-      const adAgg = new Map<string, any>();
-      cadRows.forEach((row: any) => {
-        const key = row.ad_id || `${row.brand_id}-${row.date}`;
-        if (!adAgg.has(key)) {
-          const imgs = Array.isArray(row.image_urls) ? row.image_urls : [];
-          adAgg.set(key, {
-            id: key,
-            adName: row.ad_name || "Unknown",
-            campaignName: row.campaign_name || "Unknown Campaign",
-            campaignId: row.campaign_id || "",
-            imageUrl: row.image_url || imgs[0] || null,
-            creativeType: row.creative_type || "static_single",
-            spend: 0, impressions: 0, clicks: 0, ctrSum: 0, roasSum: 0, days: 0,
-          });
-        }
-        const agg = adAgg.get(key)!;
-        agg.spend += Number(row.spend || 0);
-        agg.impressions += Number(row.impressions || 0);
-        agg.clicks += Number(row.clicks || 0);
-        agg.roasSum += Number(row.roas || 0);
-        agg.days += 1;
-      });
-
-      const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
-        const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
-        const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
-        return {
-          id: agg.id,
-          adName: agg.adName,
-          campaignName: agg.campaignName,
-          campaignId: agg.campaignId,
-          imageUrl: agg.imageUrl,
-          creativeType: agg.creativeType,
-          score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
-          decayScore: roas < 1 ? 80 : roas < 2 ? 50 : roas < 4 ? 25 : 10,
-          spend: agg.spend,
-          roas: roas,
-          ctr: ctr,
-          impressions: agg.impressions,
-        };
-      });
-      enriched.sort((a, b) => b.score - a.score);
-      setAds(enriched);
+    if (rows.length > 0) {
+      setCadRows(rows);
+      setMockAds(null);
     } else {
-      // No synced data yet — show mock data so the UI is never empty during dev
-      setAds(generateMockData());
+      setCadRows([]);
+      setMockAds(generateMockData());
     }
     setLoading(false);
   }, [selectedAccountId]);
+
+  // Derive ads from raw cad rows + selected date range
+  const ads: EnrichedAd[] = useMemo(() => {
+    if (mockAds) return mockAds;
+    if (!cadRows || cadRows.length === 0) return [];
+
+    const cutoff = (() => {
+      if (dateRange === "all") return null;
+      const days = parseInt(dateRange, 10);
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })();
+
+    const inRange = cutoff
+      ? cadRows.filter((r) => r.date && new Date(r.date) >= cutoff)
+      : cadRows;
+
+    const adAgg = new Map<string, any>();
+    inRange.forEach((row: any) => {
+      const key = row.ad_id || `${row.brand_id}-${row.date}`;
+      if (!adAgg.has(key)) {
+        const imgs = Array.isArray(row.image_urls) ? row.image_urls : [];
+        adAgg.set(key, {
+          id: key,
+          creativeId: row.creative_id || key,
+          adName: row.ad_name || "Unknown",
+          campaignName: row.campaign_name || "Unknown Campaign",
+          campaignId: row.campaign_id || "",
+          imageUrl: row.image_url || imgs[0] || null,
+          creativeType: row.creative_type || "static_single",
+          spend: 0, impressions: 0, clicks: 0, purchases: 0, roasSum: 0, days: 0,
+          hasActiveAd: false,
+        });
+      }
+      const agg = adAgg.get(key)!;
+      agg.spend += Number(row.spend || 0);
+      agg.impressions += Number(row.impressions || 0);
+      agg.clicks += Number(row.clicks || 0);
+      agg.purchases += Number(row.purchases || 0);
+      agg.roasSum += Number(row.roas || 0);
+      agg.days += 1;
+      if (String(row.ad_effective_status || "").toUpperCase() === "ACTIVE") {
+        agg.hasActiveAd = true;
+      }
+    });
+
+    const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
+      const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
+      const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
+      return {
+        id: agg.id,
+        creativeId: agg.creativeId,
+        adName: agg.adName,
+        campaignName: agg.campaignName,
+        campaignId: agg.campaignId,
+        imageUrl: agg.imageUrl,
+        creativeType: agg.creativeType,
+        score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
+        decayScore: roas < 1 ? 80 : roas < 2 ? 50 : roas < 4 ? 25 : 10,
+        spend: agg.spend,
+        roas,
+        ctr,
+        impressions: agg.impressions,
+        purchases: agg.purchases,
+        hasActiveAd: agg.hasActiveAd,
+      };
+    });
+    enriched.sort((a, b) => b.score - a.score);
+    return enriched;
+  }, [cadRows, mockAds, dateRange]);
+
 
   // Background sync for returning users (and manual resync)
   const triggerBackgroundSync = useCallback(async () => {
