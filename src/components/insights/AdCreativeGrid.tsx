@@ -107,12 +107,25 @@ function AdCard({ ad, index, onClick }: { ad: AdCreativeCardData; index: number;
       </div>
 
       {/* Info */}
-      <div className="px-3.5 py-3">
-        <p className="text-xs font-semibold text-foreground truncate mb-1.5">{ad.adName}</p>
-        <div className="flex items-center gap-3 text-[10px] text-muted-foreground font-medium">
-          <span>{fmtCompact(ad.spend, "$")}</span>
-          <span className="text-accent">{ad.roas != null ? `${ad.roas.toFixed(1)}x` : "—"}</span>
-          <span>{ad.ctr != null ? `${ad.ctr.toFixed(1)}% CTR` : ""}</span>
+      <div className="px-4 py-3.5">
+        <p className="text-sm font-semibold text-foreground truncate mb-3">{ad.adName}</p>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-lg bg-secondary/50 px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold leading-none mb-1">Spend</p>
+            <p className="text-sm font-semibold text-foreground leading-none">{fmtCompact(ad.spend, "$")}</p>
+          </div>
+          <div className="rounded-lg bg-accent/10 px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold leading-none mb-1">ROAS</p>
+            <p className="text-sm font-semibold text-accent leading-none">
+              {ad.roas != null ? `${ad.roas.toFixed(1)}x` : "—"}
+            </p>
+          </div>
+          <div className="rounded-lg bg-secondary/50 px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold leading-none mb-1">CTR</p>
+            <p className="text-sm font-semibold text-foreground leading-none">
+              {ad.ctr != null ? `${ad.ctr.toFixed(1)}%` : "—"}
+            </p>
+          </div>
         </div>
       </div>
     </motion.div>
