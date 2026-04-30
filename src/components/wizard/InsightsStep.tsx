@@ -160,6 +160,7 @@ function generateMockData(): EnrichedAd[] {
 
   return configs.map((cfg, i) => ({
     id: `mock-${i}`,
+    creativeId: `mock-creative-${i}`,
     adName: MOCK_AD_NAMES[i],
     campaignName: MOCK_CAMPAIGNS[cfg.campaign].name,
     campaignId: MOCK_CAMPAIGNS[cfg.campaign].id,
@@ -171,6 +172,8 @@ function generateMockData(): EnrichedAd[] {
     roas: cfg.roas,
     ctr: cfg.ctr,
     impressions: cfg.impressions,
+    purchases: Math.round((cfg.spend * cfg.roas) / 50),
+    hasActiveAd: i < 7,
   }));
 }
 
