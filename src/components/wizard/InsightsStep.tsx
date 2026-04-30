@@ -194,7 +194,8 @@ export const InsightsStep = () => {
   const navigate = useNavigate();
   const { state } = useWizard();
   const [loading, setLoading] = useState(true);
-  const [ads, setAds] = useState<EnrichedAd[]>([]);
+  const [cadRows, setCadRows] = useState<any[] | null>(null);
+  const [mockAds, setMockAds] = useState<EnrichedAd[] | null>(null);
   const [activeView, setActiveView] = useState("discover");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -203,6 +204,7 @@ export const InsightsStep = () => {
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "complete" | "error">("idle");
   const [syncStep, setSyncStep] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [dateRange, setDateRange] = useState<DateRangeKey>("30");
 
   const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
     const insightByAd = new Map<string, Insight>();
