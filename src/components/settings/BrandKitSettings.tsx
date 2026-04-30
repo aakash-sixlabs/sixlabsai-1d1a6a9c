@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, RefreshCw, Save } from "lucide-react";
+import { Loader2, RefreshCw, Save, Sparkles, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 
