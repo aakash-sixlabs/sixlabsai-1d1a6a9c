@@ -754,14 +754,3 @@ export const InsightsStep = () => {
     </div>
   );
 };
-
-            {/* Reinforcement */}
-            <p className="text-center text-xs text-muted-foreground/40 mt-12 mb-6 font-medium">
-              Every ad you create makes the next one smarter ✨
-            </p>
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-};
