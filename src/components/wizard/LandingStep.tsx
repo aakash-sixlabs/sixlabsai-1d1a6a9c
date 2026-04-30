@@ -18,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { enableDevSession } from "@/lib/devMode";
 
 /* ── Meta logo as image ── */
 const MetaLogo = ({ className }: { className?: string }) => (
@@ -256,6 +257,7 @@ export const LandingStep = () => {
       ],
     };
     sessionStorage.setItem("meta_connection", JSON.stringify(mockConnectionData));
+    enableDevSession();
     updateState({ metaConnected: true });
     navigate("/onboarding-v2?meta=connected&new=true&dev=true");
   };
@@ -350,6 +352,7 @@ export const LandingStep = () => {
                     ],
                   };
                   sessionStorage.setItem("meta_connection", JSON.stringify(mockConnectionData));
+                  enableDevSession();
                   updateState({ metaConnected: true });
                   navigate("/onboarding?dev=true&meta=connected&new=true");
                 }}

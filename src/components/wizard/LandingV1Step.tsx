@@ -18,6 +18,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { enableDevSession } from "@/lib/devMode";
 
 /**
  * LandingV1Step
@@ -257,6 +258,7 @@ export const LandingV1Step = () => {
       ],
     };
     sessionStorage.setItem("meta_connection", JSON.stringify(mockConnectionData));
+    enableDevSession();
     updateState({ metaConnected: true });
     navigate(`${ONBOARDING_V1_PATH}?dev=true&meta=connected&new=true`);
   };

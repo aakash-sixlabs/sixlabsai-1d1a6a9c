@@ -5,6 +5,7 @@ import { useWizard } from "@/context/WizardContext";
 import { InsightsStep } from "@/components/wizard/InsightsStep";
 import { BrandKitBanner } from "@/components/wizard/BrandKitBanner";
 import { Loader2 } from "lucide-react";
+import { isDevSession } from "@/lib/devMode";
 
 const Insights = () => {
   const navigate = useNavigate();
@@ -14,6 +15,14 @@ const Insights = () => {
 
   useEffect(() => {
     const check = async () => {
+      // Dev-mode bypass: tester completed onboarding flow without a real
+      // Supabase session. Skip auth gating + DB hydration entirely.
+      if (isDevSession()) {
+        setAuthorized(true);
+        setLoading(false);
+        return;
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/loginvcollect"); return; }
 
@@ -54,6 +63,7 @@ const Insights = () => {
     };
     check();
   }, [navigate]);
+
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>;
   if (!authorized) return null;
