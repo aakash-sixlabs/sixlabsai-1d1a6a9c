@@ -1,35 +1,31 @@
-# Fix: "No brand kit found" in Settings → Brand Kit
+# Persist brand kit even in dev/skip mode
 
-## Root cause
+## Problem
 
-Your `ad_account_profiles` table is empty for the Cirkul Primary Acct (`account_id: 4462492886662`). The Firecrawl-powered brand kit was never persisted — most likely the brand kit step in onboarding was skipped (or run in an earlier flow that didn't write here). `BrandKitSettings.tsx` queries this table by `ad_account_id` and shows the empty state when nothing comes back.
+`BrandKitStep.handleConfirm` short-circuits when `isDevMode` is true (lines 404–408):
 
-Nothing is corrupted; we just need an in-page way to create the row.
+```ts
+if (isDevMode) {
+  toast.success("Brand kit saved (dev mode).");
+  onComplete();
+  return;   // ← upsert never runs
+}
+```
 
-## Changes
+Result: users who onboard via the dev/Konami bypass never get a row in `ad_account_profiles`, which is why the Settings → Brand Kit page is empty for the Cirkul account.
 
-### 1. `src/components/settings/BrandKitSettings.tsx`
+## Fix
 
-Replace the dead-end "No brand kit found" card with an empty-state that offers two actions:
+In `src/components/wizard/BrandKitStep.tsx`:
 
-- **Extract from website** (primary) — opens the existing `BrandKitStep` dialog with a website input. On completion, that flow already inserts/updates `ad_account_profiles` via `build-brand-kit` (Firecrawl + Lovable AI). After it returns, re-`load()` the profile.
-- **Set up manually** (secondary) — inserts a minimal `ad_account_profiles` row (just `ad_account_id` + `user_id`, `brand_kit_status='pending'`) so the editable form renders. User can then fill fields and Save.
+1. Remove the `if (isDevMode) { ...; return; }` block so the upsert always runs with whatever `kit` + `edits` are currently on screen (Firecrawl-extracted or stub).
+2. Keep the optional **brand-guidelines PDF upload** gated on `!isDevMode` — storage uploads in dev mode aren't necessary and we don't want to clutter the bucket. Everything else (the `ad_account_profiles` upsert) runs unconditionally.
+3. Leave the existing success toast and `onComplete()` flow as-is (they already fire after the upsert succeeds).
 
-After either path completes, the existing edit form takes over.
-
-### 2. (Optional polish) Pre-seed website from `brands.meta_account_id` lookup
-
-When the empty state opens, look up the matching `brands` row (`meta_account_id = ad_accounts.account_id`) so we can prefill `website_url` if available. The current `brands` row for Cirkul has no website, so this is best-effort.
-
-## Files touched
-
-- `src/components/settings/BrandKitSettings.tsx` — replace empty-state branch with extract/manual CTAs and wire `BrandKitStep`.
-
-No DB migration, no new edge function — `build-brand-kit` already handles the extraction and persistence.
+No changes to schema, edge functions, or other files.
 
 ## Acceptance
 
-- Going to `/settings` → Brand Kit on an account with no `ad_account_profiles` row shows two CTAs (Extract / Manual) instead of a dead card.
-- Clicking "Extract from website" → enter `cirkul.com` → completes → form populates with logo, colors, font, tone.
-- Clicking "Set up manually" → form appears empty and Save creates the row.
-- Reloading shows the saved kit.
+- Confirming the brand kit in dev mode writes a row to `ad_account_profiles` with `confirmed=true`, `brand_kit_status='ready'`, and all extracted fields populated.
+- Settings → Brand Kit displays the saved kit on next visit.
+- Non-dev flow is unchanged (still uploads the optional PDF if provided).
