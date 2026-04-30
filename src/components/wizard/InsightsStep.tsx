@@ -16,6 +16,7 @@ import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
 import { DigestCards, TopPerformerSlide } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
+import { CreativePreviewDialog } from "@/components/insights/CreativePreviewDialog";
 import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
 
 import { useWizard } from "@/context/WizardContext";
