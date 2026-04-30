@@ -455,8 +455,10 @@ export const InsightsStep = () => {
       // New user just completed onboarding sync — skip redundant background sync
       if (state.syncComplete) return;
 
-      // For dev mode, simulate a background sync
-      const isDevMode = sessionStorage.getItem("meta_connection")?.includes("mock");
+      // For dev mode, simulate a background sync — never call real sync edge fn
+      const isDevMode =
+        isDevSession() ||
+        sessionStorage.getItem("meta_connection")?.includes("mock");
       if (isDevMode) {
         setSyncStatus("syncing");
         setSyncStep("Connecting to Meta");
