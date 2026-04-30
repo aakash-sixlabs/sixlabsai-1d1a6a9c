@@ -322,6 +322,16 @@ const OnboardingV2 = () => {
         />
       )}
 
+      {/* Phase 2.5: Add ICPs */}
+      {phase === "add-icp" && selected && (
+        <IcpOnboardingStep
+          open
+          adAccountId={selected}
+          isDevMode={isDevMode}
+          onComplete={() => setPhase("complete")}
+        />
+      )}
+
       {/* Phase 2: Pulling Data */}
       <Dialog open={phase === "pulling"} modal>
         <DialogContent
