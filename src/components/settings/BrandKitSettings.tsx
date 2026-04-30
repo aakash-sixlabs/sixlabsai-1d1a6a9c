@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, RefreshCw, Save } from "lucide-react";
+import { Loader2, RefreshCw, Save, Sparkles, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 
@@ -74,11 +74,54 @@ export const BrandKitSettings = ({ adAccountId }: Props) => {
     return <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground" /></div>;
   }
 
+  const handleSetupManual = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Not signed in"); return; }
+    const { data, error } = await supabase
+      .from("ad_account_profiles")
+      .insert({
+        ad_account_id: adAccountId,
+        user_id: user.id,
+        brand_kit_status: "pending",
+      })
+      .select("id, brand_name, website_url, logo_url, primary_color, secondary_color, accent_color, font_family, tagline")
+      .single();
+    if (error) { toast.error("Could not initialize brand kit"); return; }
+    setProfile(data);
+  };
+
   if (!profile) {
     return (
-      <Card className="p-6 text-center text-sm text-muted-foreground">
-        No brand kit found for this account.
-      </Card>
+      <>
+        <Card className="p-8 text-center space-y-5">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">No brand kit yet</h2>
+            <p className="text-sm text-muted-foreground">
+              Extract one automatically from your website, or set it up manually.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button onClick={() => setRebuildOpen(true)}>
+              <Sparkles className="w-4 h-4" />
+              Extract from website
+            </Button>
+            <Button variant="outline" onClick={handleSetupManual}>
+              <PencilLine className="w-4 h-4" />
+              Set up manually
+            </Button>
+          </div>
+        </Card>
+
+        {rebuildOpen && (
+          <BrandKitStep
+            open={rebuildOpen}
+            adAccountId={adAccountId}
+            defaultBrandName=""
+            initialWebsite=""
+            onComplete={() => { setRebuildOpen(false); load(); }}
+          />
+        )}
+      </>
     );
   }
 
