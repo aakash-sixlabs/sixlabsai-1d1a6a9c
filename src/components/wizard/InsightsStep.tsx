@@ -508,19 +508,51 @@ export const InsightsStep = () => {
     return Array.from(map.values());
   }, [ads]);
 
-  const topPerformer = useMemo(() => {
-    if (ads.length === 0) return null;
-    const top = ads[0];
-    const campaignAds = ads.filter((a) => a.campaignId === top.campaignId);
-    return {
-      name: top.adName,
-      roas: top.roas ?? 0,
-      newAds: campaignAds.length,
-      avgSpend: Math.round(
-        campaignAds.reduce((s, a) => s + (a.spend ?? 0), 0) / campaignAds.length
-      ),
-      topFormat: top.creativeType.includes("carousel") ? "Carousel" : "Static",
-    };
+  const activeCreativeCount = useMemo(() => {
+    const set = new Set<string>();
+    ads.forEach((a) => {
+      if (a.hasActiveAd) set.add(a.creativeId);
+    });
+    return set.size;
+  }, [ads]);
+
+  const topPerformers: TopPerformerSlide[] = useMemo(() => {
+    if (ads.length === 0) return [];
+    const fmt = (a: EnrichedAd) => a.creativeType.includes("carousel") ? "Carousel" : a.creativeType.includes("video") ? "Video" : "Static";
+    const compactNum = (n: number) =>
+      n >= 1_000_000 ? `${(n / 1_000_000).toFixed(2)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K` : `${n}`;
+
+    const bySpend = [...ads].sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))[0];
+    const byPurchases = [...ads].sort((a, b) =>
+      (b.purchases ?? 0) - (a.purchases ?? 0) || (b.spend ?? 0) - (a.spend ?? 0)
+    )[0];
+    const byImpressions = [...ads].sort((a, b) =>
+      (b.impressions ?? 0) - (a.impressions ?? 0) || (b.spend ?? 0) - (a.spend ?? 0)
+    )[0];
+
+    const slides: TopPerformerSlide[] = [];
+    if (bySpend) slides.push({
+      name: bySpend.adName,
+      metricLabel: "Spend",
+      metricValue: `$${compactNum(Math.round(bySpend.spend ?? 0))} spend`,
+      avgSpend: Math.round(bySpend.spend ?? 0),
+      topFormat: fmt(bySpend),
+    });
+    if (byPurchases) slides.push({
+      name: byPurchases.adName,
+      metricLabel: "Purchases",
+      metricValue: `${(byPurchases.purchases ?? 0).toLocaleString()} purchases`,
+      avgSpend: Math.round(byPurchases.spend ?? 0),
+      topFormat: fmt(byPurchases),
+    });
+    if (byImpressions) slides.push({
+      name: byImpressions.adName,
+      metricLabel: "Impressions",
+      metricValue: `${compactNum(byImpressions.impressions ?? 0)} impressions`,
+      avgSpend: Math.round(byImpressions.spend ?? 0),
+      topFormat: fmt(byImpressions),
+    });
+    return slides;
   }, [ads]);
 
   const formatMix = useMemo(() => {
