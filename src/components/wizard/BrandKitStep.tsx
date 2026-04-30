@@ -401,10 +401,51 @@ export const BrandKitStep = ({
     if (!kit || !edits) return;
     setSaving(true);
     try {
+      // Compose the full jsonb payload — everything we extracted, including hidden fields.
+      const brandKitJson = {
+        ...kit.raw,
+        target_audience: kit.target_audience,
+        value_propositions: kit.value_propositions,
+        favicon_url: kit.favicon_url,
+        screenshot_url: kit.screenshot_url,
+        heading_font: edits.heading_font,
+        body_font: edits.body_font,
+        all_fonts: kit.fonts.all,
+        all_colors: kit.colors,
+        warnings: kit.warnings,
+      };
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+
+      if (!user) {
+        if (!isDevMode) throw new Error("Not authenticated");
+
+        sessionStorage.setItem(
+          "dev_brand_kit_profile",
+          JSON.stringify({
+            ad_account_id: adAccountId,
+            brand_name: edits.brand_name || null,
+            logo_url: edits.logo_url || null,
+            primary_color: edits.primary_color,
+            secondary_color: edits.secondary_color,
+            accent_color: edits.accent_color,
+            font_family: edits.body_font,
+            tagline: edits.tagline || null,
+            tone_of_voice: kit.tone_of_voice,
+            product_categories: kit.product_categories,
+            website_url: kit.website_url,
+            brand_kit: brandKitJson,
+            brand_kit_status: "ready",
+            brand_kit_updated_at: new Date().toISOString(),
+            confirmed: true,
+          }),
+        );
+        toast.success("Brand kit saved for dev session!");
+        onComplete();
+        return;
+      }
 
       // Optional: upload brand guidelines PDF to private storage (skipped in dev mode)
       if (guidelinesFile && !isDevMode) {
@@ -423,20 +464,6 @@ export const BrandKitStep = ({
           setUploadingGuidelines(false);
         }
       }
-
-      // Compose the full jsonb payload — everything we extracted, including hidden fields.
-      const brandKitJson = {
-        ...kit.raw,
-        target_audience: kit.target_audience,
-        value_propositions: kit.value_propositions,
-        favicon_url: kit.favicon_url,
-        screenshot_url: kit.screenshot_url,
-        heading_font: edits.heading_font,
-        body_font: edits.body_font,
-        all_fonts: kit.fonts.all,
-        all_colors: kit.colors,
-        warnings: kit.warnings,
-      };
 
       const { error: upsertErr } = await supabase
         .from("ad_account_profiles")
