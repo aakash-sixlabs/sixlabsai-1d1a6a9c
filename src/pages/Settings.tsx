@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { BrandKitSettings } from "@/components/settings/BrandKitSettings";
 import { IcpSettings } from "@/components/settings/IcpSettings";
+import { isDevSession } from "@/lib/devMode";
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -16,6 +17,12 @@ const Settings = () => {
 
   useEffect(() => {
     (async () => {
+      // Dev-mode sandbox: skip Supabase auth + profile lookup, use mock ad account.
+      if (isDevSession()) {
+        setAdAccountId("mock-acc-1");
+        setLoading(false);
+        return;
+      }
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/loginvcollect"); return; }
       const { data: profile } = await supabase
