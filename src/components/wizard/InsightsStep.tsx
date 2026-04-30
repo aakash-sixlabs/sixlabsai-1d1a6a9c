@@ -726,7 +726,7 @@ export const InsightsStep = () => {
                   ads={topAds}
                   title="🔥 Top Performers"
                   subtitle="These creatives are driving the strongest returns — use them to inform your next ad"
-                  onAdClick={(id) => console.log("View ad", id)}
+                  onAdClick={(id) => setPreviewAdId(id)}
                 />
               </>
             )}
@@ -735,8 +735,25 @@ export const InsightsStep = () => {
             <AdCreativeGrid
               ads={latestAds}
               title={activeView === "discover" ? "All Ads" : viewTitle}
-              onAdClick={(id) => console.log("View ad", id)}
+              onAdClick={(id) => setPreviewAdId(id)}
             />
+
+            {/* Reinforcement */}
+            <p className="text-center text-xs text-muted-foreground/40 mt-12 mb-6 font-medium">
+              Every ad you create makes the next one smarter ✨
+            </p>
+          </div>
+        </main>
+      </div>
+
+      <CreativePreviewDialog
+        ad={previewAdId ? (filteredAds.find((a) => a.id === previewAdId) || ads.find((a) => a.id === previewAdId) || null) : null}
+        open={!!previewAdId}
+        onOpenChange={(o) => !o && setPreviewAdId(null)}
+      />
+    </div>
+  );
+};
 
             {/* Reinforcement */}
             <p className="text-center text-xs text-muted-foreground/40 mt-12 mb-6 font-medium">
