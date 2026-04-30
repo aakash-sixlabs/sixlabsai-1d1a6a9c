@@ -207,6 +207,7 @@ export const InsightsStep = () => {
   const [syncStep, setSyncStep] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [dateRange, setDateRange] = useState<DateRangeKey>("30");
+  const [previewAdId, setPreviewAdId] = useState<string | null>(null);
 
   const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
     const insightByAd = new Map<string, Insight>();
