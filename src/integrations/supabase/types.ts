@@ -618,6 +618,39 @@ export type Database = {
         }
         Relationships: []
       }
+      icps: {
+        Row: {
+          ad_account_id: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       meta_connections: {
         Row: {
           access_token: string
