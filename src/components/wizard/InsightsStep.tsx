@@ -253,6 +253,23 @@ export const InsightsStep = () => {
   }, []);
 
   const fetchData = useCallback(async () => {
+    // Dev-mode sandbox: never touch Supabase. Use a fixed set of mock accounts
+    // and generated mock ads so testers see a fully populated dashboard
+    // regardless of any real account data tied to this browser.
+    if (isDevSession()) {
+      const mockAccounts = [
+        { id: "mock-acc-1", account_id: "act_111222333", account_name: "Glow Skin Co. Ads" },
+        { id: "mock-acc-2", account_id: "act_444555666", account_name: "FitFuel Performance" },
+        { id: "mock-acc-3", account_id: "act_777888999", account_name: "UrbanThreads Growth" },
+      ];
+      setAdAccounts(mockAccounts);
+      if (!selectedAccountId) setSelectedAccountId(mockAccounts[0].id);
+      setCadRows([]);
+      setMockAds(generateMockData());
+      setLoading(false);
+      return;
+    }
+
     const accountsRes = await supabase.from("ad_accounts").select("id, account_id, account_name");
     const fetchedAccounts = accountsRes.data || [];
 
