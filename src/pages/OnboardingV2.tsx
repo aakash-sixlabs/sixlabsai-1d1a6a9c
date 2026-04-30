@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
 import { DashboardBackground } from "@/components/wizard/DashboardBackground";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
+import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +33,7 @@ interface AdAccount {
   timezone: string | null;
 }
 
-type Phase = "loading" | "select-account" | "brand-kit" | "pulling" | "complete";
+type Phase = "loading" | "select-account" | "brand-kit" | "pulling" | "add-icp" | "complete";
 
 /* ─── Sync steps shown during data pull ─── */
 const PULL_STEPS = [
@@ -178,7 +179,7 @@ const OnboardingV2 = () => {
         } else {
           clearInterval(interval);
           updateState({ syncComplete: true });
-          setPhase("complete");
+          setPhase("add-icp");
         }
       }, 1200);
       return;
@@ -195,7 +196,7 @@ const OnboardingV2 = () => {
           if (job.current_step) setCurrentStep(job.current_step);
           if (job.status === "complete") {
             updateState({ syncComplete: true });
-            setPhase("complete");
+            setPhase("add-icp");
           }
           if (job.status === "error")
             setError(job.error_message || "Sync failed");
@@ -318,6 +319,16 @@ const OnboardingV2 = () => {
           defaultBrandName={selectedAccountName}
           isDevMode={isDevMode}
           onComplete={startPull}
+        />
+      )}
+
+      {/* Phase 2.5: Add ICPs */}
+      {phase === "add-icp" && selected && (
+        <IcpOnboardingStep
+          open
+          adAccountId={selected}
+          isDevMode={isDevMode}
+          onComplete={() => setPhase("complete")}
         />
       )}
 
