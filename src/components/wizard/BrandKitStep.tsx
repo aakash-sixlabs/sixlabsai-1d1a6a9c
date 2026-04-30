@@ -401,19 +401,13 @@ export const BrandKitStep = ({
     if (!kit || !edits) return;
     setSaving(true);
     try {
-      if (isDevMode) {
-        toast.success("Brand kit saved (dev mode).");
-        onComplete();
-        return;
-      }
-
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Optional: upload brand guidelines PDF to private storage
-      if (guidelinesFile) {
+      // Optional: upload brand guidelines PDF to private storage (skipped in dev mode)
+      if (guidelinesFile && !isDevMode) {
         setUploadingGuidelines(true);
         try {
           const safeName = guidelinesFile.name.replace(/[^a-zA-Z0-9._-]/g, "_");
