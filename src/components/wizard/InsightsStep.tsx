@@ -651,13 +651,16 @@ export const InsightsStep = () => {
               </div>
             </motion.div>
 
+            {/* Date range filter — controls all metrics on the page */}
+            <div className="flex items-center justify-end mb-5">
+              <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            </div>
+
             {/* Digest Cards — only on Home */}
             {activeView === "discover" && (
               <DigestCards
-                totalAds={ads.length}
-                newAdsLast14Days={Math.min(ads.length, 5)}
-                velocityChange={40}
-                topPerformer={topPerformer}
+                activeCreativeCount={activeCreativeCount}
+                topPerformers={topPerformers}
                 formatMix={formatMix}
               />
             )}
