@@ -1,4 +1,4 @@
-import { Search, Bell, Zap, RefreshCw, Check, AlertCircle } from "lucide-react";
+import { Search, Bell, Zap, RefreshCw, Check, AlertCircle, Settings as SettingsIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -132,6 +132,17 @@ export const InsightsTopBar = ({
             )}
           </Button>
         )}
+
+        {/* Settings */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/settings")}
+          className="h-8 w-8 rounded-lg hover:bg-white/10"
+          title="Settings"
+        >
+          <SettingsIcon className="w-[18px] h-[18px] text-white/70" />
+        </Button>
 
         {/* Notifications */}
         <Popover>
