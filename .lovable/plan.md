@@ -1,68 +1,81 @@
-# Sort Structure & New Sort Controls
+# Insights Dashboard: Tile updates + Date range filter
 
-## Current sort behavior (today)
+## What changes
 
-All ads are loaded once and globally sorted by a computed **Score** (descending) in `InsightsStep.tsx`:
+### 1. Tile 1 — "Creative Velocity" → count of creatives in **active ads**
 
-```
-score = min(100, round(roas * 15 + ctr * 20))
-```
+Today: shows total creatives in account, with a hardcoded "+40%" delta.
 
-Then the view-specific filtering picks from that pre-sorted list:
+New behavior:
+- Show the count of **distinct creatives** that are used in at least one ad whose `ad_effective_status = 'ACTIVE'` within the selected date range.
+- One creative used in 4 ads = counts as 1.
+- Replace the fake "+40% vs last 14 days" with a truthful sublabel: `in active ads` (and the small delta chip is removed for now — we don't have a reliable historical baseline).
 
-| Section / View | Source | Sort applied |
-|---|---|---|
-| **Top Performers** (Home `🔥` block) | `filteredAds.slice(0, ceil(20%))` | Inherits global **Score desc** |
-| **All Ads** (Home, `discover`) | `filteredAds` | **Score desc** |
-| **Top Performers view** (`top` in sidebar) | top 20% by score | **Score desc** |
-| **Opportunities** (`opportunities`) | `spend > 1000 AND roas < 2` | **Spend desc** |
-| **Needs Review** (`needs-review`) | `decayScore > 50` | **Decay desc** |
+### 2. Tile 2 — "Top Performer" → 3-slide carousel
 
-Search filter is applied before sort/slice; no user control over sort order.
+Today: shows `ads[0]` (whatever the global sort happens to surface), with non-functional left/right arrows.
 
-## What we'll add
+New behavior — wire the existing arrows to a real 3-slide slider, each slide pinned to a fixed metric (computed from data filtered by the date range):
 
-A small **Sort by** dropdown in the section header (next to the "N creatives" pill) on the Home view, controlling **both** the Top Performers grid and the All Ads grid (single shared sort, since Top Performers is just the top slice of the same list).
+| Slide | Metric                   | Tie-break          |
+|------:|--------------------------|--------------------|
+|   1   | Highest **Spend**        | most recent date   |
+|   2   | Most **Purchases**       | highest spend      |
+|   3   | Most **Impressions**     | highest spend      |
 
-### Sort options
+Each slide shows: ad name, the headline metric (e.g. `$31.2K spend`, `1,284 purchases`, `1.35M impressions`), plus the existing two secondary rows (Avg Spend, Format).
 
-- Score (default) — `roas*15 + ctr*20`
-- Spend — highest first
-- ROAS — highest first
-- CTR — highest first
-- Impressions — highest first
-- Decay score — highest first (worst first, useful for triage)
-- Ad name — A→Z
+Slide indicator dots under the arrows (3 dots, current one filled). Arrows cycle with wrap-around; a small label above ("Top by Spend" / "Top by Purchases" / "Top by Impressions") tells the user which ranking they're on.
 
-Each is descending by default except Ad name (A→Z). Nulls always sort last.
+### 3. Page-level **Date range filter**
 
-Opportunities and Needs Review keep their opinionated sorts (spend desc / decay desc) since those views are defined by their ranking — but the dropdown will still be visible and override when changed.
+A single date-range selector at the top of the main content area (right of the page title row, above the digest tiles) controls **everything on the page** — the 3 digest tiles, Top Performers grid, All Ads grid, and view-specific filters (Opportunities, Needs Review).
 
-## Implementation
+Options (preset chips, single-select):
+- Last 7 days
+- Last 14 days
+- Last 30 days (default)
+- Last 90 days
+- All time
+
+We're keeping it to presets — no custom calendar — to ship simply. The selected range is stored in component state and passed into the data aggregation in `InsightsStep.tsx`.
+
+## How it works (technical)
 
 **File: `src/components/wizard/InsightsStep.tsx`**
 
-1. Add `sortKey` state: `"score" | "spend" | "roas" | "ctr" | "impressions" | "decay" | "name"`, default `"score"`.
-2. Remove the hard-coded `enriched.sort(...)` calls in `enrichAndSet` and `fetchData` (sort moves to the memo).
-3. In `filteredAds` useMemo, after filtering, apply sort based on `sortKey`. Keep the existing override sorts for `opportunities` / `needs-review` only when `sortKey === "score"` (default); otherwise honor the user's choice.
-4. Top slice (`topAds`) keeps using `filteredAds.slice(0, ceil(20%))` so it follows the same sort.
+1. Add `dateRange` state: `"7" | "14" | "30" | "90" | "all"`, default `"30"`.
+2. In `fetchData`, after pulling `campaign_ad_data` rows, filter by `row.date >= cutoff` before aggregating. Also keep raw rows around so we can recompute when the user changes the range without re-querying.
+   - Actually simpler: keep the full `cadRows` in state, then derive `ads` via a `useMemo` on `[cadRows, dateRange]`. Aggregation logic moves from `fetchData` into the memo.
+3. Add a new derived value `activeCreativeCount` — distinct `creative_id` where any row in the date range for that creative has `ad_effective_status = 'ACTIVE'`.
+4. Add a new derived value `topPerformersTriple`:
+   ```ts
+   {
+     bySpend:       sortAds(ads, "spend")[0],
+     byPurchases:   ads.slice().sort((a,b) => (b.purchases ?? 0) - (a.purchases ?? 0))[0],
+     byImpressions: sortAds(ads, "impressions")[0],
+   }
+   ```
+   This requires adding `purchases: number | null` to the `EnrichedAd` type and summing `purchases` in the aggregator.
+5. Pass `dateRange`, `setDateRange`, `activeCreativeCount`, and `topPerformersTriple` down to `DigestCards`.
 
-**File: `src/components/insights/AdCreativeGrid.tsx`** — no changes needed (sort happens upstream).
+**File: `src/components/insights/DigestCards.tsx`**
 
-**UI: Sort dropdown**
+1. New props: `activeCreativeCount: number`, `topPerformers: { bySpend, byPurchases, byImpressions }`. Drop `velocityChange` and `newAdsLast14Days` (no longer used).
+2. Tile 1 renders `activeCreativeCount` with sublabel "in active ads". Remove the green delta chip.
+3. Tile 2 holds local `slideIndex` state (0–2). Arrows decrement/increment with wrap. Render the slide for the current index with a small "Top by {Metric}" eyebrow label and 3 indicator dots below.
 
-Place a compact `DropdownMenu` (already imported via shadcn) in the section header at line ~545, replacing the current right-side pill area:
+**New file: `src/components/insights/DateRangeFilter.tsx`**
 
-```text
-[ Section title ]              [ Sort by: Score ▾ ]  [ N creatives ]
-```
+Small pill-group component. 5 chip buttons, active one highlighted with `bg-primary/10 text-primary`. Emits string values matching the `dateRange` keys above. Rendered in `InsightsStep.tsx` just below the hero block, right-aligned.
 
-- Trigger: ghost button, small text, `ArrowUpDown` icon, current label.
-- Items: the 7 options above; selected item shows a check.
-- Styling matches existing rounded-xl, text-xs, muted foreground patterns.
+**Out of scope (intentionally)**
+- Custom date pickers — presets only.
+- Persisting date range across sessions.
+- Reflowing the Format Mix tile (no change requested).
+- Recomputing the velocity % delta — removed, not refactored.
 
-## Out of scope
-
-- Per-grid independent sort (Top Performers vs All Ads use the same order — this is intentional so "Top" remains the head of the same ranking).
-- Ascending/descending toggle (defaults are the meaningful direction for each metric).
-- Persisting sort choice across sessions.
+## Files touched
+- `src/components/wizard/InsightsStep.tsx` — date-range state, re-derive ads, new metrics, prop wiring
+- `src/components/insights/DigestCards.tsx` — Tile 1 simplified, Tile 2 becomes 3-slide carousel
+- `src/components/insights/DateRangeFilter.tsx` — new presentational component

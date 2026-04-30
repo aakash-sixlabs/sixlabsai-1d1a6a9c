@@ -13,8 +13,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
-import { DigestCards } from "@/components/insights/DigestCards";
+import { DigestCards, TopPerformerSlide } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
+import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
 
 import { useWizard } from "@/context/WizardContext";
 
@@ -63,6 +64,7 @@ interface AdSet {
 
 interface EnrichedAd {
   id: string;
+  creativeId: string;
   adName: string;
   campaignName: string;
   campaignId: string;
@@ -74,6 +76,8 @@ interface EnrichedAd {
   roas: number | null;
   ctr: number | null;
   impressions: number | null;
+  purchases: number | null;
+  hasActiveAd: boolean;
 }
 
 // ─── Sort options ────────────────────────────────────────────────
@@ -156,6 +160,7 @@ function generateMockData(): EnrichedAd[] {
 
   return configs.map((cfg, i) => ({
     id: `mock-${i}`,
+    creativeId: `mock-creative-${i}`,
     adName: MOCK_AD_NAMES[i],
     campaignName: MOCK_CAMPAIGNS[cfg.campaign].name,
     campaignId: MOCK_CAMPAIGNS[cfg.campaign].id,
@@ -167,6 +172,8 @@ function generateMockData(): EnrichedAd[] {
     roas: cfg.roas,
     ctr: cfg.ctr,
     impressions: cfg.impressions,
+    purchases: Math.round((cfg.spend * cfg.roas) / 50),
+    hasActiveAd: i < 7,
   }));
 }
 
@@ -187,7 +194,8 @@ export const InsightsStep = () => {
   const navigate = useNavigate();
   const { state } = useWizard();
   const [loading, setLoading] = useState(true);
-  const [ads, setAds] = useState<EnrichedAd[]>([]);
+  const [cadRows, setCadRows] = useState<any[] | null>(null);
+  const [mockAds, setMockAds] = useState<EnrichedAd[] | null>(null);
   const [activeView, setActiveView] = useState("discover");
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -196,6 +204,7 @@ export const InsightsStep = () => {
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "complete" | "error">("idle");
   const [syncStep, setSyncStep] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [dateRange, setDateRange] = useState<DateRangeKey>("30");
 
   const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
     const insightByAd = new Map<string, Insight>();
@@ -261,59 +270,90 @@ export const InsightsStep = () => {
 
     // Primary source: campaign_ad_data materialized view (flattened, denormalized)
     const { data: cadData } = await supabase.from("campaign_ad_data").select("*");
-    const cadRows = cadData || [];
+    const rows = cadData || [];
 
-    if (cadRows.length > 0) {
-      // Build enriched ads from production data — aggregate daily rows per ad
-      const adAgg = new Map<string, any>();
-      cadRows.forEach((row: any) => {
-        const key = row.ad_id || `${row.brand_id}-${row.date}`;
-        if (!adAgg.has(key)) {
-          const imgs = Array.isArray(row.image_urls) ? row.image_urls : [];
-          adAgg.set(key, {
-            id: key,
-            adName: row.ad_name || "Unknown",
-            campaignName: row.campaign_name || "Unknown Campaign",
-            campaignId: row.campaign_id || "",
-            imageUrl: row.image_url || imgs[0] || null,
-            creativeType: row.creative_type || "static_single",
-            spend: 0, impressions: 0, clicks: 0, ctrSum: 0, roasSum: 0, days: 0,
-          });
-        }
-        const agg = adAgg.get(key)!;
-        agg.spend += Number(row.spend || 0);
-        agg.impressions += Number(row.impressions || 0);
-        agg.clicks += Number(row.clicks || 0);
-        agg.roasSum += Number(row.roas || 0);
-        agg.days += 1;
-      });
-
-      const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
-        const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
-        const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
-        return {
-          id: agg.id,
-          adName: agg.adName,
-          campaignName: agg.campaignName,
-          campaignId: agg.campaignId,
-          imageUrl: agg.imageUrl,
-          creativeType: agg.creativeType,
-          score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
-          decayScore: roas < 1 ? 80 : roas < 2 ? 50 : roas < 4 ? 25 : 10,
-          spend: agg.spend,
-          roas: roas,
-          ctr: ctr,
-          impressions: agg.impressions,
-        };
-      });
-      enriched.sort((a, b) => b.score - a.score);
-      setAds(enriched);
+    if (rows.length > 0) {
+      setCadRows(rows);
+      setMockAds(null);
     } else {
-      // No synced data yet — show mock data so the UI is never empty during dev
-      setAds(generateMockData());
+      setCadRows([]);
+      setMockAds(generateMockData());
     }
     setLoading(false);
   }, [selectedAccountId]);
+
+  // Derive ads from raw cad rows + selected date range
+  const ads: EnrichedAd[] = useMemo(() => {
+    if (mockAds) return mockAds;
+    if (!cadRows || cadRows.length === 0) return [];
+
+    const cutoff = (() => {
+      if (dateRange === "all") return null;
+      const days = parseInt(dateRange, 10);
+      const d = new Date();
+      d.setDate(d.getDate() - days);
+      d.setHours(0, 0, 0, 0);
+      return d;
+    })();
+
+    const inRange = cutoff
+      ? cadRows.filter((r) => r.date && new Date(r.date) >= cutoff)
+      : cadRows;
+
+    const adAgg = new Map<string, any>();
+    inRange.forEach((row: any) => {
+      const key = row.ad_id || `${row.brand_id}-${row.date}`;
+      if (!adAgg.has(key)) {
+        const imgs = Array.isArray(row.image_urls) ? row.image_urls : [];
+        adAgg.set(key, {
+          id: key,
+          creativeId: row.creative_id || key,
+          adName: row.ad_name || "Unknown",
+          campaignName: row.campaign_name || "Unknown Campaign",
+          campaignId: row.campaign_id || "",
+          imageUrl: row.image_url || imgs[0] || null,
+          creativeType: row.creative_type || "static_single",
+          spend: 0, impressions: 0, clicks: 0, purchases: 0, roasSum: 0, days: 0,
+          hasActiveAd: false,
+        });
+      }
+      const agg = adAgg.get(key)!;
+      agg.spend += Number(row.spend || 0);
+      agg.impressions += Number(row.impressions || 0);
+      agg.clicks += Number(row.clicks || 0);
+      agg.purchases += Number(row.purchases || 0);
+      agg.roasSum += Number(row.roas || 0);
+      agg.days += 1;
+      if (String(row.ad_effective_status || "").toUpperCase() === "ACTIVE") {
+        agg.hasActiveAd = true;
+      }
+    });
+
+    const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
+      const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
+      const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
+      return {
+        id: agg.id,
+        creativeId: agg.creativeId,
+        adName: agg.adName,
+        campaignName: agg.campaignName,
+        campaignId: agg.campaignId,
+        imageUrl: agg.imageUrl,
+        creativeType: agg.creativeType,
+        score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
+        decayScore: roas < 1 ? 80 : roas < 2 ? 50 : roas < 4 ? 25 : 10,
+        spend: agg.spend,
+        roas,
+        ctr,
+        impressions: agg.impressions,
+        purchases: agg.purchases,
+        hasActiveAd: agg.hasActiveAd,
+      };
+    });
+    enriched.sort((a, b) => b.score - a.score);
+    return enriched;
+  }, [cadRows, mockAds, dateRange]);
+
 
   // Background sync for returning users (and manual resync)
   const triggerBackgroundSync = useCallback(async () => {
@@ -468,19 +508,51 @@ export const InsightsStep = () => {
     return Array.from(map.values());
   }, [ads]);
 
-  const topPerformer = useMemo(() => {
-    if (ads.length === 0) return null;
-    const top = ads[0];
-    const campaignAds = ads.filter((a) => a.campaignId === top.campaignId);
-    return {
-      name: top.adName,
-      roas: top.roas ?? 0,
-      newAds: campaignAds.length,
-      avgSpend: Math.round(
-        campaignAds.reduce((s, a) => s + (a.spend ?? 0), 0) / campaignAds.length
-      ),
-      topFormat: top.creativeType.includes("carousel") ? "Carousel" : "Static",
-    };
+  const activeCreativeCount = useMemo(() => {
+    const set = new Set<string>();
+    ads.forEach((a) => {
+      if (a.hasActiveAd) set.add(a.creativeId);
+    });
+    return set.size;
+  }, [ads]);
+
+  const topPerformers: TopPerformerSlide[] = useMemo(() => {
+    if (ads.length === 0) return [];
+    const fmt = (a: EnrichedAd) => a.creativeType.includes("carousel") ? "Carousel" : a.creativeType.includes("video") ? "Video" : "Static";
+    const compactNum = (n: number) =>
+      n >= 1_000_000 ? `${(n / 1_000_000).toFixed(2)}M` : n >= 1_000 ? `${(n / 1_000).toFixed(1)}K` : `${n}`;
+
+    const bySpend = [...ads].sort((a, b) => (b.spend ?? 0) - (a.spend ?? 0))[0];
+    const byPurchases = [...ads].sort((a, b) =>
+      (b.purchases ?? 0) - (a.purchases ?? 0) || (b.spend ?? 0) - (a.spend ?? 0)
+    )[0];
+    const byImpressions = [...ads].sort((a, b) =>
+      (b.impressions ?? 0) - (a.impressions ?? 0) || (b.spend ?? 0) - (a.spend ?? 0)
+    )[0];
+
+    const slides: TopPerformerSlide[] = [];
+    if (bySpend) slides.push({
+      name: bySpend.adName,
+      metricLabel: "Spend",
+      metricValue: `$${compactNum(Math.round(bySpend.spend ?? 0))} spend`,
+      avgSpend: Math.round(bySpend.spend ?? 0),
+      topFormat: fmt(bySpend),
+    });
+    if (byPurchases) slides.push({
+      name: byPurchases.adName,
+      metricLabel: "Purchases",
+      metricValue: `${(byPurchases.purchases ?? 0).toLocaleString()} purchases`,
+      avgSpend: Math.round(byPurchases.spend ?? 0),
+      topFormat: fmt(byPurchases),
+    });
+    if (byImpressions) slides.push({
+      name: byImpressions.adName,
+      metricLabel: "Impressions",
+      metricValue: `${compactNum(byImpressions.impressions ?? 0)} impressions`,
+      avgSpend: Math.round(byImpressions.spend ?? 0),
+      topFormat: fmt(byImpressions),
+    });
+    return slides;
   }, [ads]);
 
   const formatMix = useMemo(() => {
@@ -579,13 +651,16 @@ export const InsightsStep = () => {
               </div>
             </motion.div>
 
+            {/* Date range filter — controls all metrics on the page */}
+            <div className="flex items-center justify-end mb-5">
+              <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            </div>
+
             {/* Digest Cards — only on Home */}
             {activeView === "discover" && (
               <DigestCards
-                totalAds={ads.length}
-                newAdsLast14Days={Math.min(ads.length, 5)}
-                velocityChange={40}
-                topPerformer={topPerformer}
+                activeCreativeCount={activeCreativeCount}
+                topPerformers={topPerformers}
                 formatMix={formatMix}
               />
             )}
