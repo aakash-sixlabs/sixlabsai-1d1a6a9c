@@ -2,7 +2,9 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Sparkles, Wand2 } from "lucide-react";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+const VisuallyHidden = ({ children }: { children: React.ReactNode }) => (
+  <span className="sr-only">{children}</span>
+);
 
 export interface PreviewAd {
   id: string;
