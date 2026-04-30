@@ -64,6 +64,7 @@ interface AdSet {
 
 interface EnrichedAd {
   id: string;
+  creativeId: string;
   adName: string;
   campaignName: string;
   campaignId: string;
@@ -75,6 +76,8 @@ interface EnrichedAd {
   roas: number | null;
   ctr: number | null;
   impressions: number | null;
+  purchases: number | null;
+  hasActiveAd: boolean;
 }
 
 // ─── Sort options ────────────────────────────────────────────────
