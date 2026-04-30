@@ -16,6 +16,7 @@ import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
 import { DigestCards, TopPerformerSlide } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
+import { CreativePreviewDialog } from "@/components/insights/CreativePreviewDialog";
 import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
 
 import { useWizard } from "@/context/WizardContext";
@@ -206,6 +207,7 @@ export const InsightsStep = () => {
   const [syncStep, setSyncStep] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [dateRange, setDateRange] = useState<DateRangeKey>("30");
+  const [previewAdId, setPreviewAdId] = useState<string | null>(null);
 
   const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
     const insightByAd = new Map<string, Insight>();
@@ -724,7 +726,7 @@ export const InsightsStep = () => {
                   ads={topAds}
                   title="🔥 Top Performers"
                   subtitle="These creatives are driving the strongest returns — use them to inform your next ad"
-                  onAdClick={(id) => console.log("View ad", id)}
+                  onAdClick={(id) => setPreviewAdId(id)}
                 />
               </>
             )}
@@ -733,7 +735,7 @@ export const InsightsStep = () => {
             <AdCreativeGrid
               ads={latestAds}
               title={activeView === "discover" ? "All Ads" : viewTitle}
-              onAdClick={(id) => console.log("View ad", id)}
+              onAdClick={(id) => setPreviewAdId(id)}
             />
 
             {/* Reinforcement */}
@@ -743,6 +745,12 @@ export const InsightsStep = () => {
           </div>
         </main>
       </div>
+
+      <CreativePreviewDialog
+        ad={previewAdId ? (filteredAds.find((a) => a.id === previewAdId) || ads.find((a) => a.id === previewAdId) || null) : null}
+        open={!!previewAdId}
+        onOpenChange={(o) => !o && setPreviewAdId(null)}
+      />
     </div>
   );
 };
