@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { Download, RefreshCw, ChevronLeft, ChevronRight, ImageOff, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ interface GeneratedCreative {
   headline: string | null;
   primary_text: string | null;
   description: string | null;
+  feedback?: "like" | "dislike" | null;
 }
 
 const LazyImage = ({
@@ -68,6 +69,23 @@ export const OutputStep = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
 
+  const submitFeedback = async (creativeId: string, value: "like" | "dislike") => {
+    const current = creatives.find((c) => c.id === creativeId);
+    const next = current?.feedback === value ? null : value;
+
+    setCreatives((prev) =>
+      prev.map((c) => (c.id === creativeId ? { ...c, feedback: next } : c))
+    );
+
+    if (jobId?.startsWith("dev_")) return;
+
+    const { error } = await supabase
+      .from("generated_creatives")
+      .update({ feedback: next })
+      .eq("id", creativeId);
+    if (error) toast.error("Couldn't save feedback. Try again.");
+  };
+
   useEffect(() => {
     if (!jobId) {
       setLoading(false);
@@ -97,7 +115,7 @@ export const OutputStep = () => {
         setLoading(false);
         return;
       }
-      setCreatives(data ?? []);
+      setCreatives((data ?? []) as GeneratedCreative[]);
       setLoading(false);
     })();
   }, [jobId]);
@@ -204,13 +222,31 @@ export const OutputStep = () => {
                 alt={c.headline ?? `Variant ${i + 1}`}
                 aspectClass="aspect-square"
               />
-              <div className="px-3 py-2.5">
-                <span className="text-xs font-medium text-foreground">
+              <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-foreground truncate">
                   Variant {i + 1}
                   {c.aspect_ratio && (
                     <span className="text-muted-foreground"> · {c.aspect_ratio}</span>
                   )}
                 </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <FeedbackBtn
+                    active={c.feedback === "like"}
+                    tone="like"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      submitFeedback(c.id, "like");
+                    }}
+                  />
+                  <FeedbackBtn
+                    active={c.feedback === "dislike"}
+                    tone="dislike"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      submitFeedback(c.id, "dislike");
+                    }}
+                  />
+                </div>
               </div>
             </motion.div>
           ))}
@@ -288,5 +324,34 @@ export const OutputStep = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+const FeedbackBtn = ({
+  active,
+  tone,
+  onClick,
+}: {
+  active: boolean;
+  tone: "like" | "dislike";
+  onClick: (e: React.MouseEvent) => void;
+}) => {
+  const Icon = tone === "like" ? ThumbsUp : ThumbsDown;
+  const activeClass =
+    tone === "like"
+      ? "bg-accent/15 text-accent"
+      : "bg-destructive/10 text-destructive";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-7 w-7 rounded-lg flex items-center justify-center transition-colors ${
+        active ? activeClass : "text-muted-foreground hover:bg-secondary/80"
+      }`}
+      aria-label={tone === "like" ? "Like" : "Dislike"}
+      aria-pressed={active}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </button>
   );
 };

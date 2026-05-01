@@ -543,6 +543,7 @@ export type Database = {
           aspect_ratio: string | null
           created_at: string
           description: string | null
+          feedback: string | null
           headline: string | null
           id: string
           image_url: string
@@ -557,6 +558,7 @@ export type Database = {
           aspect_ratio?: string | null
           created_at?: string
           description?: string | null
+          feedback?: string | null
           headline?: string | null
           id?: string
           image_url: string
@@ -571,6 +573,7 @@ export type Database = {
           aspect_ratio?: string | null
           created_at?: string
           description?: string | null
+          feedback?: string | null
           headline?: string | null
           id?: string
           image_url?: string

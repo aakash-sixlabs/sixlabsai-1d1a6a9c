@@ -5,6 +5,7 @@ import {
   TrendingUp,
   Lightbulb,
   AlertCircle,
+  History,
 } from "lucide-react";
 import {
   Select,
@@ -28,6 +29,7 @@ const mainNav: NavItemMeta[] = [
   { label: "Top Performers", icon: <TrendingUp className="w-[18px] h-[18px]" />, id: "top" },
   { label: "Opportunities", icon: <Lightbulb className="w-[18px] h-[18px]" />, id: "opportunities", count: 4 },
   { label: "Ad Library", icon: <FolderOpen className="w-[18px] h-[18px]" />, id: "library" },
+  { label: "My Generations", icon: <History className="w-[18px] h-[18px]" />, id: "generations" },
   { label: "Needs Review", icon: <AlertCircle className="w-[18px] h-[18px]" />, id: "needs-review", count: 3 },
 ];
 
