@@ -79,6 +79,7 @@ interface EnrichedAd {
   ctr: number | null;
   impressions: number | null;
   purchases: number | null;
+  costPerPurchase: number | null;
   hasActiveAd: boolean;
 }
 
