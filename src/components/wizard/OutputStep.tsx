@@ -205,13 +205,31 @@ export const OutputStep = () => {
                 alt={c.headline ?? `Variant ${i + 1}`}
                 aspectClass="aspect-square"
               />
-              <div className="px-3 py-2.5">
-                <span className="text-xs font-medium text-foreground">
+              <div className="px-3 py-2.5 flex items-center justify-between gap-2">
+                <span className="text-xs font-medium text-foreground truncate">
                   Variant {i + 1}
                   {c.aspect_ratio && (
                     <span className="text-muted-foreground"> · {c.aspect_ratio}</span>
                   )}
                 </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <FeedbackBtn
+                    active={c.feedback === "like"}
+                    tone="like"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      submitFeedback(c.id, "like");
+                    }}
+                  />
+                  <FeedbackBtn
+                    active={c.feedback === "dislike"}
+                    tone="dislike"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      submitFeedback(c.id, "dislike");
+                    }}
+                  />
+                </div>
               </div>
             </motion.div>
           ))}
