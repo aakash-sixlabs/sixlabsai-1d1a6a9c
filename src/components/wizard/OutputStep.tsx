@@ -98,7 +98,7 @@ export const OutputStep = () => {
         setLoading(false);
         return;
       }
-      setCreatives(data ?? []);
+      setCreatives((data ?? []) as GeneratedCreative[]);
       setLoading(false);
     })();
   }, [jobId]);
