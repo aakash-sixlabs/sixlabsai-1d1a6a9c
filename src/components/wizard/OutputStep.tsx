@@ -73,6 +73,19 @@ export const OutputStep = () => {
       setLoading(false);
       return;
     }
+    // Dev mode: read stubbed creatives from sessionStorage
+    if (jobId.startsWith("dev_")) {
+      try {
+        const raw = sessionStorage.getItem(`dev_creatives_${jobId}`);
+        if (raw) {
+          setCreatives(JSON.parse(raw));
+        }
+      } catch {
+        toast.error("Failed to load dev creatives.");
+      }
+      setLoading(false);
+      return;
+    }
     (async () => {
       const { data, error } = await supabase
         .from("generated_creatives")
