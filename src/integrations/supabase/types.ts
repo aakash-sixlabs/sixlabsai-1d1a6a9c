@@ -602,6 +602,7 @@ export type Database = {
           icp_id: string | null
           icp_snapshot: Json | null
           id: string
+          offer_type: string | null
           product_image_url: string | null
           product_input_method: string | null
           product_url: string | null
@@ -623,6 +624,7 @@ export type Database = {
           icp_id?: string | null
           icp_snapshot?: Json | null
           id?: string
+          offer_type?: string | null
           product_image_url?: string | null
           product_input_method?: string | null
           product_url?: string | null
@@ -644,6 +646,7 @@ export type Database = {
           icp_id?: string | null
           icp_snapshot?: Json | null
           id?: string
+          offer_type?: string | null
           product_image_url?: string | null
           product_input_method?: string | null
           product_url?: string | null
