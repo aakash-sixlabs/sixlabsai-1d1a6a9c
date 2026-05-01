@@ -178,6 +178,13 @@ export const CreateAdFlow = () => {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25 }}
           >
+            {stepKey === "icp" && (
+              <IcpStep
+                selectedIcpId={state.icpId}
+                onSelect={handleIcpSelect}
+                onNext={next}
+              />
+            )}
             {stepKey === "goal" && (
               <GoalStep
                 selected={state.goal}
