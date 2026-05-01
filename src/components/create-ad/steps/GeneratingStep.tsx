@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
+import { isDevSession } from "@/lib/devMode";
 import type { CreateAdState } from "../CreateAdFlow";
 
 interface GenerationStage {
@@ -62,6 +63,44 @@ export const GeneratingStep = ({ state }: GeneratingStepProps) => {
     requestStartedRef.current = true;
 
     (async () => {
+      // Dev mode: skip the edge function entirely and stub creatives locally.
+      if (isDevSession()) {
+        const ratios = state.aspectRatios?.length ? state.aspectRatios : ["1:1"];
+        const dimsFor = (r: string) => {
+          switch (r) {
+            case "9:16": return { w: 720, h: 1280 };
+            case "16:9": return { w: 1280, h: 720 };
+            case "4:5": return { w: 1080, h: 1350 };
+            default: return { w: 1080, h: 1080 };
+          }
+        };
+        const creatives: any[] = [];
+        let idx = 0;
+        for (const ratio of ratios) {
+          const { w, h } = dimsFor(ratio);
+          for (let v = 0; v < 3; v++) {
+            const seed = `dev-${Date.now()}-${idx}`;
+            creatives.push({
+              id: `dev_${idx}`,
+              variant_index: idx,
+              aspect_ratio: ratio,
+              image_url: `https://picsum.photos/seed/${seed}/${w}/${h}`,
+              thumbnail_url: `https://picsum.photos/seed/${seed}/${Math.round(w / 4)}/${Math.round(h / 4)}`,
+              headline: `Headline variant ${idx + 1}`,
+              primary_text: `Generated copy for ${state.goal ?? "your ad"} (${ratio}).`,
+              description: "Dev mode stub.",
+            });
+            idx++;
+          }
+        }
+        const devJobId = `dev_${Date.now()}`;
+        try {
+          sessionStorage.setItem(`dev_creatives_${devJobId}`, JSON.stringify(creatives));
+        } catch {}
+        jobIdRef.current = devJobId;
+        return;
+      }
+
       const { data, error } = await supabase.functions.invoke("generate-creatives", {
         body: { ...state, adAccountId: wizardState.selectedAccount ?? null },
       });
