@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon, Gift, Repeat,
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { DisclaimerPicker } from "./DisclaimerPicker";
 
 interface PromoDetailsStepProps {
   details: PromoDetails;
@@ -272,6 +273,17 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
                 rows={3}
               />
             </div>
+
+            {/* Disclaimers */}
+            <DisclaimerPicker
+              selectedIds={details.disclaimerIds}
+              onChange={(selected) =>
+                set({
+                  disclaimerIds: selected.map((d) => d.id),
+                  disclaimers: selected,
+                })
+              }
+            />
           </div>
         )}
       </div>
