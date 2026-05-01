@@ -19,6 +19,8 @@ interface PromoDetails {
   startDate?: string;
   endDate?: string;
   additionalNotes?: string;
+  disclaimerIds?: string[];
+  disclaimers?: { id: string; label: string; text: string }[];
 }
 
 interface CreateAdState {
@@ -30,6 +32,9 @@ interface CreateAdState {
   aspectRatios: string[];
   promoDetails: PromoDetails;
   adAccountId?: string | null;
+  icpId?: string | null;
+  icpName?: string | null;
+  icpDescription?: string | null;
 }
 
 interface BrandKit {
