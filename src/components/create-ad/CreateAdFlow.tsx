@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import { GoalStep } from "./steps/GoalStep";
+import { IcpStep, IcpOption } from "./steps/IcpStep";
 import { ProductInputStep } from "./steps/ProductInputStep";
 import { AspectRatioStep } from "./steps/AspectRatioStep";
 import { PromoDetailsStep } from "./steps/PromoDetailsStep";
@@ -42,6 +43,9 @@ export interface CreateAdState {
   productInputMethod: "image" | "url" | null;
   aspectRatios: string[];
   promoDetails: PromoDetails;
+  icpId: string | null;
+  icpName: string | null;
+  icpDescription: string | null;
 }
 
 const initialState: CreateAdState = {
@@ -65,6 +69,9 @@ const initialState: CreateAdState = {
     endDate: "",
     additionalNotes: "",
   },
+  icpId: null,
+  icpName: null,
+  icpDescription: null,
 };
 
 // Which goals need a product input step
@@ -86,7 +93,7 @@ export const CreateAdFlow = () => {
   const needsPromo = state.goal === "sale-promo";
   const needsPromoScope = state.goal === "sale-promo";
 
-  const steps: { key: string }[] = [{ key: "goal" }];
+  const steps: { key: string }[] = [{ key: "icp" }, { key: "goal" }];
   if (needsPromoScope) steps.push({ key: "promo-scope" });
   if (needsProduct) steps.push({ key: "product" });
   if (needsPromo) steps.push({ key: "promo" });
@@ -104,15 +111,20 @@ export const CreateAdFlow = () => {
     update({ goal, promoScope: null, productImage: null, productUrl: "", productInputMethod: null });
   };
 
-  // Map internal step to progress phase: 0=Goal, 1=Details, 2=Review
+  const handleIcpSelect = (icp: IcpOption) => {
+    update({ icpId: icp.id, icpName: icp.name, icpDescription: icp.description });
+  };
+
+  // Map internal step to progress phase: 0=Audience, 1=Goal, 2=Details, 3=Review
   const getPhase = (): number => {
-    if (stepKey === "goal") return 0;
-    if (stepKey === "review") return 2;
-    return 1; // everything in between is "Details"
+    if (stepKey === "icp") return 0;
+    if (stepKey === "goal") return 1;
+    if (stepKey === "review") return 3;
+    return 2; // everything in between is "Details"
   };
 
   const phase = getPhase();
-  const PHASES = ["Goal", "Details", "Review"];
+  const PHASES = ["Audience", "Goal", "Details", "Review"];
 
   if (isGenerating) {
     return <GeneratingStep state={state} />;
@@ -166,6 +178,13 @@ export const CreateAdFlow = () => {
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.25 }}
           >
+            {stepKey === "icp" && (
+              <IcpStep
+                selectedIcpId={state.icpId}
+                onSelect={handleIcpSelect}
+                onNext={next}
+              />
+            )}
             {stepKey === "goal" && (
               <GoalStep
                 selected={state.goal}

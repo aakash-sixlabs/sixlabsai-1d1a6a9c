@@ -1,6 +1,6 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users } from "lucide-react";
 
 const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
   "sale-promo": { label: "Sale / Promotion", icon: Tag },
@@ -47,6 +47,17 @@ export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
       </p>
 
       <div className="space-y-4">
+        {/* Audience */}
+        {state.icpName && (
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Audience</p>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              <p className="font-medium text-foreground">{state.icpName}</p>
+            </div>
+          </div>
+        )}
+
         {/* Goal */}
         <div className="p-4 rounded-lg bg-card border border-border">
           <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Goal</p>
