@@ -18,6 +18,7 @@ import { DigestCards, TopPerformerSlide } from "@/components/insights/DigestCard
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
 import { CreativePreviewDialog } from "@/components/insights/CreativePreviewDialog";
 import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
+import { GeneratedCreativesByJob } from "@/components/insights/GeneratedCreativesByJob";
 
 import { useWizard } from "@/context/WizardContext";
 
