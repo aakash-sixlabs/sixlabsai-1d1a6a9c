@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
+import { isDevSession } from "@/lib/devMode";
 import type { CreateAdState } from "../CreateAdFlow";
 
 interface GenerationStage {
