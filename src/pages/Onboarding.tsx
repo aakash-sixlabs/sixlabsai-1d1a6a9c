@@ -153,6 +153,14 @@ const Onboarding = () => {
           onComplete={handleBrandKitComplete}
         />
       )}
+      {phase === "add-icp" && state.selectedAccount && (
+        <IcpOnboardingStep
+          open
+          adAccountId={state.selectedAccount}
+          isDevMode={isDevMode}
+          onComplete={handleIcpComplete}
+        />
+      )}
       <ToolExplanationOverlay
         open={phase === "tool-explanation"}
         onContinue={handleToolExplanationContinue}
