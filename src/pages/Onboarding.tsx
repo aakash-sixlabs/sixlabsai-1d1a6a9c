@@ -118,6 +118,11 @@ const Onboarding = () => {
   };
 
   const handleBrandKitComplete = () => {
+    // Optional ICP collection before pulling data.
+    setPhase("add-icp");
+  };
+
+  const handleIcpComplete = () => {
     // Finally pull the ad data.
     setPhase("data-sync");
   };
