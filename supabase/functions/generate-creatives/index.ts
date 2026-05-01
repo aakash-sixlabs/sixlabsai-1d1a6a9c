@@ -183,6 +183,7 @@ Deno.serve(async (req) => {
         product_image_url: body.productImage || null,
         aspect_ratios: body.aspectRatios,
         promo_details: body.promoDetails ?? {},
+        offer_type: body.promoDetails?.offerType ?? null,
         icp_id: body.icpId ?? null,
         icp_snapshot: icpSnapshot,
         disclaimer_ids: body.promoDetails?.disclaimerIds ?? [],
