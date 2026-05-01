@@ -6,10 +6,11 @@ import { ProfileOverlay, AccountSelectOverlay } from "@/components/wizard/Onboar
 import { ToolExplanationOverlay } from "@/components/wizard/ToolExplanationOverlay";
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
+import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
 import { supabase } from "@/integrations/supabase/client";
 import { isSuperAdmin } from "@/lib/superAdmin";
 
-type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "data-sync";
+type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "add-icp" | "data-sync";
 
 const Onboarding = () => {
   const { state, updateState } = useWizard();
