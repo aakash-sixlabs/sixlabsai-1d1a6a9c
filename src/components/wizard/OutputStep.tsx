@@ -69,6 +69,23 @@ export const OutputStep = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<string | null>(null);
 
+  const submitFeedback = async (creativeId: string, value: "like" | "dislike") => {
+    const current = creatives.find((c) => c.id === creativeId);
+    const next = current?.feedback === value ? null : value;
+
+    setCreatives((prev) =>
+      prev.map((c) => (c.id === creativeId ? { ...c, feedback: next } : c))
+    );
+
+    if (jobId?.startsWith("dev_")) return;
+
+    const { error } = await supabase
+      .from("generated_creatives")
+      .update({ feedback: next })
+      .eq("id", creativeId);
+    if (error) toast.error("Couldn't save feedback. Try again.");
+  };
+
   useEffect(() => {
     if (!jobId) {
       setLoading(false);
