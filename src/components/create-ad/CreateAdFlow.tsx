@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import { GoalStep } from "./steps/GoalStep";
+import { IcpStep, IcpOption } from "./steps/IcpStep";
 import { ProductInputStep } from "./steps/ProductInputStep";
 import { AspectRatioStep } from "./steps/AspectRatioStep";
 import { PromoDetailsStep } from "./steps/PromoDetailsStep";
