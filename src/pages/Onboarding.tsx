@@ -6,10 +6,11 @@ import { ProfileOverlay, AccountSelectOverlay } from "@/components/wizard/Onboar
 import { ToolExplanationOverlay } from "@/components/wizard/ToolExplanationOverlay";
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
+import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
 import { supabase } from "@/integrations/supabase/client";
 import { isSuperAdmin } from "@/lib/superAdmin";
 
-type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "data-sync";
+type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "add-icp" | "data-sync";
 
 const Onboarding = () => {
   const { state, updateState } = useWizard();
@@ -117,6 +118,11 @@ const Onboarding = () => {
   };
 
   const handleBrandKitComplete = () => {
+    // Optional ICP collection before pulling data.
+    setPhase("add-icp");
+  };
+
+  const handleIcpComplete = () => {
     // Finally pull the ad data.
     setPhase("data-sync");
   };
@@ -145,6 +151,14 @@ const Onboarding = () => {
           initialWebsite={state.brandWebsite}
           isDevMode={isDevMode}
           onComplete={handleBrandKitComplete}
+        />
+      )}
+      {phase === "add-icp" && state.selectedAccount && (
+        <IcpOnboardingStep
+          open
+          adAccountId={state.selectedAccount}
+          isDevMode={isDevMode}
+          onComplete={handleIcpComplete}
         />
       )}
       <ToolExplanationOverlay
