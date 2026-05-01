@@ -21,6 +21,7 @@ interface AdCreativeCardData {
   roas: number | null;
   ctr: number | null;
   impressions: number | null;
+  costPerPurchase: number | null;
 }
 
 interface AdCreativeGridProps {
@@ -109,7 +110,7 @@ function AdCard({ ad, index, onClick }: { ad: AdCreativeCardData; index: number;
       {/* Info */}
       <div className="px-4 py-3.5">
         <p className="text-sm font-semibold text-foreground truncate mb-3">{ad.adName}</p>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <div className="rounded-lg bg-secondary/50 px-2 py-1.5">
             <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold leading-none mb-1">Spend</p>
             <p className="text-sm font-semibold text-foreground leading-none">{fmtCompact(ad.spend, "$")}</p>
@@ -125,6 +126,10 @@ function AdCard({ ad, index, onClick }: { ad: AdCreativeCardData; index: number;
             <p className="text-sm font-semibold text-foreground leading-none">
               {ad.ctr != null ? `${ad.ctr.toFixed(1)}%` : "—"}
             </p>
+          </div>
+          <div className="rounded-lg bg-secondary/50 px-2 py-1.5">
+            <p className="text-[9px] uppercase tracking-wide text-muted-foreground font-semibold leading-none mb-1">CPP</p>
+            <p className="text-sm font-semibold text-foreground leading-none">{fmtCompact(ad.costPerPurchase, "$")}</p>
           </div>
         </div>
       </div>

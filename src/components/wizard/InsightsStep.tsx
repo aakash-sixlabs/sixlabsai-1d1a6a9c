@@ -79,6 +79,7 @@ interface EnrichedAd {
   ctr: number | null;
   impressions: number | null;
   purchases: number | null;
+  costPerPurchase: number | null;
   hasActiveAd: boolean;
 }
 
@@ -175,6 +176,7 @@ function generateMockData(): EnrichedAd[] {
     ctr: cfg.ctr,
     impressions: cfg.impressions,
     purchases: Math.round((cfg.spend * cfg.roas) / 50),
+    costPerPurchase: cfg.roas > 0 ? 50 / cfg.roas : null,
     hasActiveAd: i < 7,
   }));
 }
@@ -352,6 +354,7 @@ export const InsightsStep = () => {
     const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
       const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
       const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
+      const costPerPurchase = agg.purchases > 0 ? agg.spend / agg.purchases : null;
       return {
         id: agg.id,
         creativeId: agg.creativeId,
@@ -367,6 +370,7 @@ export const InsightsStep = () => {
         ctr,
         impressions: agg.impressions,
         purchases: agg.purchases,
+        costPerPurchase,
         hasActiveAd: agg.hasActiveAd,
       };
     });
