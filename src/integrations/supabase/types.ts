@@ -508,6 +508,36 @@ export type Database = {
           },
         ]
       }
+      disclaimers: {
+        Row: {
+          ad_account_id: string
+          created_at: string
+          id: string
+          label: string
+          text: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ad_account_id: string
+          created_at?: string
+          id?: string
+          label: string
+          text: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ad_account_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          text?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_creatives: {
         Row: {
           aspect_ratio: string | null
