@@ -326,3 +326,32 @@ export const OutputStep = () => {
     </div>
   );
 };
+
+const FeedbackBtn = ({
+  active,
+  tone,
+  onClick,
+}: {
+  active: boolean;
+  tone: "like" | "dislike";
+  onClick: (e: React.MouseEvent) => void;
+}) => {
+  const Icon = tone === "like" ? ThumbsUp : ThumbsDown;
+  const activeClass =
+    tone === "like"
+      ? "bg-accent/15 text-accent"
+      : "bg-destructive/10 text-destructive";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`h-7 w-7 rounded-lg flex items-center justify-center transition-colors ${
+        active ? activeClass : "text-muted-foreground hover:bg-secondary/80"
+      }`}
+      aria-label={tone === "like" ? "Like" : "Dislike"}
+      aria-pressed={active}
+    >
+      <Icon className="w-3.5 h-3.5" />
+    </button>
+  );
+};
