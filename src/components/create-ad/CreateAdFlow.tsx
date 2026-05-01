@@ -33,6 +33,8 @@ export interface PromoDetails {
   startDate: string;
   endDate: string;
   additionalNotes: string;
+  disclaimerIds: string[];
+  disclaimers: { id: string; label: string; text: string }[];
 }
 
 export interface CreateAdState {
@@ -68,6 +70,8 @@ const initialState: CreateAdState = {
     startDate: "",
     endDate: "",
     additionalNotes: "",
+    disclaimerIds: [],
+    disclaimers: [],
   },
   icpId: null,
   icpName: null,
