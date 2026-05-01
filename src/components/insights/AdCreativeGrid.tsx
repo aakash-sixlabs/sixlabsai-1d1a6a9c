@@ -21,6 +21,7 @@ interface AdCreativeCardData {
   roas: number | null;
   ctr: number | null;
   impressions: number | null;
+  costPerPurchase: number | null;
 }
 
 interface AdCreativeGridProps {
