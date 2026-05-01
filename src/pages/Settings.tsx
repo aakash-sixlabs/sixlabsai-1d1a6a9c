@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { BrandKitSettings } from "@/components/settings/BrandKitSettings";
 import { IcpSettings } from "@/components/settings/IcpSettings";
+import { DisclaimerSettings } from "@/components/settings/DisclaimerSettings";
 import { isDevSession } from "@/lib/devMode";
 
 const Settings = () => {
@@ -64,12 +65,16 @@ const Settings = () => {
           <TabsList>
             <TabsTrigger value="brand">Brand Kit</TabsTrigger>
             <TabsTrigger value="icps">ICPs</TabsTrigger>
+            <TabsTrigger value="disclaimers">Disclaimers</TabsTrigger>
           </TabsList>
           <TabsContent value="brand" className="mt-6">
             <BrandKitSettings adAccountId={adAccountId} />
           </TabsContent>
           <TabsContent value="icps" className="mt-6">
             <IcpSettings adAccountId={adAccountId} />
+          </TabsContent>
+          <TabsContent value="disclaimers" className="mt-6">
+            <DisclaimerSettings adAccountId={adAccountId} />
           </TabsContent>
         </Tabs>
       </div>
