@@ -419,8 +419,11 @@ export const BrandKitStep = ({
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (!user) {
-        if (!isDevMode) throw new Error("Not authenticated");
+      // In dev mode, the selected adAccountId is a Meta string id (e.g.
+      // "act_111222333"), not a uuid — bypass all Supabase writes regardless
+      // of whether a real auth session happens to exist.
+      if (isDevMode || !user) {
+        if (!isDevMode && !user) throw new Error("Not authenticated");
 
         sessionStorage.setItem(
           "dev_brand_kit_profile",
