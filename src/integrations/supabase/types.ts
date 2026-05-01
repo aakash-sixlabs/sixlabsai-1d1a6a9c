@@ -596,8 +596,11 @@ export type Database = {
           ad_account_id: string | null
           aspect_ratios: string[]
           created_at: string
+          disclaimer_ids: string[] | null
           error_message: string | null
           goal: string | null
+          icp_id: string | null
+          icp_snapshot: Json | null
           id: string
           product_image_url: string | null
           product_input_method: string | null
@@ -614,8 +617,11 @@ export type Database = {
           ad_account_id?: string | null
           aspect_ratios?: string[]
           created_at?: string
+          disclaimer_ids?: string[] | null
           error_message?: string | null
           goal?: string | null
+          icp_id?: string | null
+          icp_snapshot?: Json | null
           id?: string
           product_image_url?: string | null
           product_input_method?: string | null
@@ -632,8 +638,11 @@ export type Database = {
           ad_account_id?: string | null
           aspect_ratios?: string[]
           created_at?: string
+          disclaimer_ids?: string[] | null
           error_message?: string | null
           goal?: string | null
+          icp_id?: string | null
+          icp_snapshot?: Json | null
           id?: string
           product_image_url?: string | null
           product_input_method?: string | null
