@@ -43,6 +43,9 @@ export interface CreateAdState {
   productInputMethod: "image" | "url" | null;
   aspectRatios: string[];
   promoDetails: PromoDetails;
+  icpId: string | null;
+  icpName: string | null;
+  icpDescription: string | null;
 }
 
 const initialState: CreateAdState = {
@@ -66,6 +69,9 @@ const initialState: CreateAdState = {
     endDate: "",
     additionalNotes: "",
   },
+  icpId: null,
+  icpName: null,
+  icpDescription: null,
 };
 
 // Which goals need a product input step
