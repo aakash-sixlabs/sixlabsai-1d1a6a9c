@@ -167,6 +167,10 @@ Deno.serve(async (req) => {
     }
 
     // 1. Insert job row (status = generating)
+    const icpSnapshot = body.icpId
+      ? { name: body.icpName ?? null, description: body.icpDescription ?? null }
+      : null;
+
     const { data: job, error: jobErr } = await supabase
       .from("generation_jobs")
       .insert({
@@ -179,6 +183,9 @@ Deno.serve(async (req) => {
         product_image_url: body.productImage || null,
         aspect_ratios: body.aspectRatios,
         promo_details: body.promoDetails ?? {},
+        icp_id: body.icpId ?? null,
+        icp_snapshot: icpSnapshot,
+        disclaimer_ids: body.promoDetails?.disclaimerIds ?? [],
         service_request_payload: { ...body, brand_kit: brandKit },
         status: "generating",
       })
