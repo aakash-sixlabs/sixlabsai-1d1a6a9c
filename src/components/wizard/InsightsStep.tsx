@@ -176,6 +176,7 @@ function generateMockData(): EnrichedAd[] {
     ctr: cfg.ctr,
     impressions: cfg.impressions,
     purchases: Math.round((cfg.spend * cfg.roas) / 50),
+    costPerPurchase: cfg.roas > 0 ? 50 / cfg.roas : null,
     hasActiveAd: i < 7,
   }));
 }
