@@ -483,8 +483,18 @@ export const InsightsStep = () => {
         }, 1200);
         return;
       }
-      // Returning user — sync in background
+      // Returning user — sync in background, but throttle auto-resync to once
+      // per hour per account. Manual resync button bypasses this.
       if (state.selectedAccount) {
+        const AUTO_SYNC_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+        const key = `last_auto_sync_${state.selectedAccount}`;
+        try {
+          const last = Number(localStorage.getItem(key) || 0);
+          if (Date.now() - last < AUTO_SYNC_COOLDOWN_MS) {
+            return;
+          }
+          localStorage.setItem(key, String(Date.now()));
+        } catch {}
         triggerBackgroundSync();
       }
     });
