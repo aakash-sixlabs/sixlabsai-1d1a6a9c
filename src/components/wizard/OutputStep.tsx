@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw, ChevronLeft, ChevronRight, ImageOff } from "lucide-react";
+import { Download, RefreshCw, ChevronLeft, ChevronRight, ImageOff, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -17,6 +17,7 @@ interface GeneratedCreative {
   headline: string | null;
   primary_text: string | null;
   description: string | null;
+  feedback?: "like" | "dislike" | null;
 }
 
 const LazyImage = ({
