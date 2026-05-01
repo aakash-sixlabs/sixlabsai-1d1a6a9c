@@ -354,6 +354,7 @@ export const InsightsStep = () => {
     const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
       const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
       const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
+      const costPerPurchase = agg.purchases > 0 ? agg.spend / agg.purchases : null;
       return {
         id: agg.id,
         creativeId: agg.creativeId,
@@ -369,6 +370,7 @@ export const InsightsStep = () => {
         ctr,
         impressions: agg.impressions,
         purchases: agg.purchases,
+        costPerPurchase,
         hasActiveAd: agg.hasActiveAd,
       };
     });
