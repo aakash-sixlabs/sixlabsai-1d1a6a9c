@@ -1,69 +1,51 @@
-## Goal
+## Audit: what the create-ad flow collects vs what `generation_jobs` stores
 
-Add the optional ICP (Ideal Customer Profile) step to the **v1** onboarding flow at `/onboarding`, placed **after** the Brand Kit step and **before** the Data Sync step. Works in both real and dev mode.
+The `CreateAdState` (client) currently collects:
 
-## Current v1 phase order (src/pages/Onboarding.tsx)
+- `goal` ✅ stored as `goal`
+- `promoScope` ✅ stored as `promo_scope`
+- `productImage` ✅ stored as `product_image_url`
+- `productUrl` ✅ stored as `product_url`
+- `productInputMethod` ✅ stored as `product_input_method`
+- `aspectRatios` ✅ stored as `aspect_ratios`
+- `promoDetails` (incl. offer fields, promo code, dates, notes, **disclaimerIds**, **disclaimers**) ✅ stored as `promo_details` jsonb — but disclaimers are buried inside this blob, not queryable
+- `icpId` / `icpName` / `icpDescription` ❌ **NOT stored anywhere** (lost after generation)
+- `adAccountId` ✅ stored as `ad_account_id`
 
+The full payload is also dumped into `service_request_payload` jsonb, so technically nothing is *lost* — but the things we'll likely want to query, filter, or report on (which ICP an ad targets, which disclaimers were attached) deserve first-class columns.
+
+## What's missing / worth adding
+
+Add three first-class fields to `generation_jobs`:
+
+1. **`icp_id` (uuid, nullable)** — references the chosen ICP. Lets us answer "show all creatives generated for ICP X" without scanning JSON.
+2. **`icp_snapshot` (jsonb, nullable)** — `{ name, description }` captured at generation time. Preserves intent even if the ICP is later edited or deleted.
+3. **`disclaimer_ids` (uuid[], nullable)** — array of disclaimer IDs used. Easy to join/filter. The full label+text snapshot stays inside `promo_details.disclaimers` for historical fidelity.
+
+Everything else in the flow is already covered by existing columns or the `service_request_payload` snapshot.
+
+## Implementation
+
+### 1. Migration
+Add columns to `generation_jobs`:
 ```text
-loading → profile → tool-explanation → account-select → brand-kit → data-sync → /home
+icp_id          uuid       null
+icp_snapshot    jsonb      null
+disclaimer_ids  uuid[]     null  default '{}'
 ```
+No FK constraints (matches the table's existing convention of no FKs); nullable so existing rows stay valid.
 
-## New v1 phase order
+### 2. `supabase/functions/generate-creatives/index.ts`
+- Extend the `CreateAdState` interface with `icpId`, `icpName`, `icpDescription`, and `promoDetails.disclaimerIds` / `promoDetails.disclaimers`.
+- On insert into `generation_jobs`, populate the three new columns from the payload.
 
-```text
-loading → profile → tool-explanation → account-select → brand-kit → add-icp → data-sync → /home
-```
+### 3. `src/components/create-ad/steps/GeneratingStep.tsx`
+No change needed — it already spreads the entire `state` into the edge function body, so `icpId` / `icpName` / `icpDescription` will flow through automatically.
 
-The `IcpOnboardingStep` component already exists (`src/components/wizard/IcpOnboardingStep.tsx`) and is currently used by `OnboardingV2.tsx`. It already supports:
-- An `isDevMode` prop that skips the Supabase insert
-- An optional/skippable UX (the "Skip for now" button)
-- Persisting to the `icps` table when not in dev mode
+### 4. `src/integrations/supabase/types.ts`
+Auto-regenerated after migration. No manual edit.
 
-We just need to mount it as an extra phase in the v1 page.
-
-## Changes
-
-### `src/pages/Onboarding.tsx`
-
-1. Extend the `OnboardingPhase` union to include `"add-icp"`:
-   ```ts
-   type OnboardingPhase =
-     | "loading"
-     | "profile"
-     | "tool-explanation"
-     | "account-select"
-     | "brand-kit"
-     | "add-icp"
-     | "data-sync";
-   ```
-
-2. Import `IcpOnboardingStep`.
-
-3. Update `handleBrandKitComplete` to advance to `"add-icp"` instead of jumping straight to `"data-sync"`:
-   ```ts
-   const handleBrandKitComplete = () => setPhase("add-icp");
-   const handleIcpComplete = () => setPhase("data-sync");
-   ```
-
-4. Render the step (inside the JSX, after the `BrandKitStep` block):
-   ```tsx
-   {phase === "add-icp" && state.selectedAccount && (
-     <IcpOnboardingStep
-       open
-       adAccountId={state.selectedAccount}
-       isDevMode={isDevMode}
-       onComplete={handleIcpComplete}
-     />
-   )}
-   ```
-
-That's the entire change — one file, scoped strictly to the v1 page. No DB, routing, or other component changes are needed because:
-- The `icps` table + RLS already exist
-- `IcpOnboardingStep` already handles dev mode, skipping, and persistence
-- v2 is untouched
-
-## Notes
-
-- The step remains **optional** — the existing "Skip for now" button advances without saving, matching the v2 behavior.
-- In dev mode, no rows are written to `icps` (component already short-circuits via `isDevMode`).
-- No memory updates needed; the routing/onboarding memory entries already describe the unified post-Meta phase model.
+## Out of scope
+- No UI changes.
+- No backfill of historical jobs (they keep `null` for the new columns).
+- Disclaimer label/text is intentionally left inside `promo_details` rather than duplicated into a snapshot column — `disclaimers` table rows aren't typically deleted, and the JSON snapshot is sufficient.
