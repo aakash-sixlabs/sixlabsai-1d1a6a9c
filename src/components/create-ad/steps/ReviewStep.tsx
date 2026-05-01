@@ -1,6 +1,6 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid } from "lucide-react";
+import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users } from "lucide-react";
 
 const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
   "sale-promo": { label: "Sale / Promotion", icon: Tag },
