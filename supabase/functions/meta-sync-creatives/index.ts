@@ -415,6 +415,7 @@ Deno.serve(async (req) => {
           await admin.from("ad_creatives").upsert(
             {
               user_id: userId,
+              account_id: adAccount.account_id,
               ad_id: storedAd.id,
               meta_creative_id: creative.id || storedAd.meta_creative_id || storedAd.meta_ad_id,
               creative_type: creativeType,
