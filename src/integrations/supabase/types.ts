@@ -558,6 +558,9 @@ export type Database = {
           job_id: string
           metadata: Json
           primary_text: string | null
+          storage_status: string | null
+          stored_image_url: string | null
+          stored_thumbnail_url: string | null
           thumbnail_url: string | null
           user_id: string
           variant_index: number
@@ -573,6 +576,9 @@ export type Database = {
           job_id: string
           metadata?: Json
           primary_text?: string | null
+          storage_status?: string | null
+          stored_image_url?: string | null
+          stored_thumbnail_url?: string | null
           thumbnail_url?: string | null
           user_id: string
           variant_index?: number
@@ -588,6 +594,9 @@ export type Database = {
           job_id?: string
           metadata?: Json
           primary_text?: string | null
+          storage_status?: string | null
+          stored_image_url?: string | null
+          stored_thumbnail_url?: string | null
           thumbnail_url?: string | null
           user_id?: string
           variant_index?: number
@@ -606,7 +615,10 @@ export type Database = {
         Row: {
           ad_account_id: string | null
           aspect_ratios: string[]
+          attempt_count: number | null
+          callback_received_at: string | null
           created_at: string
+          credits_used: number | null
           disclaimer_ids: string[] | null
           error_message: string | null
           goal: string | null
@@ -619,6 +631,7 @@ export type Database = {
           product_url: string | null
           promo_details: Json
           promo_scope: string | null
+          service_job_id: string | null
           service_request_payload: Json
           service_response_payload: Json | null
           status: string
@@ -628,7 +641,10 @@ export type Database = {
         Insert: {
           ad_account_id?: string | null
           aspect_ratios?: string[]
+          attempt_count?: number | null
+          callback_received_at?: string | null
           created_at?: string
+          credits_used?: number | null
           disclaimer_ids?: string[] | null
           error_message?: string | null
           goal?: string | null
@@ -641,6 +657,7 @@ export type Database = {
           product_url?: string | null
           promo_details?: Json
           promo_scope?: string | null
+          service_job_id?: string | null
           service_request_payload?: Json
           service_response_payload?: Json | null
           status?: string
@@ -650,7 +667,10 @@ export type Database = {
         Update: {
           ad_account_id?: string | null
           aspect_ratios?: string[]
+          attempt_count?: number | null
+          callback_received_at?: string | null
           created_at?: string
+          credits_used?: number | null
           disclaimer_ids?: string[] | null
           error_message?: string | null
           goal?: string | null
@@ -663,6 +683,7 @@ export type Database = {
           product_url?: string | null
           promo_details?: Json
           promo_scope?: string | null
+          service_job_id?: string | null
           service_request_payload?: Json
           service_response_payload?: Json | null
           status?: string
