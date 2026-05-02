@@ -117,7 +117,11 @@ export const GenerationNotificationsProvider = ({ children }: { children: ReactN
           });
         } else {
           toast.error("Generation failed", {
-            description: row.error_message ?? "Something went wrong.",
+            description: row.error_message ?? "Something went wrong. Please try again.",
+            action: {
+              label: "Try Again",
+              onClick: () => navigate("/create-ad"),
+            },
           });
         }
       }
