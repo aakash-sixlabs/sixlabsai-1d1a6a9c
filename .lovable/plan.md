@@ -1,27 +1,25 @@
-## Goal
-Wire Badri's generation service (`adsopti-production.up.railway.app`) into the `generate-creatives` edge function.
+## Diagnosis
 
-## Current state
-`supabase/functions/generate-creatives/index.ts` already reads the service URL from an env secret and calls it:
+The mirror trigger fires and authenticates correctly. The second Supabase rejects the request with PostgREST error **PGRST125 "Invalid path specified in request URL"** — which means the URL path is malformed (not that the table is missing — that would be PGRST205, and you've confirmed the tables exist).
 
-```ts
-const genServiceUrl = Deno.env.get("GEN_SERVICE_URL");
-...
-fetch(`${genServiceUrl.replace(/\/$/, "")}/v1/generations`, { ... })
-```
+Most likely cause: the `MIRROR_SUPABASE_URL` secret was entered with a trailing path like `https://jkzbuypbhqbssmqjpdtj.supabase.co/rest/v1/` (which is what your sample URL looked like), so the actual fetch URL ends up as `.../rest/v1/rest/v1/ad_account_profiles` — invalid.
 
-So no code changes are required — only the secret needs to be set.
+## Fix
 
-## Steps
+1. **Harden URL handling in `mirror-write`** so any of these shapes work:
+   - `https://jkzbuypbhqbssmqjpdtj.supabase.co`
+   - `https://jkzbuypbhqbssmqjpdtj.supabase.co/`
+   - `https://jkzbuypbhqbssmqjpdtj.supabase.co/rest/v1`
+   - `https://jkzbuypbhqbssmqjpdtj.supabase.co/rest/v1/`
 
-1. **Set `GEN_SERVICE_URL` secret** to `https://adsopti-production.up.railway.app` (using the secret manager — I'll prompt for it via `add_secret` so you confirm the value).
-2. **Verify the other two required secrets exist** for production mode (the function fails fast if any are missing):
-   - `GEN_SERVICE_API_KEY` — bearer token Badri's service expects
-   - `GEN_CALLBACK_SECRET` — HMAC secret shared with Badri (already confirmed to be used as raw UTF-8)
-   I'll list configured secrets via `fetch_secrets` and prompt for any that are missing.
-3. **Confirm `GEN_USE_STUB` is not `true`** (otherwise the function will keep using the stub and never call Railway). If it's set to `true`, I'll ask whether to remove/flip it.
-4. **Smoke test** by tailing edge function logs (`edge_function_logs` for `generate-creatives`) after you trigger one generation from the UI, so we can confirm the POST hits Railway and the response is parsed correctly.
+   Logic: strip trailing `/`, strip trailing `/rest/v1`, then always append `/rest/v1/<table>` ourselves.
 
-## Notes
-- Protocol: I'm assuming `https://` (Railway terminates TLS). If Badri exposes only HTTP, tell me and I'll set it accordingly.
-- No path is appended in the secret — the function adds `/v1/generations` itself, matching `docs/generation-service-contract.md`. If Badri's endpoint differs, we'll update the code in step 1 instead of just the secret.
+2. **Add diagnostic logging** so the next failure (if any) shows the exact URL being hit and the second project's full response — making future debugging instant.
+
+3. **Trigger a test write** to `ad_account_profiles` and check `mirror-write` logs to confirm the row reached the second project.
+
+4. **Verify** by running a `SELECT id, brand_kit_updated_at FROM ad_account_profiles WHERE id = '978d6c64-...'` against the second project (via curl) and confirming the timestamp matches.
+
+## Files to change
+
+- `supabase/functions/mirror-write/index.ts` — robust URL normalization + better logs
