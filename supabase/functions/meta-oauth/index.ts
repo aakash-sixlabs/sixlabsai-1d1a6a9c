@@ -225,13 +225,13 @@ Deno.serve(async (req) => {
         if (profile?.default_ad_account_id) {
           const { data: defaultAcc } = await adminClient
             .from("ad_accounts")
-            .select("id, account_id, account_name")
+            .select("id, account_id_meta, account_name")
             .eq("id", profile.default_ad_account_id)
             .single();
           if (defaultAcc) {
             defaultAdAccountId = defaultAcc.id;
             defaultAdAccountName = defaultAcc.account_name;
-            defaultMetaAccountId = defaultAcc.account_id;
+            defaultMetaAccountId = defaultAcc.account_id_meta;
           }
         }
       }
