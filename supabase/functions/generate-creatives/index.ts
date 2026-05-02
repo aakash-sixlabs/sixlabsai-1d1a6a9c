@@ -116,15 +116,15 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      Deno.env.get("PROD_SUPABASE_URL")!,
+      Deno.env.get("PROD_SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
 
     // Service-role client for status updates that should bypass RLS
     const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      Deno.env.get("PROD_SUPABASE_URL")!,
+      Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const token = authHeader.replace("Bearer ", "");
@@ -271,7 +271,7 @@ Deno.serve(async (req) => {
         .eq("id", jobId);
     } else {
       // ── PRODUCTION MODE ────────────────────────────────────
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseUrl = Deno.env.get("PROD_SUPABASE_URL")!;
       const callbackUrl = `${supabaseUrl}/functions/v1/generation-callback`;
       const genServiceUrl = Deno.env.get("GEN_SERVICE_URL");
       const genServiceKey = Deno.env.get("GEN_SERVICE_API_KEY");
