@@ -37,7 +37,7 @@ export const DataSyncStep = ({
   // "Pulling performance (2026-03-09)") to one of our 6 visible UI steps.
   const mapBackendStep = (raw: string): number => {
     const s = (raw || "").toLowerCase();
-    if (s.includes("complete")) return SYNC_STEPS.length - 1;
+    if (s.includes("complete") || s.includes("done") || s.includes("finished")) return SYNC_STEPS.length - 1;
     if (s.includes("performance") || s.includes("insights")) return 3; // Pulling ad performance
     if (s.includes("creative")) return 2; // Pulling ads and creatives
     if (s.includes("ad set") || s.includes("adset") || s.includes("pulling ads")) return 2;
