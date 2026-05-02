@@ -292,11 +292,11 @@ Deno.serve(async (req) => {
       // DEBUG: log key fingerprint (length + first/last 4 chars) — never the full value
       const keyFingerprint = `len=${genServiceKey.length} first4=${genServiceKey.slice(0, 4)} last4=${genServiceKey.slice(-4)}`;
       console.log(`[generate-creatives] GEN_SERVICE_API_KEY fingerprint: ${keyFingerprint}`);
-      console.log(`[generate-creatives] POSTing to: ${normalizedBase}/v1/generations`);
+      console.log(`[generate-creatives] POSTing to: ${normalizedBase}/`);
 
       let serviceResponse: Response;
       try {
-        serviceResponse = await fetch(`${normalizedBase}/v1/generations`, {
+        serviceResponse = await fetch(`${normalizedBase}/`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${genServiceKey}`,
