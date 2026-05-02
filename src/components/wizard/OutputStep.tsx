@@ -14,11 +14,18 @@ interface GeneratedCreative {
   aspect_ratio: string | null;
   image_url: string;
   thumbnail_url: string | null;
+  stored_image_url?: string | null;
+  stored_thumbnail_url?: string | null;
+  storage_status?: "pending" | "stored" | "failed" | null;
   headline: string | null;
   primary_text: string | null;
   description: string | null;
   feedback?: "like" | "dislike" | null;
 }
+
+const displayImage = (c: GeneratedCreative) => c.stored_image_url ?? c.image_url;
+const displayThumbnail = (c: GeneratedCreative) =>
+  c.stored_thumbnail_url ?? c.thumbnail_url ?? c.stored_image_url ?? c.image_url;
 
 const LazyImage = ({
   src,
