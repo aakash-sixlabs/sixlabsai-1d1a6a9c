@@ -10,6 +10,7 @@ import {
   DisclaimerEditDialog,
   type DisclaimerDraft,
 } from "@/components/settings/DisclaimerEditDialog";
+import { getCurrentUserAndAccount } from "@/lib/accountContext";
 
 export interface DisclaimerOption {
   id: string;
@@ -107,9 +108,11 @@ export const DisclaimerPicker = ({ selectedIds, onChange }: Props) => {
       return;
     }
 
+    const { accountId } = await getCurrentUserAndAccount();
     const { data, error } = await supabase
       .from("disclaimers")
       .insert({
+        account_id: accountId,
         user_id: user.id,
         ad_account_id: adAccountId,
         label: draft.label,

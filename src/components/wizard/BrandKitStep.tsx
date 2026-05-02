@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getCurrentAccountId } from "@/lib/accountContext";
 import { toast } from "sonner";
 
 /* ── Types ──────────────────────────────────────────────────── */
@@ -440,7 +441,7 @@ export const BrandKitStep = ({
             product_categories: kit.product_categories,
             website_url: kit.website_url,
             brand_kit: brandKitJson,
-            brand_kit_status: "ready",
+            brand_kit_status: "completed",
             brand_kit_updated_at: new Date().toISOString(),
             confirmed: true,
           }),
@@ -468,10 +469,12 @@ export const BrandKitStep = ({
         }
       }
 
+      const lovableAccountId = await getCurrentAccountId();
       const { error: upsertErr } = await supabase
         .from("ad_account_profiles")
         .upsert(
           {
+            account_id: lovableAccountId,
             ad_account_id: adAccountId,
             user_id: user.id,
             brand_name: edits.brand_name || null,
@@ -485,11 +488,11 @@ export const BrandKitStep = ({
             product_categories: kit.product_categories, // hidden from UI, still saved
             website_url: kit.website_url,
             brand_kit: brandKitJson,
-            brand_kit_status: "ready",
+            brand_kit_status: "completed",
             brand_kit_updated_at: new Date().toISOString(),
             confirmed: true,
           },
-          { onConflict: "ad_account_id,user_id" },
+          { onConflict: "user_id,ad_account_id" },
         );
 
       if (upsertErr) throw upsertErr;

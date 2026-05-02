@@ -234,7 +234,7 @@ export const AccountSelectOverlay = ({
 
       if (
         previousDefaultAccountId === account.id ||
-        accountProfile?.brand_kit_status === "ready" ||
+        accountProfile?.brand_kit_status === "completed" ||
         accountProfile?.confirmed
       ) {
         onReturningAccountSelected();

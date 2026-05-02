@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2, Plus, Pencil, Trash2, FileWarning } from "lucide-react";
 import { toast } from "sonner";
 import { DisclaimerEditDialog, type DisclaimerDraft } from "./DisclaimerEditDialog";
+import { getCurrentUserAndAccount } from "@/lib/accountContext";
 
 interface Disclaimer {
   id: string;
@@ -51,7 +52,9 @@ export const DisclaimerSettings = ({ adAccountId }: Props) => {
       if (error) { toast.error("Failed to update"); return; }
       toast.success("Disclaimer updated");
     } else {
+      const { accountId } = await getCurrentUserAndAccount();
       const { error } = await supabase.from("disclaimers").insert({
+        account_id: accountId,
         user_id: user.id,
         ad_account_id: adAccountId,
         label: draft.label,
