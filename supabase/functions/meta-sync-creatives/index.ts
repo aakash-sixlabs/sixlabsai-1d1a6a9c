@@ -506,7 +506,7 @@ Deno.serve(async (req) => {
     console.error("meta-sync-creatives fatal:", err);
     if (syncId) {
       await admin.from("sync_jobs").update({
-        status: "error",
+        status: "failed",
         error_message: err?.message || "Creatives phase failed",
         updated_at: new Date().toISOString(),
       }).eq("id", syncId);
