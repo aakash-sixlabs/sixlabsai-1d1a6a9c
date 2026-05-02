@@ -1882,6 +1882,10 @@ export type Database = {
         Args: { _account_id: string; _user_id: string }
         Returns: boolean
       }
+      is_account_admin: {
+        Args: { _account_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_superadmin: { Args: { _user_id: string }; Returns: boolean }
       user_account_ids: { Args: { _user_id: string }; Returns: string[] }
     }
