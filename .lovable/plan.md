@@ -1,51 +1,19 @@
-## Audit: what the create-ad flow collects vs what `generation_jobs` stores
+## Problem
 
-The `CreateAdState` (client) currently collects:
+In `src/components/insights/GenerationsTable.tsx`, the `StatusBadge` checks for `status === "complete"`, but the `generate-creatives` edge function writes `"completed"` to `generation_jobs.status`. As a result, completed jobs fall into the default branch and render an animated `Loader2` spinner next to the word "completed" — making finished jobs look like they're still running.
 
-- `goal` ✅ stored as `goal`
-- `promoScope` ✅ stored as `promo_scope`
-- `productImage` ✅ stored as `product_image_url`
-- `productUrl` ✅ stored as `product_url`
-- `productInputMethod` ✅ stored as `product_input_method`
-- `aspectRatios` ✅ stored as `aspect_ratios`
-- `promoDetails` (incl. offer fields, promo code, dates, notes, **disclaimerIds**, **disclaimers**) ✅ stored as `promo_details` jsonb — but disclaimers are buried inside this blob, not queryable
-- `icpId` / `icpName` / `icpDescription` ❌ **NOT stored anywhere** (lost after generation)
-- `adAccountId` ✅ stored as `ad_account_id`
+## Fix
 
-The full payload is also dumped into `service_request_payload` jsonb, so technically nothing is *lost* — but the things we'll likely want to query, filter, or report on (which ICP an ad targets, which disclaimers were attached) deserve first-class columns.
+Update `StatusBadge` in `src/components/insights/GenerationsTable.tsx` (lines ~42–59):
 
-## What's missing / worth adding
+1. Recognize `"completed"` (the actual DB value) as the done state — also accept `"complete"` for backward compatibility with any older rows.
+2. Show a static `CheckCircle2` icon (green/accent) for completed jobs instead of nothing/spinner.
+3. Show a static `XCircle` icon for `error` / `failed`.
+4. Only show the animated `Loader2` spinner for in-progress states (`pending`, `generating`, `syncing`, etc.).
 
-Add three first-class fields to `generation_jobs`:
-
-1. **`icp_id` (uuid, nullable)** — references the chosen ICP. Lets us answer "show all creatives generated for ICP X" without scanning JSON.
-2. **`icp_snapshot` (jsonb, nullable)** — `{ name, description }` captured at generation time. Preserves intent even if the ICP is later edited or deleted.
-3. **`disclaimer_ids` (uuid[], nullable)** — array of disclaimer IDs used. Easy to join/filter. The full label+text snapshot stays inside `promo_details.disclaimers` for historical fidelity.
-
-Everything else in the flow is already covered by existing columns or the `service_request_payload` snapshot.
-
-## Implementation
-
-### 1. Migration
-Add columns to `generation_jobs`:
-```text
-icp_id          uuid       null
-icp_snapshot    jsonb      null
-disclaimer_ids  uuid[]     null  default '{}'
-```
-No FK constraints (matches the table's existing convention of no FKs); nullable so existing rows stay valid.
-
-### 2. `supabase/functions/generate-creatives/index.ts`
-- Extend the `CreateAdState` interface with `icpId`, `icpName`, `icpDescription`, and `promoDetails.disclaimerIds` / `promoDetails.disclaimers`.
-- On insert into `generation_jobs`, populate the three new columns from the payload.
-
-### 3. `src/components/create-ad/steps/GeneratingStep.tsx`
-No change needed — it already spreads the entire `state` into the edge function body, so `icpId` / `icpName` / `icpDescription` will flow through automatically.
-
-### 4. `src/integrations/supabase/types.ts`
-Auto-regenerated after migration. No manual edit.
+Icons come from `lucide-react` (already used in this file).
 
 ## Out of scope
-- No UI changes.
-- No backfill of historical jobs (they keep `null` for the new columns).
-- Disclaimer label/text is intentionally left inside `promo_details` rather than duplicated into a snapshot column — `disclaimers` table rows aren't typically deleted, and the JSON snapshot is sufficient.
+
+- `GenerationDetail.tsx` line 367 also checks `"complete"` — flagging here but not changing unless you want it; it's a separate display string and worth a quick follow-up to align on `"completed"` across the app.
+- No DB or schema changes.
