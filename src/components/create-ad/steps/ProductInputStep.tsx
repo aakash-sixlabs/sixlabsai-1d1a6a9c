@@ -1,8 +1,17 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ArrowRight, Link2, ImagePlus } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Link2, ImagePlus } from "lucide-react";
 import { useState } from "react";
+import {
+  STEP_CONTAINER,
+  STEP_HEADING,
+  STEP_SUBTITLE,
+  CARD_BASE,
+  CARD_SELECTED,
+  CARD_IDLE,
+  CTA_SHAPE,
+} from "./_shared";
 
 interface ProductInputStepProps {
   state: CreateAdState;
@@ -28,38 +37,43 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
     onNext();
   };
 
+  const options: { value: "url" | "image"; label: string; description: string; icon: React.ElementType }[] = [
+    { value: "url", label: "Product URL", description: "Paste your Shopify or store link", icon: Link2 },
+    { value: "image", label: "Upload Image", description: "Drop a product photo", icon: ImagePlus },
+  ];
+
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-foreground mb-1">Add your product</h2>
-      <p className="text-muted-foreground mb-8">
+    <div className={STEP_CONTAINER}>
+      <h2 className={STEP_HEADING}>Add your product</h2>
+      <p className={STEP_SUBTITLE}>
         Share the product you want to advertise. We'll extract key details automatically.
       </p>
 
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <button
-          onClick={() => setMethod("url")}
-          className={`p-6 rounded-lg border-2 text-center transition-all ${
-            method === "url"
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/40 bg-card"
-          }`}
-        >
-          <Link2 className={`w-8 h-8 mx-auto mb-3 ${method === "url" ? "text-primary" : "text-muted-foreground"}`} />
-          <p className="font-semibold text-foreground text-sm">Product URL</p>
-          <p className="text-xs text-muted-foreground mt-1">Paste your Shopify or store link</p>
-        </button>
-        <button
-          onClick={() => setMethod("image")}
-          className={`p-6 rounded-lg border-2 text-center transition-all ${
-            method === "image"
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/40 bg-card"
-          }`}
-        >
-          <ImagePlus className={`w-8 h-8 mx-auto mb-3 ${method === "image" ? "text-primary" : "text-muted-foreground"}`} />
-          <p className="font-semibold text-foreground text-sm">Upload Image</p>
-          <p className="text-xs text-muted-foreground mt-1">Drop a product photo</p>
-        </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        {options.map((o) => {
+          const Icon = o.icon;
+          const isSelected = method === o.value;
+          return (
+            <button
+              key={o.value}
+              onClick={() => setMethod(o.value)}
+              className={`${CARD_BASE} p-5 ${isSelected ? CARD_SELECTED : CARD_IDLE}`}
+            >
+              {isSelected && (
+                <div className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                </div>
+              )}
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Icon className="w-4 h-4 text-primary" />
+                </div>
+                <p className="font-semibold text-sm text-foreground pr-6">{o.label}</p>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{o.description}</p>
+            </button>
+          );
+        })}
       </div>
 
       {method === "url" && (
@@ -71,7 +85,7 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
               placeholder="https://yourstore.com/products/..."
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              className="pl-9"
+              className="pl-9 rounded-xl"
             />
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
@@ -79,18 +93,20 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
       )}
 
       {method === "image" && (
-        <div className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary/40 transition-colors cursor-pointer">
-          <ImagePlus className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+        <div className="rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 p-12 text-center hover:border-primary/40 transition-colors cursor-pointer">
+          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <ImagePlus className="w-5 h-5 text-muted-foreground" />
+          </div>
           <p className="text-sm font-medium text-foreground">Click to upload or drag & drop</p>
           <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
         </div>
       )}
 
-      <div className="mt-8 flex justify-between">
-        <Button variant="ghost" size="lg" onClick={onBack} className="gap-2">
+      <div className="mt-10 flex justify-between">
+        <Button variant="ghost" size="lg" onClick={onBack} className={CTA_SHAPE}>
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button size="lg" onClick={handleContinue} disabled={!method} className="gap-2">
+        <Button size="lg" onClick={handleContinue} disabled={!method} className={CTA_SHAPE}>
           Continue <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
