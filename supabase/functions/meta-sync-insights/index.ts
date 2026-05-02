@@ -201,6 +201,7 @@ Deno.serve(async (req) => {
 
             perfRows.push({
               user_id: userId,
+              account_id: adAccount.account_id,
               ad_id: internalAdId,
               date: insight.date_start,
               impressions,
