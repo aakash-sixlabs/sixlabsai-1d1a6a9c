@@ -296,7 +296,6 @@ Deno.serve(async (req) => {
             job_id: jobId,
             callback_url: callbackUrl,
             callback_secret: callbackSecret,
-            payload: { ...body, brand_kit: brandKit },
           }),
         });
       } catch (fetchError) {
