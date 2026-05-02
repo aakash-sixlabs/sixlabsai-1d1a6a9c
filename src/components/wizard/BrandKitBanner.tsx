@@ -35,7 +35,7 @@ export const BrandKitBanner = () => {
 
     const { data: acct } = await supabase
       .from("ad_accounts")
-      .select("id, account_id, account_name")
+      .select("id, account_id_meta, account_name")
       .eq("id", profile.default_ad_account_id)
       .maybeSingle();
     if (!acct) return;
@@ -46,8 +46,8 @@ export const BrandKitBanner = () => {
       .eq("ad_account_id", acct.id)
       .maybeSingle();
 
-    setAccount({ id: acct.id, name: acct.account_name, metaId: acct.account_id });
-    setShow(Boolean(aap && aap.brand_kit_status !== "ready"));
+    setAccount({ id: acct.id, name: acct.account_name, metaId: acct.account_id_meta });
+    setShow(Boolean(aap && aap.brand_kit_status !== "completed"));
   };
 
   useEffect(() => {

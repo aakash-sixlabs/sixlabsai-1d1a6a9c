@@ -6,6 +6,7 @@ import { useWizard } from "@/context/WizardContext";
 import { isDevSession } from "@/lib/devMode";
 import { toast } from "sonner";
 import { IcpEditDialog, IcpDraft } from "@/components/settings/IcpEditDialog";
+import { getCurrentUserAndAccount } from "@/lib/accountContext";
 
 export interface IcpOption {
   id: string;
@@ -98,9 +99,11 @@ export const IcpStep = ({ selectedIcpId, onSelect, onNext }: Props) => {
       return;
     }
 
+    const { accountId } = await getCurrentUserAndAccount();
     const { data, error } = await supabase
       .from("icps")
       .insert({
+        account_id: accountId,
         user_id: user.id,
         ad_account_id: adAccountId,
         name: draft.name,

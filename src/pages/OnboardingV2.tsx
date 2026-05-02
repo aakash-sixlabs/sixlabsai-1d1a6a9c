@@ -27,9 +27,9 @@ import {
 /* ─── Types ─── */
 interface AdAccount {
   id: string;
-  account_id: string;
+  account_id_meta: string;
   account_name: string;
-  currency: string;
+  currency: string | null;
   timezone: string | null;
 }
 
@@ -67,7 +67,7 @@ const OnboardingV2 = () => {
           const data = JSON.parse(stored);
           const mock: AdAccount[] = (data.accounts || []).map((a: any) => ({
             id: a.account_id,
-            account_id: a.account_id,
+            account_id_meta: a.account_id,
             account_name: a.name || a.account_name,
             currency: a.currency || "USD",
             timezone: null,
@@ -140,7 +140,7 @@ const OnboardingV2 = () => {
     updateState({
       selectedAccount: account.id,
       selectedAccountName: account.account_name,
-      selectedMetaAccountId: account.account_id,
+      selectedMetaAccountId: account.account_id_meta,
       dateRange: "90",
     });
 
@@ -150,7 +150,7 @@ const OnboardingV2 = () => {
       .eq("ad_account_id", account.id)
       .maybeSingle();
 
-    if (accountProfile?.brand_kit_status === "ready" || accountProfile?.confirmed) {
+    if (accountProfile?.brand_kit_status === "completed" || accountProfile?.confirmed) {
       navigate("/home", { replace: true });
       return;
     }
@@ -194,11 +194,11 @@ const OnboardingV2 = () => {
         (payload) => {
           const job = payload.new as any;
           if (job.current_step) setCurrentStep(job.current_step);
-          if (job.status === "complete") {
+          if (job.status === "completed") {
             updateState({ syncComplete: true });
             setPhase("add-icp");
           }
-          if (job.status === "error")
+          if (job.status === "failed")
             setError(job.error_message || "Sync failed");
         }
       )
@@ -291,7 +291,7 @@ const OnboardingV2 = () => {
                           {acc.account_name}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {acc.account_id} · {acc.currency}
+                          {acc.account_id_meta} · {acc.currency}
                         </div>
                       </div>
                     </div>
