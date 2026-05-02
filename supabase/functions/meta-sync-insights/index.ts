@@ -114,9 +114,9 @@ Deno.serve(async (req) => {
           .single();
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
-        const actId = adAccount.account_id.startsWith("act_")
-          ? adAccount.account_id
-          : `act_${adAccount.account_id}`;
+        const actId = adAccount.account_id_meta.startsWith("act_")
+          ? adAccount.account_id_meta
+          : `act_${adAccount.account_id_meta}`;
 
         // Map Meta ad_id → internal ads.id (new schema: meta_ad_id)
         const { data: allStoredAds } = await admin
