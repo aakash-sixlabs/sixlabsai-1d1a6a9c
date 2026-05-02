@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, History } from "lucide-react";
+import { ArrowRight, Loader2, History, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,20 +40,25 @@ const titleCase = (s: string | null) =>
   s ? s.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const tone =
-    status === "complete"
-      ? "bg-accent/15 text-accent"
-      : status === "error" || status === "failed"
-      ? "bg-destructive/10 text-destructive"
-      : "bg-primary/10 text-primary";
+  const isDone = status === "completed" || status === "complete";
+  const isFailed = status === "error" || status === "failed";
+  const tone = isDone
+    ? "bg-accent/15 text-accent"
+    : isFailed
+    ? "bg-destructive/10 text-destructive"
+    : "bg-primary/10 text-primary";
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${tone}`}
     >
-      {status !== "complete" && status !== "error" && status !== "failed" && (
+      {isDone ? (
+        <CheckCircle2 className="w-3 h-3" />
+      ) : isFailed ? (
+        <XCircle className="w-3 h-3" />
+      ) : (
         <Loader2 className="w-3 h-3 animate-spin" />
       )}
-      {status}
+      {isDone ? "Completed" : status}
     </span>
   );
 };
