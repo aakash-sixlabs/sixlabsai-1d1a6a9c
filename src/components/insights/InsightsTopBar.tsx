@@ -50,21 +50,19 @@ export const InsightsTopBar = ({
   canResync = true,
 }: InsightsTopBarProps) => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const { notifications, unreadCount, markAllRead, markRead } = useGenerationNotifications();
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const statusIcon = (status: string) => {
+    if (status === "completed") return <Sparkles className="w-3.5 h-3.5 text-accent" />;
+    if (status === "failed") return <XCircle className="w-3.5 h-3.5 text-destructive" />;
+    return <Clock className="w-3.5 h-3.5 text-muted-foreground" />;
   };
 
-  const typeIcon = (type: Notification["type"]) => {
-    switch (type) {
-      case "sync": return "🔄";
-      case "insight": return "🏆";
-      case "alert": return "⚠️";
-      case "tip": return "💡";
-    }
+  const statusTitle = (status: string) => {
+    if (status === "completed") return "Creatives ready";
+    if (status === "failed") return "Generation failed";
+    if (status === "generating" || status === "pending") return "Generating creatives…";
+    return "Generation update";
   };
 
   return (
