@@ -382,10 +382,11 @@ Deno.serve(async (req) => {
           total_ads: adRecords.length,
         });
 
-        // Chain to phase 2
-        const supabaseUrl = Deno.env.get("PROD_SUPABASE_URL")!;
+        // Chain to phase 2 — edge functions live on the Lovable Cloud project,
+        // so call back via SUPABASE_URL (Cloud), not PROD_SUPABASE_URL.
+        const functionsHost = Deno.env.get("SUPABASE_URL")!;
         const serviceKey = Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!;
-        await fetch(`${supabaseUrl}/functions/v1/meta-sync-creatives`, {
+        await fetch(`${functionsHost}/functions/v1/meta-sync-creatives`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

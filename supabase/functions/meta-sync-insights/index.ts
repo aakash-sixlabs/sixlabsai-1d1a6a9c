@@ -141,9 +141,9 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             }).eq("id", syncId!);
 
-            const supabaseUrl = Deno.env.get("PROD_SUPABASE_URL")!;
+            const functionsHost = Deno.env.get("SUPABASE_URL")!;
             const serviceKey = Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!;
-            await fetch(`${supabaseUrl}/functions/v1/meta-sync-insights`, {
+            await fetch(`${functionsHost}/functions/v1/meta-sync-insights`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",

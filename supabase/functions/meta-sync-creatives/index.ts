@@ -412,7 +412,7 @@ Deno.serve(async (req) => {
           const primaryFbUrl = urls[0] || null;
           const primaryStoredUrl = storedImageUrls[0] || null;
 
-          await admin.from("ad_creatives").upsert(
+          const { error: creativeUpsertError } = await admin.from("ad_creatives").upsert(
             {
               user_id: userId,
               account_id: adAccount.account_id,
@@ -440,8 +440,18 @@ Deno.serve(async (req) => {
               raw_object_story_spec: oss && Object.keys(oss).length ? oss : null,
               raw_data: creative,
             },
-            { onConflict: "user_id,meta_creative_id" },
+            { onConflict: "ad_id,meta_creative_id" },
           );
+
+          if (creativeUpsertError) {
+            console.error(
+              `ad_creatives upsert failed for ad ${storedAd.meta_ad_id}:`,
+              creativeUpsertError,
+            );
+            throw new Error(
+              `ad_creatives upsert failed: ${creativeUpsertError.message}`,
+            );
+          }
 
           await admin
             .from("ads")
@@ -475,9 +485,10 @@ Deno.serve(async (req) => {
           images_downloaded: imagesDownloaded,
         });
 
-        // Chain to phase 3
+        // Chain to phase 3 — edge functions live on Lovable Cloud
+        const functionsHost = Deno.env.get("SUPABASE_URL")!;
         const serviceKey = Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!;
-        await fetch(`${supabaseUrl}/functions/v1/meta-sync-insights`, {
+        await fetch(`${functionsHost}/functions/v1/meta-sync-insights`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
