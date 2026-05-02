@@ -19,6 +19,7 @@ import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
 import { CreativePreviewDialog } from "@/components/insights/CreativePreviewDialog";
 import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
 import { GeneratedCreativesByJob } from "@/components/insights/GeneratedCreativesByJob";
+import { GenerationsTable } from "@/components/insights/GenerationsTable";
 
 import { useWizard } from "@/context/WizardContext";
 
@@ -652,15 +653,13 @@ export const InsightsStep = () => {
           onAccountChange={setSelectedAccountId}
         />
         <main className="flex-1 overflow-auto border-l border-border/60">
-          {activeView === "library" || activeView === "generations" ? (
+          {activeView === "generations" ? (
+            <GenerationsTable />
+          ) : activeView === "library" ? (
             <GeneratedCreativesByJob
-              title={activeView === "library" ? "Ad Library" : "My Past Generations"}
-              subtitle={
-                activeView === "library"
-                  ? "Every creative you've generated, grouped by the request that produced it."
-                  : "A log of every generation request you've started, with the creatives it produced."
-              }
-              hideEmptyJobs={activeView === "library"}
+              title="Ad Library"
+              subtitle="Every creative you've generated, grouped by the request that produced it."
+              hideEmptyJobs
             />
           ) : (
           <div className="px-8 py-10 max-w-[1200px] mx-auto">
