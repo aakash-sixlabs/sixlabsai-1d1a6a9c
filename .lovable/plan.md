@@ -1,31 +1,27 @@
 ## Goal
+Wire Badri's generation service (`adsopti-production.up.railway.app`) into the `generate-creatives` edge function.
 
-Retrieve the value of `SUPABASE_SERVICE_ROLE_KEY` by exposing it once via a temporary edge function, then immediately remove that function so the key is not left publicly accessible.
+## Current state
+`supabase/functions/generate-creatives/index.ts` already reads the service URL from an env secret and calls it:
+
+```ts
+const genServiceUrl = Deno.env.get("GEN_SERVICE_URL");
+...
+fetch(`${genServiceUrl.replace(/\/$/, "")}/v1/generations`, { ... })
+```
+
+So no code changes are required — only the secret needs to be set.
 
 ## Steps
 
-1. **Create a temporary edge function** at `supabase/functions/_reveal-key/index.ts` that:
-   - Accepts a `GET` request.
-   - Requires a one-time shared secret in the `x-reveal-token` header that you and I agree on in this session (so a random scanner hitting the URL gets `401`, not your service role key).
-   - When the header matches, returns the value of `Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")` as plain text.
-   - Returns `401` for any other request.
-   - Configured with `verify_jwt = false` in `supabase/config.toml` so it can be called without a Supabase auth token.
+1. **Set `GEN_SERVICE_URL` secret** to `https://adsopti-production.up.railway.app` (using the secret manager — I'll prompt for it via `add_secret` so you confirm the value).
+2. **Verify the other two required secrets exist** for production mode (the function fails fast if any are missing):
+   - `GEN_SERVICE_API_KEY` — bearer token Badri's service expects
+   - `GEN_CALLBACK_SECRET` — HMAC secret shared with Badri (already confirmed to be used as raw UTF-8)
+   I'll list configured secrets via `fetch_secrets` and prompt for any that are missing.
+3. **Confirm `GEN_USE_STUB` is not `true`** (otherwise the function will keep using the stub and never call Railway). If it's set to `true`, I'll ask whether to remove/flip it.
+4. **Smoke test** by tailing edge function logs (`edge_function_logs` for `generate-creatives`) after you trigger one generation from the UI, so we can confirm the POST hits Railway and the response is parsed correctly.
 
-2. **Deploy the function** so it's live.
-
-3. **Call the function** using `supabase--curl_edge_functions` with the agreed `x-reveal-token` header. The response body will contain your service role key. I'll surface it to you in chat.
-
-4. **Immediately delete the function** from the codebase and from Supabase (via `supabase--delete_edge_functions`) in the same step, plus remove the config.toml block. After this, the URL returns 404 and the key is no longer exposed.
-
-5. **Confirm cleanup** by calling the URL once more — should return 404.
-
-## What I need from you before starting
-
-Pick a one-time reveal token (any random string, e.g. `reveal-9f3k2m-xyz`). Reply with the token and I'll execute steps 1–5 in a single pass. If you'd rather I just generate one, say "generate it" and I will.
-
-## Security notes (please read)
-
-- Once you have the key, treat it as **root credentials to your entire database**. Anyone holding it can read, modify, or delete every row in every table, bypassing all RLS.
-- Give it to Badri over a secure channel (1Password, Bitwarden share link, signed message — **not** plain email or Slack).
-- If it ever leaks, the only remediation is contacting Lovable/Supabase support to rotate it, which will require redeploying every edge function.
-- I still recommend the scoped endpoint approach instead, but this plan delivers exactly what you asked for.
+## Notes
+- Protocol: I'm assuming `https://` (Railway terminates TLS). If Badri exposes only HTTP, tell me and I'll set it accordingly.
+- No path is appended in the secret — the function adds `/v1/generations` itself, matching `docs/generation-service-contract.md`. If Badri's endpoint differs, we'll update the code in step 1 instead of just the secret.
