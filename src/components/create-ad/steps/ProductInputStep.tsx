@@ -201,7 +201,7 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
                 {uploading ? "Uploading…" : "Click to upload or drag & drop"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WebP up to 10MB</p>
-            </button>
+            </label>
           )}
 
           {error && <p className="text-sm text-destructive mt-2">{error}</p>}
