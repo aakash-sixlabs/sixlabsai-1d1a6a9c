@@ -29,10 +29,11 @@ export const supabase = createClient<Database>(
 );
 
 // Override the functions endpoint so invoke() hits Lovable Cloud, not prod.
-// (The supabase-js client doesn't accept a custom functions URL via constructor
-// options in v2, but we can set it on the FunctionsClient directly.)
-// @ts-expect-error — internal but stable: rewrite the base URL used by invoke().
-supabase.functions.url = FUNCTIONS_URL;
+// `supabase.functions` is a getter that constructs a new FunctionsClient from
+// `this.functionsUrl` on every access, so we must override `functionsUrl`
+// itself — mutating `supabase.functions.url` only affects a throwaway instance.
+// @ts-expect-error — internal but stable across supabase-js v2.
+supabase.functionsUrl = new URL(FUNCTIONS_URL);
 
 export const SUPABASE_URL = PROD_SUPABASE_URL;
 export const SUPABASE_PUBLISHABLE_KEY = PROD_SUPABASE_ANON_KEY;
