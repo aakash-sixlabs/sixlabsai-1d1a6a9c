@@ -74,15 +74,15 @@ async function ensureParentRow(
         return true;
       }
       const txt = await res.text().catch(() => "");
-      // 23502 = NOT NULL violation → try a richer body
-      // 23503 = FK violation → recurse on this parent before retrying
+      console.error(
+        `[mirror-write] bootstrap ${table} attempt ${JSON.stringify(body)} -> ${res.status} ${txt.slice(0, 400)}`,
+      );
       if (res.status === 409 && txt.includes('"23503"')) {
         try {
           const parsed = JSON.parse(txt);
           const child = parseFkViolation(parsed.details ?? "");
           if (child) {
             await ensureParentRow(base, child.table, child.col, child.value);
-            // Retry this same attempt now that grandparent exists
             const retry = await fetch(`${base}/rest/v1/${encodeURIComponent(table)}`, {
               method: "POST",
               headers: buildHeaders(),
@@ -93,12 +93,15 @@ async function ensureParentRow(
               ensuredParents.add(cacheKey);
               return true;
             }
+            const rtxt = await retry.text().catch(() => "");
+            console.error(
+              `[mirror-write] bootstrap ${table} retry -> ${retry.status} ${rtxt.slice(0, 400)}`,
+            );
           }
         } catch {
           // fall through
         }
       }
-      // Otherwise try next shape
     } catch (err) {
       console.error(`[mirror-write] bootstrap attempt failed:`, err);
     }
