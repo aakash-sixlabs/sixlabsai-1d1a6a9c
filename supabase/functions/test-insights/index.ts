@@ -41,9 +41,9 @@ Deno.serve(async (req) => {
       .eq('id', adAccountId)
       .single()
 
-    const metaAccountId = adAccount.account_id.startsWith('act_')
-      ? adAccount.account_id
-      : `act_${adAccount.account_id}`
+    const metaAccountId = adAccount.account_id_meta.startsWith('act_')
+      ? adAccount.account_id_meta
+      : `act_${adAccount.account_id_meta}`
     const userId = adAccount.user_id
 
     // Only pull insights for non-video ads we've stored
