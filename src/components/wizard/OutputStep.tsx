@@ -164,7 +164,7 @@ export const OutputStep = () => {
       const c = creatives[i];
       if (c) {
         const img = new Image();
-        img.src = c.image_url;
+        img.src = displayImage(c);
       }
     });
   }, [selectedIndex, creatives]);
