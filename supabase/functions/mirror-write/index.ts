@@ -11,6 +11,29 @@ const MIRROR_URL = Deno.env.get("MIRROR_SUPABASE_URL");
 const MIRROR_KEY = Deno.env.get("MIRROR_SUPABASE_SERVICE_ROLE_KEY");
 const SHARED_SECRET = Deno.env.get("MIRROR_WEBHOOK_SECRET");
 
+// Cache so we only bootstrap the Client1 account row once per cold start.
+let client1Bootstrapped = false;
+
+async function ensureClient1Account(base: string, headers: Record<string, string>, clientUuid: string) {
+  if (client1Bootstrapped) return;
+  try {
+    const res = await fetch(`${base}/rest/v1/accounts`, {
+      method: "POST",
+      headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
+      body: JSON.stringify({ id: clientUuid, name: "Client1" }),
+    });
+    if (res.ok) {
+      console.log("[mirror-write] bootstrapped Client1 account row");
+      client1Bootstrapped = true;
+    } else {
+      const txt = await res.text().catch(() => "");
+      console.error(`[mirror-write] bootstrap accounts failed: ${res.status} ${txt.slice(0, 400)}`);
+    }
+  } catch (err) {
+    console.error("[mirror-write] bootstrap error:", err instanceof Error ? err.message : String(err));
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
