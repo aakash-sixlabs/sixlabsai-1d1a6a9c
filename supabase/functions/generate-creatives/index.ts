@@ -283,10 +283,15 @@ Deno.serve(async (req) => {
         });
       }
 
-      // POST to generation service
+      // POST to generation service. Tolerate secret values that omit the scheme
+      // (e.g. "adsopti-production.up.railway.app") by defaulting to https.
+      const normalizedBase = /^https?:\/\//i.test(genServiceUrl)
+        ? genServiceUrl.replace(/\/$/, "")
+        : `https://${genServiceUrl.replace(/\/$/, "")}`;
+
       let serviceResponse: Response;
       try {
-        serviceResponse = await fetch(`${genServiceUrl.replace(/\/$/, "")}/v1/generations`, {
+        serviceResponse = await fetch(`${normalizedBase}/v1/generations`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${genServiceKey}`,
