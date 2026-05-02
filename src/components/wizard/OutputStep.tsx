@@ -318,7 +318,7 @@ export const OutputStep = () => {
             <div className="flex flex-col">
               <div className="relative">
                 <LazyImage
-                  src={selectedCreative.image_url}
+                  src={displayImage(selectedCreative)}
                   alt={selectedCreative.headline ?? `Variant ${selectedIndex + 1}`}
                   aspectClass={aspectClassFor(selectedCreative.aspect_ratio)}
                 />
