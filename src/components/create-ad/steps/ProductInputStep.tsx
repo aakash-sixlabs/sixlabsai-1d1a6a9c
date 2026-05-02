@@ -178,17 +178,17 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
               </Button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => !uploading && fileInputRef.current?.click()}
+            <label
+              htmlFor="product-image-input"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
                 const f = e.dataTransfer.files?.[0];
                 if (f && !uploading) handleFileSelected(f);
               }}
-              disabled={uploading}
-              className="w-full rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 p-12 text-center hover:border-primary/40 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className={`block w-full rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 p-12 text-center hover:border-primary/40 transition-colors ${
+                uploading ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+              }`}
             >
               <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
                 {uploading ? (
