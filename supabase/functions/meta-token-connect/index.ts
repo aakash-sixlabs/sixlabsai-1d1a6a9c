@@ -159,16 +159,18 @@ Deno.serve(async (req) => {
         .from("ad_accounts")
         .select("id")
         .eq("user_id", user.id)
-        .eq("account_id", a.account_id)
+        .eq("account_id_meta", a.account_id)
         .maybeSingle();
 
       const payload = {
         user_id: user.id,
+        account_id: tenantAccountId,
         connection_id: connectionId,
-        account_id: a.account_id,
+        account_id_meta: a.account_id,
         account_name: a.name,
         currency: a.currency || "USD",
         timezone: a.timezone_name || null,
+        connection_status: "connected",
       };
 
       if (existing?.id) {
