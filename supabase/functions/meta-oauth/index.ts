@@ -294,9 +294,10 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("[meta-oauth] unhandled error:", err);
     const message = err instanceof Error ? err.message : String(err);
-    return new Response(JSON.stringify({ error: message }), {
+    const stack = err instanceof Error ? err.stack : undefined;
+    return new Response(JSON.stringify({ error: message, stack }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
