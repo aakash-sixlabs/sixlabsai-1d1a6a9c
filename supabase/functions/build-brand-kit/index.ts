@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getUserAccountId } from "../_shared/account.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -140,15 +141,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 1. Mark as scraping (upsert preserves any pre-existing fields like industry / facebook_page_id)
+    // Resolve Lovable tenant account_id (RLS requires it)
+    const tenantAccountId = await getUserAccountId(supabase, userId);
+
+    // 1. Mark as processing (upsert preserves any pre-existing fields like industry / facebook_page_id)
     await supabase
       .from("ad_account_profiles")
       .upsert(
         {
           ad_account_id: body.adAccountId,
           user_id: userId,
+          account_id: tenantAccountId,
           website_url: parsed.origin,
-          brand_kit_status: "scraping",
+          brand_kit_status: "processing",
         },
         { onConflict: "ad_account_id,user_id" },
       );
@@ -170,7 +175,7 @@ Deno.serve(async (req) => {
         tagline: kit.tagline,
         product_categories: kit.product_categories,
         brand_kit: kit.raw,
-        brand_kit_status: "ready",
+        brand_kit_status: "completed",
         brand_kit_updated_at: new Date().toISOString(),
       })
       .eq("ad_account_id", body.adAccountId)

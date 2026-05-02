@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     // 2. Find job
     const { data: job, error: jobError } = await admin
       .from("generation_jobs")
-      .select("id, user_id, status")
+      .select("id, user_id, account_id, status")
       .eq("id", job_id)
       .single();
 
@@ -162,6 +162,7 @@ Deno.serve(async (req) => {
     const creativeRows = (creatives as any[]).map((c) => ({
       job_id,
       user_id: job.user_id,
+      account_id: job.account_id,
       variant_index: c.variant_index,
       aspect_ratio: c.aspect_ratio,
       image_url: c.image_url,

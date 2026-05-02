@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "error",
+          status: "failed",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -114,9 +114,9 @@ Deno.serve(async (req) => {
           .single();
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
-        const actId = adAccount.account_id.startsWith("act_")
-          ? adAccount.account_id
-          : `act_${adAccount.account_id}`;
+        const actId = adAccount.account_id_meta.startsWith("act_")
+          ? adAccount.account_id_meta
+          : `act_${adAccount.account_id_meta}`;
 
         // Map Meta ad_id → internal ads.id (new schema: meta_ad_id)
         const { data: allStoredAds } = await admin
@@ -201,6 +201,7 @@ Deno.serve(async (req) => {
 
             perfRows.push({
               user_id: userId,
+              account_id: adAccount.account_id,
               ad_id: internalAdId,
               date: insight.date_start,
               impressions,
@@ -236,15 +237,10 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Refresh the materialized view so dashboard sees fresh data
-        try {
-          await admin.rpc("refresh_campaign_ad_data");
-        } catch (refreshErr) {
-          console.warn("MV refresh failed (non-fatal):", refreshErr);
-        }
+        // Materialized view removed in dictionary alignment — no refresh needed.
 
         await admin.from("sync_jobs").update({
-          status: "complete",
+          status: "completed",
           current_step: "Complete",
           phase: "done",
           cursor_date: null,
@@ -271,7 +267,7 @@ Deno.serve(async (req) => {
     console.error("meta-sync-insights fatal:", err);
     if (syncId) {
       await admin.from("sync_jobs").update({
-        status: "error",
+        status: "failed",
         error_message: err?.message || "Insights phase failed",
         updated_at: new Date().toISOString(),
       }).eq("id", syncId);

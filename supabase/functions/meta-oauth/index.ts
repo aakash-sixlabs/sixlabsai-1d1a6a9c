@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getUserAccountId } from "../_shared/account.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -138,12 +139,16 @@ Deno.serve(async (req) => {
 
       const tokenHash = linkData.properties?.hashed_token;
 
+      // Resolve Lovable tenant account_id (created by handle_new_user trigger)
+      const tenantAccountId = await getUserAccountId(adminClient, userId);
+
       // Store Meta connection
       const { data: connection, error: insertError } = await adminClient
         .from("meta_connections")
         .upsert(
           {
             user_id: userId,
+            account_id: tenantAccountId,
             access_token: accessToken,
             token_expires_at: new Date(
               Date.now() + expiresIn * 1000
@@ -184,17 +189,19 @@ Deno.serve(async (req) => {
       const accounts = (accountsData.data || []).map((acc: any) => ({
         connection_id: connection.id,
         user_id: userId,
-        account_id: acc.account_id || acc.id,
+        account_id: tenantAccountId,
+        account_id_meta: acc.account_id || acc.id,
         account_name: acc.name || `Account ${acc.account_id}`,
         currency: acc.currency || "USD",
         timezone: acc.timezone_name,
+        connection_status: "connected",
       }));
 
       if (accounts.length > 0) {
         // Preserve existing account row IDs so saved defaults, brand kits, and
         // synced data tied to those accounts are not lost on every re-login.
         await adminClient.from("ad_accounts").upsert(accounts, {
-          onConflict: "account_id",
+          onConflict: "user_id,account_id_meta",
         });
       }
 
@@ -218,13 +225,13 @@ Deno.serve(async (req) => {
         if (profile?.default_ad_account_id) {
           const { data: defaultAcc } = await adminClient
             .from("ad_accounts")
-            .select("id, account_id, account_name")
+            .select("id, account_id_meta, account_name")
             .eq("id", profile.default_ad_account_id)
             .single();
           if (defaultAcc) {
             defaultAdAccountId = defaultAcc.id;
             defaultAdAccountName = defaultAcc.account_name;
-            defaultMetaAccountId = defaultAcc.account_id;
+            defaultMetaAccountId = defaultAcc.account_id_meta;
           }
         }
       }
