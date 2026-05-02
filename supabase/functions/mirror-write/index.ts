@@ -61,6 +61,19 @@ Deno.serve(async (req) => {
       Prefer: "resolution=merge-duplicates,return=minimal",
     };
 
+    // Inject default values for columns that exist on the SECOND project
+    // but not on this primary DB. Lets us mirror without changing tables.
+    // Use a fixed UUID to represent "Client1" since the second project
+    // typed account_id as uuid.
+    const CLIENT1_UUID = "00000001-0000-0000-0000-000000000001";
+    const SECONDARY_DEFAULTS: Record<string, Record<string, unknown>> = {
+      ad_account_profiles: { account_id: CLIENT1_UUID },
+    };
+    const enrichedRow =
+      row && SECONDARY_DEFAULTS[table]
+        ? { ...SECONDARY_DEFAULTS[table], ...row }
+        : row;
+
     let res: Response;
     let url: string;
     if (op === "INSERT" || op === "UPDATE") {
@@ -68,7 +81,7 @@ Deno.serve(async (req) => {
       res = await fetch(url, {
         method: "POST",
         headers,
-        body: JSON.stringify(row),
+        body: JSON.stringify(enrichedRow),
       });
     } else {
       const id = (old_row as any)?.id;
