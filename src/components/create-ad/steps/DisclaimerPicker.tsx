@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Check, FileWarning, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { useWizard } from "@/context/WizardContext";
 import { isDevSession } from "@/lib/devMode";
 import { toast } from "sonner";

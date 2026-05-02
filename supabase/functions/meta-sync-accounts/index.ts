@@ -63,8 +63,8 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      Deno.env.get("PROD_SUPABASE_URL")!,
+      Deno.env.get("PROD_SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
 
@@ -80,8 +80,8 @@ Deno.serve(async (req) => {
     const { adAccountId, dateRangeDays } = await req.json();
 
     const admin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      Deno.env.get("PROD_SUPABASE_URL")!,
+      Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: adAccount } = await admin
@@ -383,8 +383,8 @@ Deno.serve(async (req) => {
         });
 
         // Chain to phase 2
-        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabaseUrl = Deno.env.get("PROD_SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!;
         await fetch(`${supabaseUrl}/functions/v1/meta-sync-creatives`, {
           method: "POST",
           headers: {

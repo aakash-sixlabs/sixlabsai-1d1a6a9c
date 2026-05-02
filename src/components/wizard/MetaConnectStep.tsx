@@ -3,7 +3,7 @@ import { useWizard } from "@/context/WizardContext";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, Shield, CheckCircle2, Loader2, KeyRound } from "lucide-react";
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { toast } from "sonner";
 import {
   Dialog,

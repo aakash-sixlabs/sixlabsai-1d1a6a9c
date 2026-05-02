@@ -23,7 +23,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { getCurrentAccountId } from "@/lib/accountContext";
 import { toast } from "sonner";
 
@@ -320,7 +320,7 @@ export const BrandKitStep = ({
       const controller = new AbortController();
       abortRef.current = controller;
 
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-brand-kit`;
+      const url = `https://bhcusyaonpevmwaruvlx.supabase.co/functions/v1/extract-brand-kit`;
       const resp = await fetch(url, {
         method: "POST",
         headers: {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { supabase } from '@/integrations/supabase/client'
+import { supabase } from '@/integrations/prod/client'
 import BrandKitTestCard from '@/components/debug/BrandKitTestCard'
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'skipped'

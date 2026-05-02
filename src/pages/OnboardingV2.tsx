@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { useWizard } from "@/context/WizardContext";
 import { DashboardBackground } from "@/components/wizard/DashboardBackground";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";

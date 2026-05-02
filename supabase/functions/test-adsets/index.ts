@@ -32,8 +32,8 @@ Deno.serve(async (req) => {
 
   try {
     const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      Deno.env.get('PROD_SUPABASE_URL')!,
+      Deno.env.get('PROD_SUPABASE_SERVICE_ROLE_KEY')!
     )
 
     const { adAccountId, accessToken, dateRangeDays = 90 } = await req.json()

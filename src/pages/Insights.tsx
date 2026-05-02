@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { useWizard } from "@/context/WizardContext";
 import { InsightsStep } from "@/components/wizard/InsightsStep";
 import { BrandKitBanner } from "@/components/wizard/BrandKitBanner";
