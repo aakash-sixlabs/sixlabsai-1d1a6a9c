@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, Mail, Building2, ArrowRight, Loader2, Star, Globe } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { toast } from "sonner";
 import { useWizard } from "@/context/WizardContext";
 

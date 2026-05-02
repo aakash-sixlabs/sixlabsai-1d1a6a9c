@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { useWizard } from "@/context/WizardContext";
 import { isDevSession } from "@/lib/devMode";
 import type { CreateAdState } from "../CreateAdFlow";

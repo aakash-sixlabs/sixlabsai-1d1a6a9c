@@ -3,7 +3,7 @@ import { useWizard } from "@/context/WizardContext";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Building2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { AdAccountProfileDialog } from "@/components/wizard/AdAccountProfileDialog";
 
 interface AdAccount {

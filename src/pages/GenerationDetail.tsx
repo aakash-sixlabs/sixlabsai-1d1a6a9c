@@ -16,7 +16,7 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/prod/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
