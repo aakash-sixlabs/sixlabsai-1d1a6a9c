@@ -20,6 +20,7 @@ import Settings from "./pages/Settings";
 import MetaCallback from "./pages/MetaCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DebugSyncPage from "./pages/DebugSyncPage";
+import GenerationDetail from "./pages/GenerationDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
             <Route path="/create-ad" element={<CreateAd />} />
             <Route path="/pdp-scrape" element={<PdpScrape />} />
             <Route path="/output" element={<Output />} />
+            <Route path="/generations/:jobId" element={<GenerationDetail />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/auth/callback" element={<MetaCallback />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
