@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
       );
       const pagesData = await pagesRes.json();
 
-      const isNewUser = !existingUser;
+      const isNewUser = !foundExisting;
 
       let defaultAdAccountId = null;
       let defaultAdAccountName = null;
