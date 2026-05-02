@@ -37,7 +37,7 @@ export const DataSyncStep = ({
   // "Pulling performance (2026-03-09)") to one of our 6 visible UI steps.
   const mapBackendStep = (raw: string): number => {
     const s = (raw || "").toLowerCase();
-    if (s.includes("complete")) return SYNC_STEPS.length - 1;
+    if (s.includes("complete") || s.includes("done") || s.includes("finished")) return SYNC_STEPS.length - 1;
     if (s.includes("performance") || s.includes("insights")) return 3; // Pulling ad performance
     if (s.includes("creative")) return 2; // Pulling ads and creatives
     if (s.includes("ad set") || s.includes("adset") || s.includes("pulling ads")) return 2;
@@ -93,6 +93,36 @@ export const DataSyncStep = ({
       return () => clearInterval(interval);
     }
 
+    let syncJobId: string | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+
+    const handleJobUpdate = (job: any) => {
+      if (!job) return;
+      if (job.current_step) setCurrentStep(job.current_step);
+      if (job.status === "completed") {
+        setIsComplete(true);
+        updateState({ syncComplete: true });
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        setTimeout(() => handleComplete(), 1000);
+      }
+      if (job.status === "failed" || job.status === "error") {
+        setError(job.error_message || "Sync failed");
+        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+      }
+    };
+
+    const startPolling = (jobId: string) => {
+      if (pollInterval) return;
+      pollInterval = setInterval(async () => {
+        const { data } = await supabase
+          .from("sync_jobs")
+          .select("status, current_step, error_message")
+          .eq("id", jobId)
+          .maybeSingle();
+        if (data) handleJobUpdate(data);
+      }, 3000);
+    };
+
     const startSync = async () => {
       try {
         const { data, error: fnError } = await supabase.functions.invoke("meta-sync-accounts", {
@@ -100,8 +130,10 @@ export const DataSyncStep = ({
         });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
-        // Sync runs in the background — realtime updates on sync_jobs will
-        // drive currentStep and the final complete/error state.
+        if (data?.syncJobId) {
+          syncJobId = data.syncJobId;
+          startPolling(data.syncJobId);
+        }
       } catch (err: any) {
         console.error("Sync error:", err);
         setError(err.message || "Sync failed");
@@ -111,19 +143,15 @@ export const DataSyncStep = ({
     const channel = supabase
       .channel("sync-progress")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "sync_jobs" }, (payload) => {
-        const job = payload.new as any;
-        if (job.current_step) setCurrentStep(job.current_step);
-        if (job.status === "complete") {
-          setIsComplete(true);
-          updateState({ syncComplete: true });
-          setTimeout(() => handleComplete(), 1000);
-        }
-        if (job.status === "error") setError(job.error_message || "Sync failed");
+        handleJobUpdate(payload.new);
       })
       .subscribe();
 
     startSync();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      supabase.removeChannel(channel);
+      if (pollInterval) clearInterval(pollInterval);
+    };
   }, []);
 
   const effectiveIdx = currentIdx >= 0 ? currentIdx : 0;
