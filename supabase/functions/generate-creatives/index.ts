@@ -152,6 +152,9 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Resolve Lovable tenant account_id (RLS requires it)
+    const tenantAccountId = await getUserAccountId(admin, userId);
+
     // Load brand kit for the selected ad account (if any)
     let brandKit: BrandKit | null = null;
     if (body.adAccountId) {
@@ -163,12 +166,12 @@ Deno.serve(async (req) => {
         .eq("ad_account_id", body.adAccountId)
         .eq("user_id", userId)
         .maybeSingle();
-      if (profile && profile.brand_kit_status === "ready") {
+      if (profile && profile.brand_kit_status === "completed") {
         brandKit = profile as BrandKit;
       }
     }
 
-    // Insert job row (status = generating)
+    // Insert job row (status = processing)
     const icpSnapshot = body.icpId
       ? { name: body.icpName ?? null, description: body.icpDescription ?? null }
       : null;
@@ -177,6 +180,7 @@ Deno.serve(async (req) => {
       .from("generation_jobs")
       .insert({
         user_id: userId,
+        account_id: tenantAccountId,
         ad_account_id: body.adAccountId ?? null,
         goal: body.goal ?? null,
         promo_scope: body.promoScope ?? null,
@@ -190,7 +194,7 @@ Deno.serve(async (req) => {
         icp_snapshot: icpSnapshot,
         disclaimer_ids: body.promoDetails?.disclaimerIds ?? [],
         service_request_payload: { ...body, brand_kit: brandKit },
-        status: "generating",
+        status: "processing",
       })
       .select()
       .single();
