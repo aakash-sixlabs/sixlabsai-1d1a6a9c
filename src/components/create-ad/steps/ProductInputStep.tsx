@@ -1,8 +1,10 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ArrowRight, Check, Link2, ImagePlus } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, Check, Link2, ImagePlus, Loader2, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import {
   STEP_CONTAINER,
   STEP_HEADING,
@@ -20,19 +22,65 @@ interface ProductInputStepProps {
   onBack: () => void;
 }
 
+const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+
 export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInputStepProps) => {
   const [method, setMethod] = useState<"url" | "image" | null>(state.productInputMethod);
   const [url, setUrl] = useState(state.productUrl);
   const [error, setError] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(state.productImage ?? null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileSelected = async (file: File) => {
+    setError("");
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload a PNG or JPG image");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      setError("Image must be 10MB or smaller");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const { data: userData, error: userErr } = await supabase.auth.getUser();
+      if (userErr || !userData.user) throw new Error("Not authenticated");
+
+      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${userData.user.id}/uploads/${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}.${ext}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from("ad-creatives")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (uploadErr) throw uploadErr;
+
+      const { data: pub } = supabase.storage.from("ad-creatives").getPublicUrl(path);
+      setUploadedUrl(pub.publicUrl);
+      onUpdate({ productImage: pub.publicUrl, productInputMethod: "image" });
+      toast.success("Image uploaded");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleContinue = () => {
     if (method === "url") {
       if (!url.trim()) { setError("Please enter a product URL"); return; }
       if (!url.startsWith("http")) { setError("Please enter a valid URL starting with https://"); return; }
       setError("");
-      onUpdate({ productUrl: url, productInputMethod: "url" });
+      onUpdate({ productUrl: url, productInputMethod: "url", productImage: null });
     } else if (method === "image") {
-      onUpdate({ productInputMethod: "image" });
+      if (!uploadedUrl) { setError("Please upload an image first"); return; }
+      setError("");
+      onUpdate({ productImage: uploadedUrl, productInputMethod: "image" });
     }
     onNext();
   };
@@ -93,12 +141,70 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
       )}
 
       {method === "image" && (
-        <div className="rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 p-12 text-center hover:border-primary/40 transition-colors cursor-pointer">
-          <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-            <ImagePlus className="w-5 h-5 text-muted-foreground" />
-          </div>
-          <p className="text-sm font-medium text-foreground">Click to upload or drag & drop</p>
-          <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/jpg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFileSelected(f);
+              e.target.value = "";
+            }}
+          />
+
+          {uploadedUrl ? (
+            <div className="relative rounded-2xl border border-border/80 bg-muted/20 p-4 flex items-center gap-4">
+              <img
+                src={uploadedUrl}
+                alt="Uploaded product"
+                className="w-20 h-20 rounded-lg object-cover border border-border"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-foreground">Image uploaded</p>
+                <p className="text-xs text-muted-foreground truncate">{uploadedUrl}</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setUploadedUrl(null);
+                  onUpdate({ productImage: null });
+                }}
+                aria-label="Remove image"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => !uploading && fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const f = e.dataTransfer.files?.[0];
+                if (f && !uploading) handleFileSelected(f);
+              }}
+              disabled={uploading}
+              className="w-full rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 p-12 text-center hover:border-primary/40 transition-colors cursor-pointer disabled:cursor-not-allowed"
+            >
+              <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                {uploading ? (
+                  <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
+                ) : (
+                  <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                )}
+              </div>
+              <p className="text-sm font-medium text-foreground">
+                {uploading ? "Uploading…" : "Click to upload or drag & drop"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WebP up to 10MB</p>
+            </button>
+          )}
+
+          {error && <p className="text-sm text-destructive mt-2">{error}</p>}
         </div>
       )}
 
@@ -106,7 +212,12 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
         <Button variant="ghost" size="lg" onClick={onBack} className={CTA_SHAPE}>
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button size="lg" onClick={handleContinue} disabled={!method} className={CTA_SHAPE}>
+        <Button
+          size="lg"
+          onClick={handleContinue}
+          disabled={!method || uploading || (method === "image" && !uploadedUrl)}
+          className={CTA_SHAPE}
+        >
           Continue <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
