@@ -22,6 +22,7 @@ import MetaCallback from "./pages/MetaCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DebugSyncPage from "./pages/DebugSyncPage";
 import GenerationDetail from "./pages/GenerationDetail";
+import OnboardingV1Live from "./pages/OnboardingV1Live";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,7 @@ const App = () => (
             <Route path="/auth/callback" element={<MetaCallback />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/debug-sync" element={<DebugSyncPage />} />
+            <Route path="/onboardingv1" element={<OnboardingV1Live />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
