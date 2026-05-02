@@ -144,9 +144,10 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
         <div>
           <input
             ref={fileInputRef}
+            id="product-image-input"
             type="file"
             accept="image/png,image/jpeg,image/jpg,image/webp"
-            className="hidden"
+            className="sr-only"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) handleFileSelected(f);
