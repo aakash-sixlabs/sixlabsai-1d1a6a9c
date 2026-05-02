@@ -321,11 +321,17 @@ export const BrandKitStep = ({
       abortRef.current = controller;
 
       const url = `https://bhcusyaonpevmwaruvlx.supabase.co/functions/v1/extract-brand-kit`;
+      // NOTE: apikey header is required by the Lovable Cloud functions gateway,
+      // even when verify_jwt=false. Without it the gateway returns 401 before
+      // our code runs. Use the prod anon key (same key the supabase-js client
+      // uses internally for invoke()).
+      const { SUPABASE_PUBLISHABLE_KEY } = await import("@/integrations/prod/client");
       const resp = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
+          apikey: SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({ websiteUrl: trimmed }),
         signal: controller.signal,
