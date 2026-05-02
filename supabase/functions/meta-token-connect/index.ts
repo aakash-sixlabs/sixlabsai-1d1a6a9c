@@ -104,6 +104,9 @@ Deno.serve(async (req) => {
     // 3. Upsert via service role (bypasses RLS for write but scoped to this user)
     const admin = createClient(supabaseUrl, serviceKey);
 
+    // Resolve the Lovable tenant account_id for this user
+    const tenantAccountId = await getUserAccountId(admin, user.id);
+
     // Reuse existing connection row for this user if present, else insert
     const { data: existingConn } = await admin
       .from("meta_connections")
@@ -130,6 +133,7 @@ Deno.serve(async (req) => {
         .from("meta_connections")
         .insert({
           user_id: user.id,
+          account_id: tenantAccountId,
           access_token: accessToken,
           meta_user_id: me.id,
           meta_user_name: me.name,
