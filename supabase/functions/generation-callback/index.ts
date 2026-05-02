@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
     // 2. Find job
     const { data: job, error: jobError } = await admin
       .from("generation_jobs")
-      .select("id, user_id, status")
+      .select("id, user_id, account_id, status")
       .eq("id", job_id)
       .single();
 
