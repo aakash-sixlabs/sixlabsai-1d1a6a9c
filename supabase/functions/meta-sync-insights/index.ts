@@ -141,9 +141,9 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             }).eq("id", syncId!);
 
-            const supabaseUrl = Deno.env.get("PROD_SUPABASE_URL")!;
+            const functionsHost = Deno.env.get("SUPABASE_URL")!;
             const serviceKey = Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!;
-            await fetch(`${supabaseUrl}/functions/v1/meta-sync-insights`, {
+            await fetch(`${functionsHost}/functions/v1/meta-sync-insights`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -221,9 +221,24 @@ Deno.serve(async (req) => {
           }
 
           if (perfRows.length > 0) {
-            await admin.from("ad_performance_daily").upsert(perfRows, {
-              onConflict: "user_id,ad_id,date",
-            });
+            // Prod table has no unique constraint on (user_id, ad_id, date),
+            // so we delete + insert per day instead of upserting.
+            const adIds = [...new Set(perfRows.map((r) => r.ad_id))];
+            const { error: delErr } = await admin
+              .from("ad_performance_daily")
+              .delete()
+              .eq("user_id", userId)
+              .eq("date", day)
+              .in("ad_id", adIds);
+            if (delErr) {
+              throw new Error(`ad_performance_daily delete failed: ${delErr.message}`);
+            }
+            const { error: insErr } = await admin
+              .from("ad_performance_daily")
+              .insert(perfRows);
+            if (insErr) {
+              throw new Error(`ad_performance_daily insert failed: ${insErr.message}`);
+            }
           }
 
           daysThisRun++;
