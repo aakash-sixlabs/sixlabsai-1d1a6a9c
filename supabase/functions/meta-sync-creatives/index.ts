@@ -4,6 +4,7 @@
 // stored_image_url(s), raw_asset_feed_spec, raw_object_story_spec).
 // Chains to meta-sync-insights.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getProdSupabaseUrl } from "../_shared/supabase-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -228,7 +229,7 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(
-    Deno.env.get("PROD_SUPABASE_URL")!,
+    getProdSupabaseUrl(),
     Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
@@ -313,7 +314,7 @@ Deno.serve(async (req) => {
           );
         }
 
-        const supabaseUrl = Deno.env.get("PROD_SUPABASE_URL")!;
+        const supabaseUrl = getProdSupabaseUrl();
         let processed = 0;
         let imagesDownloaded = 0;
         let videosSkipped = 0;

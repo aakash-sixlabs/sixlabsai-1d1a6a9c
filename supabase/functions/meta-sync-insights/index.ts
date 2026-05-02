@@ -4,6 +4,7 @@
 // Self-chains via sync_jobs.cursor_date when approaching wall limit.
 // On final day → REFRESH MATERIALIZED VIEW campaign_ad_data, mark complete.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getProdSupabaseUrl } from "../_shared/supabase-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(
-    Deno.env.get("PROD_SUPABASE_URL")!,
+    getProdSupabaseUrl(),
     Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
   );
 

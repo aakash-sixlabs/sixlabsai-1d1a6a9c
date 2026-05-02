@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getUserAccountId } from "../_shared/account.ts";
+import { getProdSupabaseUrl } from "../_shared/supabase-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -43,7 +44,7 @@ Deno.serve(async (req) => {
       const META_APP_SECRET = Deno.env.get("META_APP_SECRET")!;
 
       const adminClient = createClient(
-        Deno.env.get("PROD_SUPABASE_URL")!,
+        getProdSupabaseUrl(),
         Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!
       );
 
