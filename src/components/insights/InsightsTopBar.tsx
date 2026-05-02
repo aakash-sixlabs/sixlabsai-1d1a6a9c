@@ -167,30 +167,56 @@ export const InsightsTopBar = ({
                 </button>
               )}
             </div>
-            <div className="max-h-72 overflow-auto">
-              {notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={cn(
-                    "px-4 py-3.5 border-b border-border/30 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer",
-                    !n.read && "bg-primary/5"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-sm mt-0.5">{typeIcon(n.type)}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-foreground">{n.title}</span>
-                        {!n.read && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                        )}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{n.description}</p>
-                      <span className="text-[10px] text-muted-foreground/60 mt-1 block">{n.time}</span>
-                    </div>
-                  </div>
+            <div className="max-h-80 overflow-auto">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+                  No notifications yet
                 </div>
-              ))}
+              ) : (
+                notifications.map((n) => {
+                  const isDone = n.status === "completed";
+                  const isFailed = n.status === "failed";
+                  const description = isFailed
+                    ? n.error_message ?? "Generation failed."
+                    : isDone
+                    ? `${goalLabel(n.goal)} — ready to view`
+                    : `${goalLabel(n.goal)} — in progress`;
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => {
+                        markRead(n.id);
+                        if (isDone) navigate(`/output?jobId=${n.id}`);
+                        else navigate(`/generations/${n.id}`);
+                      }}
+                      className={cn(
+                        "px-4 py-3.5 border-b border-border/30 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer",
+                        !n.read && "bg-primary/5"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5">{statusIcon(n.status)}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-foreground">
+                              {statusTitle(n.status)}
+                            </span>
+                            {!n.read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                            {description}
+                          </p>
+                          <span className="text-[10px] text-muted-foreground/60 mt-1 block">
+                            {formatRelative(n.updated_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </PopoverContent>
         </Popover>
