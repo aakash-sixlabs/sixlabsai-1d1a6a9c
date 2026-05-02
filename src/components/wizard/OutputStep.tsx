@@ -361,7 +361,7 @@ export const OutputStep = () => {
                   <Button
                     size="sm"
                     className="gap-1.5"
-                    onClick={() => window.open(selectedCreative.image_url, "_blank")}
+                    onClick={() => window.open(displayImage(selectedCreative), "_blank")}
                   >
                     <Download className="w-3.5 h-3.5" /> Download
                   </Button>
