@@ -42,7 +42,7 @@ const Insights = () => {
 
         const { data: acct } = await supabase
           .from("ad_accounts")
-          .select("id, account_id, account_name")
+          .select("id, account_id_meta, account_name")
           .eq("id", profile.default_ad_account_id)
           .maybeSingle();
 
@@ -54,7 +54,7 @@ const Insights = () => {
         updateState({
           selectedAccount: acct.id,
           selectedAccountName: acct.account_name,
-          selectedMetaAccountId: acct.account_id,
+          selectedMetaAccountId: acct.account_id_meta,
         });
       }
 

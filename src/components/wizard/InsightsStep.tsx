@@ -276,8 +276,12 @@ export const InsightsStep = () => {
       return;
     }
 
-    const accountsRes = await supabase.from("ad_accounts").select("id, account_id, account_name");
-    const fetchedAccounts = accountsRes.data || [];
+    const accountsRes = await supabase.from("ad_accounts").select("id, account_id_meta, account_name");
+    const fetchedAccounts = (accountsRes.data || []).map((a: any) => ({
+      id: a.id,
+      account_id: a.account_id_meta,
+      account_name: a.account_name,
+    }));
 
     if (fetchedAccounts.length === 0) {
       const mockAccounts = [
@@ -292,17 +296,10 @@ export const InsightsStep = () => {
       if (!selectedAccountId) setSelectedAccountId(fetchedAccounts[0].id);
     }
 
-    // Primary source: campaign_ad_data materialized view (flattened, denormalized)
-    const { data: cadData } = await supabase.from("campaign_ad_data").select("*");
-    const rows = cadData || [];
-
-    if (rows.length > 0) {
-      setCadRows(rows);
-      setMockAds(null);
-    } else {
-      setCadRows([]);
-      setMockAds(generateMockData());
-    }
+    // campaign_ad_data materialized view was removed — fall back to mock data
+    // until insights are recomputed against the new schema.
+    setCadRows([]);
+    setMockAds(generateMockData());
     setLoading(false);
   }, [selectedAccountId]);
 
@@ -398,7 +395,7 @@ export const InsightsStep = () => {
       .from("sync_jobs")
       .select("id, status, current_step, updated_at")
       .eq("ad_account_id", accountId)
-      .in("status", ["syncing", "pending"])
+      .in("status", ["running", "pending"])
       .order("created_at", { ascending: false })
       .limit(1);
     const existing = existingJobs?.[0];
@@ -422,13 +419,13 @@ export const InsightsStep = () => {
           if (!activeJobId) activeJobId = job.id;
 
           if (job.current_step) setSyncStep(job.current_step);
-          if (job.status === "complete") {
+          if (job.status === "completed") {
             setSyncStatus("complete");
             fetchData();
             supabase.removeChannel(channel);
             setTimeout(() => setSyncStatus("idle"), 2500);
           }
-          if (job.status === "error") {
+          if (job.status === "failed") {
             setSyncStatus("error");
             setSyncStep(job.error_message || "Sync failed");
             supabase.removeChannel(channel);
