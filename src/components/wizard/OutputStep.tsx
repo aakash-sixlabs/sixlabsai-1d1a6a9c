@@ -130,6 +130,33 @@ export const OutputStep = () => {
   const selectedCreative = creatives.find((c) => c.id === selected);
   const selectedIndex = creatives.findIndex((c) => c.id === selected);
 
+  // Realtime: update creatives as background storage completes
+  useEffect(() => {
+    if (!jobId || jobId.startsWith("dev_")) return;
+    const channel = supabase
+      .channel(`output-storage-${jobId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "generated_creatives",
+          filter: `job_id=eq.${jobId}`,
+        },
+        (payload) => {
+          setCreatives((prev) =>
+            prev.map((c) =>
+              c.id === (payload.new as any).id ? { ...c, ...(payload.new as any) } : c,
+            ),
+          );
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [jobId]);
+
   // Preload neighbors in lightbox
   useEffect(() => {
     if (selectedIndex < 0) return;
