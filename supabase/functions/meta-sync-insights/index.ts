@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "error",
+          status: "failed",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
