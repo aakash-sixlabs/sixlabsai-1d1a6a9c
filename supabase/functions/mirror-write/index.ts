@@ -47,7 +47,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    const base = MIRROR_URL.replace(/\/$/, "");
+    // Normalize URL: accept any of these shapes
+    //   https://x.supabase.co
+    //   https://x.supabase.co/
+    //   https://x.supabase.co/rest/v1
+    //   https://x.supabase.co/rest/v1/
+    let base = MIRROR_URL.trim().replace(/\/+$/, "");
+    base = base.replace(/\/rest\/v1$/, "");
     const headers = {
       apikey: MIRROR_KEY,
       Authorization: `Bearer ${MIRROR_KEY}`,
@@ -56,15 +62,15 @@ Deno.serve(async (req) => {
     };
 
     let res: Response;
+    let url: string;
     if (op === "INSERT" || op === "UPDATE") {
-      // Upsert by primary key (id) into the matching table.
-      res = await fetch(`${base}/rest/v1/${encodeURIComponent(table)}`, {
+      url = `${base}/rest/v1/${encodeURIComponent(table)}`;
+      res = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify(row),
       });
     } else {
-      // DELETE — match by id if available.
       const id = (old_row as any)?.id;
       if (!id) {
         return new Response(JSON.stringify({ ok: true, skipped: "no_id" }), {
@@ -72,15 +78,17 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      res = await fetch(
-        `${base}/rest/v1/${encodeURIComponent(table)}?id=eq.${encodeURIComponent(String(id))}`,
-        { method: "DELETE", headers },
-      );
+      url = `${base}/rest/v1/${encodeURIComponent(table)}?id=eq.${encodeURIComponent(String(id))}`;
+      res = await fetch(url, { method: "DELETE", headers });
     }
 
     if (!res.ok) {
       const txt = await res.text().catch(() => "");
-      console.error(`[mirror-write] ${op} ${table} failed: ${res.status} ${txt.slice(0, 500)}`);
+      console.error(
+        `[mirror-write] ${op} ${table} -> ${url} :: ${res.status} ${txt.slice(0, 600)}`,
+      );
+    } else {
+      console.log(`[mirror-write] ${op} ${table} -> ${res.status}`);
     }
 
     return new Response(JSON.stringify({ ok: res.ok, status: res.status }), {
