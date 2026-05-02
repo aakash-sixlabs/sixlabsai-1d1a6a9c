@@ -100,9 +100,10 @@ const GenerationDetail = () => {
       // Resolve ICP (prefer snapshot, fallback to live ICP row)
       let resolvedIcpName: string | null = null;
       let resolvedIcpDesc: string | null = null;
-      if (jobData.icp_snapshot) {
-        resolvedIcpName = jobData.icp_snapshot.name ?? null;
-        resolvedIcpDesc = jobData.icp_snapshot.description ?? null;
+      if (jobData.icp_snapshot && typeof jobData.icp_snapshot === "object" && !Array.isArray(jobData.icp_snapshot)) {
+        const snap = jobData.icp_snapshot as Record<string, any>;
+        resolvedIcpName = (snap.name as string) ?? null;
+        resolvedIcpDesc = (snap.description as string) ?? null;
       }
       if (!resolvedIcpName && jobData.icp_id) {
         const { data: icp } = await supabase
