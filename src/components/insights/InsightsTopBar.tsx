@@ -1,30 +1,33 @@
-import { Search, Bell, Zap, RefreshCw, Check, AlertCircle, Settings as SettingsIcon } from "lucide-react";
+import { Search, Bell, Zap, RefreshCw, Check, AlertCircle, Settings as SettingsIcon, Sparkles, XCircle, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useGenerationNotifications } from "@/context/GenerationNotificationsContext";
 
-interface Notification {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  read: boolean;
-  type: "sync" | "insight" | "alert" | "tip";
-}
+const formatRelative = (iso: string) => {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+};
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: "1", title: "Sync complete", description: "Glow Skin Co. Ads — 42 creatives updated", time: "2m ago", read: false, type: "sync" },
-  { id: "2", title: "New top performer", description: "\"Summer-Collection-Hero\" hit 4.8x ROAS", time: "1h ago", read: false, type: "insight" },
-  { id: "3", title: "Creative needs review", description: "\"Flash-Sale-Countdown\" CTR dropped 40%", time: "3h ago", read: false, type: "alert" },
-  { id: "4", title: "Opportunity detected", description: "Static single format outperforming carousel by 2x", time: "5h ago", read: true, type: "tip" },
-];
+const goalLabel = (goal: string | null) => {
+  if (!goal) return "Generation";
+  return goal
+    .split("-")
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+};
 
 interface InsightsTopBarProps {
   searchQuery: string;
