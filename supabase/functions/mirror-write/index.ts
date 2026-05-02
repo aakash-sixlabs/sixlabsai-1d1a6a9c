@@ -42,12 +42,51 @@ function parseFkViolation(detail: string): { table: string; col: string; value: 
   return { col: m[1], value: m[2], table: m[3] };
 }
 
+async function ensureAuthUser(base: string, userId: string): Promise<boolean> {
+  const cacheKey = `auth.users:id:${userId}`;
+  if (ensuredParents.has(cacheKey)) return true;
+  try {
+    const res = await fetch(`${base}/auth/v1/admin/users`, {
+      method: "POST",
+      headers: {
+        apikey: MIRROR_KEY!,
+        Authorization: `Bearer ${MIRROR_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: userId,
+        email: `mirror-${userId}@mirror.local`,
+        email_confirm: true,
+        user_metadata: { mirror_stub: true },
+      }),
+    });
+    if (res.ok || res.status === 422 /* already exists */) {
+      ensuredParents.add(cacheKey);
+      console.log(`[mirror-write] ensured auth user ${userId} (status ${res.status})`);
+      return true;
+    }
+    const txt = await res.text().catch(() => "");
+    console.error(`[mirror-write] auth user create failed ${res.status}: ${txt.slice(0, 400)}`);
+    return false;
+  } catch (err) {
+    console.error("[mirror-write] auth user create error:", err);
+    return false;
+  }
+}
+
 async function ensureParentRow(
   base: string,
   table: string,
   col: string,
   value: string,
 ): Promise<boolean> {
+  // Special-case: PostgREST can't write to auth.users; use Auth Admin API.
+  // The schema-cache-not-found error masks the real referenced schema, but
+  // any FK on a column literally named user_id pointing to a "users" table
+  // we can't see is overwhelmingly auth.users.
+  if (table === "users" && col === "user_id") {
+    return await ensureAuthUser(base, value);
+  }
   const cacheKey = `${table}:${col}:${value}`;
   if (ensuredParents.has(cacheKey)) return true;
 
