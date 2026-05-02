@@ -231,6 +231,7 @@ Deno.serve(async (req) => {
       const rows = serviceResponse.creatives.map((c) => ({
         job_id: jobId,
         user_id: userId,
+        account_id: tenantAccountId,
         variant_index: c.variant_index,
         aspect_ratio: c.aspect_ratio,
         image_url: c.image_url,
