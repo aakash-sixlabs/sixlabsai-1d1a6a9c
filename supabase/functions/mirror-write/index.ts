@@ -97,6 +97,11 @@ Deno.serve(async (req) => {
         ? { ...SECONDARY_DEFAULTS[table], ...row }
         : row;
 
+    // Ensure FK target exists in the second project (one-time per cold start).
+    if (SECONDARY_DEFAULTS[table]) {
+      await ensureClient1Account(base, headers, CLIENT1_UUID);
+    }
+
     let res: Response;
     let url: string;
     if (op === "INSERT" || op === "UPDATE") {
