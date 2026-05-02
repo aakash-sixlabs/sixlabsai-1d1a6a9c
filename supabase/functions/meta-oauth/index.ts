@@ -92,18 +92,41 @@ Deno.serve(async (req) => {
       // Use Meta User ID as the primary identity
       const placeholderEmail = `meta_${meData.id}@users.noreply`;
 
-      // Create or find Supabase auth user
-      let userId: string;
+      // Resolve Supabase auth user idempotently.
+      // 1) Try profiles.meta_user_id (cheap, indexed lookup)
+      // 2) Try listUsers() match on user_metadata.meta_user_id (legacy users)
+      // 3) Try lookup by deterministic placeholder email
+      // 4) Only then create a new user
+      let userId: string | null = null;
+      let foundExisting = false;
 
-      const { data: listData } = await adminClient.auth.admin.listUsers();
-      const existingUser = listData?.users?.find(
-        (u: any) => u.user_metadata?.meta_user_id === meData.id
-      );
+      const { data: profileMatch } = await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("meta_user_id", meData.id)
+        .maybeSingle();
 
-      if (existingUser) {
-        userId = existingUser.id;
-        console.log("[meta-oauth] found existing user:", userId);
-      } else {
+      if (profileMatch?.id) {
+        userId = profileMatch.id;
+        foundExisting = true;
+        console.log("[meta-oauth] resolved user via profiles.meta_user_id:", userId);
+      }
+
+      if (!userId) {
+        const { data: listData } = await adminClient.auth.admin.listUsers();
+        const existingUser = listData?.users?.find(
+          (u: any) =>
+            u.user_metadata?.meta_user_id === meData.id ||
+            u.email === placeholderEmail
+        );
+        if (existingUser) {
+          userId = existingUser.id;
+          foundExisting = true;
+          console.log("[meta-oauth] resolved user via auth.listUsers:", userId);
+        }
+      }
+
+      if (!userId) {
         const { data: createData, error: createError } = await adminClient.auth.admin.createUser({
           email: placeholderEmail,
           email_confirm: true,
@@ -116,8 +139,13 @@ Deno.serve(async (req) => {
         if (createError) {
           console.error("[meta-oauth] create user error:", createError);
           return new Response(
-            JSON.stringify({ error: "Failed to create user account." }),
-            { status: 500, headers: corsHeaders }
+            JSON.stringify({
+              error: "Failed to create user account.",
+              detail: createError.message,
+              code: (createError as any).code ?? null,
+              status: (createError as any).status ?? null,
+            }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
         userId = createData.user.id;
@@ -212,7 +240,7 @@ Deno.serve(async (req) => {
       );
       const pagesData = await pagesRes.json();
 
-      const isNewUser = !existingUser;
+      const isNewUser = !foundExisting;
 
       let defaultAdAccountId = null;
       let defaultAdAccountName = null;
@@ -266,9 +294,10 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("[meta-oauth] unhandled error:", err);
     const message = err instanceof Error ? err.message : String(err);
-    return new Response(JSON.stringify({ error: message }), {
+    const stack = err instanceof Error ? err.stack : undefined;
+    return new Response(JSON.stringify({ error: message, stack }), {
       status: 500,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
