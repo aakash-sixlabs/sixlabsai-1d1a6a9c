@@ -4,11 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { DisclaimerPicker } from "./DisclaimerPicker";
+import {
+  STEP_CONTAINER,
+  STEP_HEADING,
+  STEP_SUBTITLE,
+  CARD_BASE,
+  CARD_SELECTED,
+  CARD_IDLE,
+  CTA_SHAPE,
+} from "./_shared";
 
 interface PromoDetailsStepProps {
   details: PromoDetails;
@@ -65,33 +74,36 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
   };
 
   return (
-    <div>
-      <h2 className="text-2xl font-bold text-foreground mb-1">Promotion details</h2>
-      <p className="text-muted-foreground mb-8">
-        What kind of offer are you running?
-      </p>
+    <div className={STEP_CONTAINER}>
+      <h2 className={STEP_HEADING}>Promotion details</h2>
+      <p className={STEP_SUBTITLE}>What kind of offer are you running?</p>
 
       <div className="space-y-8">
         {/* Offer Type Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {OFFER_TYPES.map(({ type, label, description, icon: Icon }) => (
-            <button
-              key={type}
-              onClick={() => set({ offerType: type })}
-              className={cn(
-                "flex flex-col items-start gap-2 p-4 rounded-lg border-2 transition-all text-left",
-                details.offerType === type
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/40 bg-card"
-              )}
-            >
-              <Icon className={cn("w-5 h-5", details.offerType === type ? "text-primary" : "text-muted-foreground")} />
-              <div>
-                <p className="font-medium text-foreground text-sm">{label}</p>
-                <p className="text-xs text-muted-foreground">{description}</p>
-              </div>
-            </button>
-          ))}
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {OFFER_TYPES.map(({ type, label, description, icon: Icon }) => {
+            const isSelected = details.offerType === type;
+            return (
+              <button
+                key={type}
+                onClick={() => set({ offerType: type })}
+                className={cn(CARD_BASE, "p-5", isSelected ? CARD_SELECTED : CARD_IDLE)}
+              >
+                {isSelected && (
+                  <div className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                    <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                  </div>
+                )}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <p className="font-semibold text-sm text-foreground pr-6">{label}</p>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+              </button>
+            );
+          })}
         </div>
 
         {/* Conditional Fields */}
@@ -288,11 +300,11 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
         )}
       </div>
 
-      <div className="mt-8 flex justify-between">
-        <Button variant="ghost" size="lg" onClick={onBack} className="gap-2">
+      <div className="mt-10 flex justify-between">
+        <Button variant="ghost" size="lg" onClick={onBack} className={CTA_SHAPE}>
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button size="lg" onClick={onNext} disabled={!isValid(details)} className="gap-2">
+        <Button size="lg" onClick={onNext} disabled={!isValid(details)} className={CTA_SHAPE}>
           Continue <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
