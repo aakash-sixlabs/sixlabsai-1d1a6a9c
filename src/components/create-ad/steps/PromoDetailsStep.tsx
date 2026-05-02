@@ -300,11 +300,11 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
         )}
       </div>
 
-      <div className="mt-8 flex justify-between">
-        <Button variant="ghost" size="lg" onClick={onBack} className="gap-2">
+      <div className="mt-10 flex justify-between">
+        <Button variant="ghost" size="lg" onClick={onBack} className={CTA_SHAPE}>
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button size="lg" onClick={onNext} disabled={!isValid(details)} className="gap-2">
+        <Button size="lg" onClick={onNext} disabled={!isValid(details)} className={CTA_SHAPE}>
           Continue <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
