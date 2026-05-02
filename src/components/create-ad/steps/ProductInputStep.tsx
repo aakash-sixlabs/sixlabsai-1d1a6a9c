@@ -144,9 +144,10 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
         <div>
           <input
             ref={fileInputRef}
+            id="product-image-input"
             type="file"
             accept="image/png,image/jpeg,image/jpg,image/webp"
-            className="hidden"
+            className="sr-only"
             onChange={(e) => {
               const f = e.target.files?.[0];
               if (f) handleFileSelected(f);
@@ -178,17 +179,17 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
               </Button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => !uploading && fileInputRef.current?.click()}
+            <label
+              htmlFor="product-image-input"
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
                 const f = e.dataTransfer.files?.[0];
                 if (f && !uploading) handleFileSelected(f);
               }}
-              disabled={uploading}
-              className="w-full rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 p-12 text-center hover:border-primary/40 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className={`block w-full rounded-2xl border-2 border-dashed border-border/80 bg-muted/20 p-12 text-center hover:border-primary/40 transition-colors ${
+                uploading ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+              }`}
             >
               <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
                 {uploading ? (
@@ -201,7 +202,7 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
                 {uploading ? "Uploading…" : "Click to upload or drag & drop"}
               </p>
               <p className="text-xs text-muted-foreground mt-1">PNG, JPG, WebP up to 10MB</p>
-            </button>
+            </label>
           )}
 
           {error && <p className="text-sm text-destructive mt-2">{error}</p>}
