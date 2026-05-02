@@ -4,11 +4,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { DisclaimerPicker } from "./DisclaimerPicker";
+import {
+  STEP_CONTAINER,
+  STEP_HEADING,
+  STEP_SUBTITLE,
+  CARD_BASE,
+  CARD_SELECTED,
+  CARD_IDLE,
+  CTA_SHAPE,
+} from "./_shared";
 
 interface PromoDetailsStepProps {
   details: PromoDetails;
