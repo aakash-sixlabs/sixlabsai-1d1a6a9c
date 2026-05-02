@@ -171,31 +171,50 @@ Deno.serve(async (req) => {
       // Resolve Lovable tenant account_id (created by handle_new_user trigger)
       const tenantAccountId = await getUserAccountId(adminClient, userId);
 
-      // Store Meta connection
-      const { data: connection, error: insertError } = await adminClient
-        .from("meta_connections")
-        .upsert(
-          {
-            user_id: userId,
-            account_id: tenantAccountId,
-            access_token: accessToken,
-            token_expires_at: new Date(
-              Date.now() + expiresIn * 1000
-            ).toISOString(),
-            meta_user_id: meData.id,
-            meta_user_name: meData.name,
-          },
-          { onConflict: "user_id" }
-        )
-        .select()
-        .single();
+      // Store Meta connection — manual upsert (prod DB lacks some unique constraints).
+      const connectionPayload = {
+        user_id: userId,
+        account_id: tenantAccountId,
+        access_token: accessToken,
+        token_expires_at: new Date(Date.now() + expiresIn * 1000).toISOString(),
+        meta_user_id: meData.id,
+        meta_user_name: meData.name,
+      };
 
-      if (insertError) {
-        console.error("[meta-oauth] insert connection error:", insertError);
-        return new Response(JSON.stringify({ error: insertError.message }), {
-          status: 500,
-          headers: corsHeaders,
-        });
+      let connection: any = null;
+      const { data: existingConn } = await adminClient
+        .from("meta_connections")
+        .select("id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (existingConn?.id) {
+        const { data: updated, error: updateError } = await adminClient
+          .from("meta_connections")
+          .update(connectionPayload)
+          .eq("id", existingConn.id)
+          .select()
+          .single();
+        if (updateError) {
+          console.error("[meta-oauth] update connection error:", updateError);
+          return new Response(JSON.stringify({ error: updateError.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        connection = updated;
+      } else {
+        const { data: inserted, error: insertError } = await adminClient
+          .from("meta_connections")
+          .insert(connectionPayload)
+          .select()
+          .single();
+        if (insertError) {
+          console.error("[meta-oauth] insert connection error:", insertError);
+          return new Response(JSON.stringify({ error: insertError.message }), {
+            status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        connection = inserted;
       }
 
       // Update profile
@@ -227,11 +246,28 @@ Deno.serve(async (req) => {
       }));
 
       if (accounts.length > 0) {
-        // Preserve existing account row IDs so saved defaults, brand kits, and
-        // synced data tied to those accounts are not lost on every re-login.
-        await adminClient.from("ad_accounts").upsert(accounts, {
-          onConflict: "user_id,account_id_meta",
-        });
+        // Manual upsert per row (prod DB may lack the (user_id, account_id_meta)
+        // unique constraint, so PostgREST onConflict can't be used).
+        for (const acc of accounts) {
+          const { data: existing } = await adminClient
+            .from("ad_accounts")
+            .select("id")
+            .eq("user_id", acc.user_id)
+            .eq("account_id_meta", acc.account_id_meta)
+            .maybeSingle();
+          if (existing?.id) {
+            const { error: updErr } = await adminClient
+              .from("ad_accounts")
+              .update(acc)
+              .eq("id", existing.id);
+            if (updErr) console.error("[meta-oauth] ad_accounts update error:", updErr, acc.account_id_meta);
+          } else {
+            const { error: insErr } = await adminClient
+              .from("ad_accounts")
+              .insert(acc);
+            if (insErr) console.error("[meta-oauth] ad_accounts insert error:", insErr, acc.account_id_meta);
+          }
+        }
       }
 
       // Fetch Facebook pages
