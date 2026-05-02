@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.generation-callback]
 verify_jwt = false
+
+[functions.mirror-write]
+verify_jwt = false
