@@ -6,6 +6,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WizardProvider } from "@/context/WizardContext";
+import { GenerationNotificationsProvider } from "@/context/GenerationNotificationsContext";
 import Landing from "./pages/Landing";
 import LandingV1 from "./pages/LandingV1";
 import SixLabsLanding from "./pages/SixLabsLanding";
@@ -32,6 +33,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <WizardProvider>
+          <GenerationNotificationsProvider>
           <Routes>
             <Route path="/" element={<SixLabsLanding />} />
             <Route path="/loginvcollect" element={<Landing />} />
@@ -51,6 +53,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </GenerationNotificationsProvider>
         </WizardProvider>
       </BrowserRouter>
     </TooltipProvider>

@@ -1,30 +1,33 @@
-import { Search, Bell, Zap, RefreshCw, Check, AlertCircle, Settings as SettingsIcon } from "lucide-react";
+import { Search, Bell, Zap, RefreshCw, Check, AlertCircle, Settings as SettingsIcon, Sparkles, XCircle, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { useGenerationNotifications } from "@/context/GenerationNotificationsContext";
 
-interface Notification {
-  id: string;
-  title: string;
-  description: string;
-  time: string;
-  read: boolean;
-  type: "sync" | "insight" | "alert" | "tip";
-}
+const formatRelative = (iso: string) => {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  return `${d}d ago`;
+};
 
-const MOCK_NOTIFICATIONS: Notification[] = [
-  { id: "1", title: "Sync complete", description: "Glow Skin Co. Ads — 42 creatives updated", time: "2m ago", read: false, type: "sync" },
-  { id: "2", title: "New top performer", description: "\"Summer-Collection-Hero\" hit 4.8x ROAS", time: "1h ago", read: false, type: "insight" },
-  { id: "3", title: "Creative needs review", description: "\"Flash-Sale-Countdown\" CTR dropped 40%", time: "3h ago", read: false, type: "alert" },
-  { id: "4", title: "Opportunity detected", description: "Static single format outperforming carousel by 2x", time: "5h ago", read: true, type: "tip" },
-];
+const goalLabel = (goal: string | null) => {
+  if (!goal) return "Generation";
+  return goal
+    .split("-")
+    .map((w) => w[0].toUpperCase() + w.slice(1))
+    .join(" ");
+};
 
 interface InsightsTopBarProps {
   searchQuery: string;
@@ -47,21 +50,19 @@ export const InsightsTopBar = ({
   canResync = true,
 }: InsightsTopBarProps) => {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  const { notifications, unreadCount, markAllRead, markRead } = useGenerationNotifications();
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  const statusIcon = (status: string) => {
+    if (status === "completed") return <Sparkles className="w-3.5 h-3.5 text-accent" />;
+    if (status === "failed") return <XCircle className="w-3.5 h-3.5 text-destructive" />;
+    return <Clock className="w-3.5 h-3.5 text-muted-foreground" />;
   };
 
-  const typeIcon = (type: Notification["type"]) => {
-    switch (type) {
-      case "sync": return "🔄";
-      case "insight": return "🏆";
-      case "alert": return "⚠️";
-      case "tip": return "💡";
-    }
+  const statusTitle = (status: string) => {
+    if (status === "completed") return "Creatives ready";
+    if (status === "failed") return "Generation failed";
+    if (status === "generating" || status === "pending") return "Generating creatives…";
+    return "Generation update";
   };
 
   return (
@@ -166,30 +167,56 @@ export const InsightsTopBar = ({
                 </button>
               )}
             </div>
-            <div className="max-h-72 overflow-auto">
-              {notifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={cn(
-                    "px-4 py-3.5 border-b border-border/30 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer",
-                    !n.read && "bg-primary/5"
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-sm mt-0.5">{typeIcon(n.type)}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-foreground">{n.title}</span>
-                        {!n.read && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                        )}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{n.description}</p>
-                      <span className="text-[10px] text-muted-foreground/60 mt-1 block">{n.time}</span>
-                    </div>
-                  </div>
+            <div className="max-h-80 overflow-auto">
+              {notifications.length === 0 ? (
+                <div className="px-4 py-8 text-center text-xs text-muted-foreground">
+                  No notifications yet
                 </div>
-              ))}
+              ) : (
+                notifications.map((n) => {
+                  const isDone = n.status === "completed";
+                  const isFailed = n.status === "failed";
+                  const description = isFailed
+                    ? n.error_message ?? "Generation failed."
+                    : isDone
+                    ? `${goalLabel(n.goal)} — ready to view`
+                    : `${goalLabel(n.goal)} — in progress`;
+                  return (
+                    <div
+                      key={n.id}
+                      onClick={() => {
+                        markRead(n.id);
+                        if (isDone) navigate(`/output?jobId=${n.id}`);
+                        else navigate(`/generations/${n.id}`);
+                      }}
+                      className={cn(
+                        "px-4 py-3.5 border-b border-border/30 last:border-0 hover:bg-muted/50 transition-colors cursor-pointer",
+                        !n.read && "bg-primary/5"
+                      )}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5">{statusIcon(n.status)}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-foreground">
+                              {statusTitle(n.status)}
+                            </span>
+                            {!n.read && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                            {description}
+                          </p>
+                          <span className="text-[10px] text-muted-foreground/60 mt-1 block">
+                            {formatRelative(n.updated_at)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
           </PopoverContent>
         </Popover>
