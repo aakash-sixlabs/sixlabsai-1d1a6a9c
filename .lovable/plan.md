@@ -1,152 +1,31 @@
-# Slim Outbound Generation Request + Contract Doc
+## Goal
 
-## 1. Code change (one edit)
+Retrieve the value of `SUPABASE_SERVICE_ROLE_KEY` by exposing it once via a temporary edge function, then immediately remove that function so the key is not left publicly accessible.
 
-**File:** `supabase/functions/generate-creatives/index.ts`
+## Steps
 
-In the production-mode `fetch` to `${GEN_SERVICE_URL}/v1/generations`, replace the body:
+1. **Create a temporary edge function** at `supabase/functions/_reveal-key/index.ts` that:
+   - Accepts a `GET` request.
+   - Requires a one-time shared secret in the `x-reveal-token` header that you and I agree on in this session (so a random scanner hitting the URL gets `401`, not your service role key).
+   - When the header matches, returns the value of `Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")` as plain text.
+   - Returns `401` for any other request.
+   - Configured with `verify_jwt = false` in `supabase/config.toml` so it can be called without a Supabase auth token.
 
-```ts
-// before
-body: JSON.stringify({
-  job_id: jobId,
-  callback_url: callbackUrl,
-  callback_secret: callbackSecret,
-  payload: { ...body, brand_kit: brandKit },
-}),
+2. **Deploy the function** so it's live.
 
-// after
-body: JSON.stringify({
-  job_id: jobId,
-  callback_url: callbackUrl,
-  callback_secret: callbackSecret,
-}),
-```
+3. **Call the function** using `supabase--curl_edge_functions` with the agreed `x-reveal-token` header. The response body will contain your service role key. I'll surface it to you in chat.
 
-Nothing else in this file changes. The initial `generation_jobs` INSERT (which already runs BEFORE the POST) persists every wizard input Badri's service needs. Verified column-by-column against the live schema — no migration required.
+4. **Immediately delete the function** from the codebase and from Supabase (via `supabase--delete_edge_functions`) in the same step, plus remove the config.toml block. After this, the URL returns 404 and the key is no longer exposed.
 
-## 2. Contract doc for Badri
+5. **Confirm cleanup** by calling the URL once more — should return 404.
 
-Create `docs/generation-service-contract.md` with the content below so Badri has one source of truth.
+## What I need from you before starting
 
----
+Pick a one-time reveal token (any random string, e.g. `reveal-9f3k2m-xyz`). Reply with the token and I'll execute steps 1–5 in a single pass. If you'd rather I just generate one, say "generate it" and I will.
 
-### Generation Service Contract — v2
+## Security notes (please read)
 
-#### Inbound: `POST /v1/generations`
-
-Headers:
-```
-Authorization: Bearer <GEN_SERVICE_API_KEY>
-Content-Type: application/json
-```
-
-Body (exactly these three fields, nothing else):
-```json
-{
-  "job_id": "uuid",
-  "callback_url": "https://bhcusyaonpevmwaruvlx.supabase.co/functions/v1/generation-callback",
-  "callback_secret": "hex-string"
-}
-```
-
-Response: any 2xx. Optionally `{ "service_job_id": "string" }` — if returned, we'll store it on the job row. Non-2xx marks the job failed.
-
-#### How to load the job inputs
-
-Use the Supabase service-role key to read from `generation_jobs`:
-
-```sql
-SELECT
-  id,
-  user_id,
-  ad_account_id,
-  goal,                       -- 'sale-promo' | 'product-highlight' | 'new-arrival' | 'brand-story' | 'category-highlight'
-  promo_scope,
-  product_input_method,       -- 'image' | 'url'
-  product_image_url,
-  product_url,
-  aspect_ratios,              -- text[] e.g. ['1:1','4:5','9:16','16:9']
-  promo_details,              -- jsonb (offerType, discountValue, disclaimers, ...)
-  offer_type,
-  icp_id,
-  icp_snapshot,               -- jsonb { name, description }
-  disclaimer_ids,
-  service_request_payload     -- jsonb: full raw wizard body, includes brand_kit snapshot
-FROM generation_jobs
-WHERE id = $1;
-```
-
-Brand kit lives at `service_request_payload.brand_kit` (snapshot taken at submit time). Schema:
-```ts
-{
-  brand_name: string | null,
-  primary_color: string | null,
-  secondary_color: string | null,
-  accent_color: string | null,
-  font_family: string | null,
-  tone_of_voice: string | null,
-  tagline: string | null,
-  logo_url: string | null,
-  product_categories: string[] | null
-}
-```
-May be `null` if the brand kit wasn't ready. Fall back to defaults.
-
-For `client_name`: `slugify(brand_kit.brand_name)` with `ad_account_id` as stable fallback.
-For `ad_type`: map directly from `goal`.
-
-#### Outbound: `POST {callback_url}`
-
-Headers:
-```
-Content-Type: application/json
-x-signature: sha256=<hex(HMAC_SHA256(callback_secret, raw_body))>
-```
-
-Success body:
-```json
-{
-  "job_id": "uuid",
-  "service_job_id": "optional-string",
-  "status": "completed",
-  "creatives": [
-    {
-      "variant_index": 0,
-      "aspect_ratio": "1:1",
-      "image_url": "https://v3.fal.media/...",
-      "thumbnail_url": "https://v3.fal.media/...",
-      "headline": "string",
-      "primary_text": "string",
-      "description": "string",
-      "metadata": { "cost_credits": 2 }
-    }
-  ]
-}
-```
-
-Failure body:
-```json
-{
-  "job_id": "uuid",
-  "status": "failed",
-  "error": { "code": "STRING_CODE", "message": "Human-readable reason" }
-}
-```
-
-#### Constraints
-
-- `image_url` host must be one of: `fal.ai`, `fal.media`, `v3.fal.media`, `storage.googleapis.com` (we re-host into our bucket).
-- Callback always returns HTTP 200, even on signature mismatch — do not implement retries based on response code; rely on watchdog (10 min) for stuck jobs.
-- Idempotent: sending `completed` twice for the same `job_id` is a no-op on our side.
-- Sign the **raw request body bytes** as sent on the wire; do not re-serialize before HMAC.
-
-## Out of scope
-
-- `generation-callback/index.ts` — unchanged
-- `generation-watchdog/index.ts` — unchanged
-- DB schema — unchanged
-- Wizard UI — unchanged
-- Stub-mode branch — unchanged
-
-Approve to apply the edit and write the contract doc.
+- Once you have the key, treat it as **root credentials to your entire database**. Anyone holding it can read, modify, or delete every row in every table, bypassing all RLS.
+- Give it to Badri over a secure channel (1Password, Bitwarden share link, signed message — **not** plain email or Slack).
+- If it ever leaks, the only remediation is contacting Lovable/Supabase support to rotate it, which will require redeploying every edge function.
+- I still recommend the scoped endpoint approach instead, but this plan delivers exactly what you asked for.
