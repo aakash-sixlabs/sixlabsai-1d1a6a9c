@@ -6,6 +6,7 @@ import { useWizard } from "@/context/WizardContext";
 import { DashboardBackground } from "@/components/wizard/DashboardBackground";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
+import { getOnboardingState } from "@/lib/onboardingState";
 import {
   Dialog,
   DialogContent,
@@ -87,26 +88,49 @@ const OnboardingV2 = () => {
       }
 
       try {
-        // Returning-user shortcut: once a default ad account exists, onboarding
-        // has already been completed for this user. The /home page triggers a
-        // non-blocking 30-day resync on landing.
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("default_ad_account_id")
-          .eq("id", session.user.id)
-          .maybeSingle();
+        const onboarding = await getOnboardingState(session.user.id);
 
-        if (profile?.default_ad_account_id) {
-          navigate("/home", { replace: true });
-          return;
-        }
-
+        // Always load the account list so the select-account UI works for
+        // users who haven't picked one yet.
         const { data, error } = await supabase
           .from("ad_accounts")
           .select("*")
           .order("created_at", { ascending: false });
         if (error) throw error;
         setAccounts(data || []);
+
+        if (onboarding.complete) {
+          navigate("/home", { replace: true });
+          return;
+        }
+
+        // Resume from wherever the user dropped off. We never let them
+        // shortcut past an incomplete step.
+        if (onboarding.adAccountId) {
+          setSelected(onboarding.adAccountId);
+          updateState({
+            selectedAccount: onboarding.adAccountId,
+            selectedAccountName: onboarding.adAccountName,
+            selectedMetaAccountId: onboarding.metaAccountId,
+            dateRange: "90",
+          });
+        }
+
+        if (onboarding.resumePhase === "brand-kit") {
+          setPhase("brand-kit");
+          return;
+        }
+        if (onboarding.resumePhase === "add-icp") {
+          setPhase("add-icp");
+          return;
+        }
+        if (onboarding.resumePhase === "pulling") {
+          // Kick the data sync again — the only way out is a completed job.
+          setPhase("pulling");
+          // startPull reads `selected`; defer one tick so state settles.
+          setTimeout(() => startPull(), 0);
+          return;
+        }
       } catch (err) {
         console.error("Error fetching accounts:", err);
       }
@@ -144,15 +168,24 @@ const OnboardingV2 = () => {
       dateRange: "90",
     });
 
-    const { data: accountProfile } = await supabase
-      .from("ad_account_profiles")
-      .select("brand_kit_status, confirmed")
-      .eq("ad_account_id", account.id)
-      .maybeSingle();
-
-    if (accountProfile?.brand_kit_status === "completed" || accountProfile?.confirmed) {
-      navigate("/home", { replace: true });
-      return;
+    // Re-evaluate the full onboarding state for this account so we resume
+    // from the first incomplete step instead of jumping straight to /home.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const onboarding = await getOnboardingState(user.id);
+      if (onboarding.complete) {
+        navigate("/home", { replace: true });
+        return;
+      }
+      if (onboarding.resumePhase === "add-icp") {
+        setPhase("add-icp");
+        return;
+      }
+      if (onboarding.resumePhase === "pulling") {
+        setPhase("pulling");
+        setTimeout(() => startPull(), 0);
+        return;
+      }
     }
 
     setPhase("brand-kit");
