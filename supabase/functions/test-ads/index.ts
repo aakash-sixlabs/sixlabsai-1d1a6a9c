@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
   try {
     const prodAdmin = createClient(
-      getProdSupabaseUrl(),
+      TEST_REPLACEMENT,
       Deno.env.get('PROD_SUPABASE_SERVICE_ROLE_KEY')!
     )
     const admin = createClient(
