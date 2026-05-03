@@ -1,6 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getUserAccountId } from "../_shared/account.ts";
-import { getProdSupabaseUrl } from "../_shared/supabase-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,8 +43,8 @@ Deno.serve(async (req) => {
       const META_APP_SECRET = Deno.env.get("META_APP_SECRET")!;
 
       const adminClient = createClient(
-        getProdSupabaseUrl(),
-        Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
       );
 
       // Exchange code for short-lived token

@@ -118,8 +118,8 @@ Deno.serve(async (req) => {
 
     // Admin client for DB operations (bypasses RLS, hits prod DB).
     const admin = createClient(
-      (Deno.env.get("PROD_SUPABASE_URL") ?? "").replace(/\/$/, ""),
-      Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
+      (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""),
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const token = authHeader.replace("Bearer ", "");
