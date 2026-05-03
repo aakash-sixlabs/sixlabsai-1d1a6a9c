@@ -229,6 +229,15 @@ const OnboardingV2 = () => {
           if (job.current_step) setCurrentStep(job.current_step);
           if (job.status === "completed") {
             updateState({ syncComplete: true });
+            // Safety net: also flip the flag from the client in case the edge
+            // function update didn't land. /home gating relies on this.
+            if (selected) {
+              supabase
+                .from("ad_accounts")
+                .update({ onboarding_completed: true })
+                .eq("id", selected)
+                .then(() => {});
+            }
             setPhase("add-icp");
           }
           if (job.status === "failed")
