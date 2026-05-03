@@ -111,6 +111,37 @@ function normalizeKit(raw: any): ExtractedKit {
   };
 }
 
+function cirkulStubKit(): ExtractedKit {
+  return normalizeKit({
+    brand_name: "Cirkul",
+    tagline: "Drink More Water. Enjoy Every Sip.",
+    website_url: "https://drinkcirkul.com",
+    logo_url: "https://www.google.com/s2/favicons?domain=drinkcirkul.com&sz=128",
+    favicon_url: "https://www.google.com/s2/favicons?domain=drinkcirkul.com&sz=64",
+    screenshot_url: null,
+    colors: {
+      primary: "#00B4E4",
+      secondary: "#0A2540",
+      accent: "#FF6B35",
+      background: "#FFFFFF",
+      text_primary: "#0A2540",
+      text_secondary: "#4A5A6A",
+    },
+    fonts: { primary: "Inter", heading: "Inter", all: ["Inter"] },
+    tone_of_voice: "energetic, friendly, health-forward",
+    product_categories: ["hydration", "flavor cartridges", "water bottles"],
+    target_audience:
+      "Health-conscious consumers, athletes, and busy professionals who want to drink more water with great-tasting, customizable flavors.",
+    value_propositions: [
+      "Personalized flavor and caffeine dial",
+      "Helps you drink more water effortlessly",
+      "Zero sugar options with vitamins and electrolytes",
+    ],
+    raw: { stub: "cirkul" },
+    warnings: [],
+  });
+}
+
 function devStubKit(brandName?: string): ExtractedKit {
   const name = brandName || "Acme Co";
   return normalizeKit({
