@@ -149,10 +149,10 @@ Deno.serve(async (req) => {
     }
 
     // Resolve Lovable tenant account_id (RLS requires it)
-    const tenantAccountId = await getUserAccountId(supabase, userId);
+    const tenantAccountId = await getUserAccountId(admin, userId);
 
     // 1. Mark as processing (upsert preserves any pre-existing fields like industry / facebook_page_id)
-    await supabase
+    await admin
       .from("ad_account_profiles")
       .upsert(
         {
@@ -169,7 +169,7 @@ Deno.serve(async (req) => {
     const kit = stubBrandKit(body.websiteUrl, body.brandName ?? null);
 
     // 3. Persist the derived fields
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await admin
       .from("ad_account_profiles")
       .update({
         brand_name: kit.brand_name,
@@ -189,7 +189,7 @@ Deno.serve(async (req) => {
       .eq("user_id", userId);
 
     if (updateErr) {
-      await supabase
+      await admin
         .from("ad_account_profiles")
         .update({ brand_kit_status: "failed" })
         .eq("ad_account_id", body.adAccountId)
