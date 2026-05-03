@@ -111,6 +111,7 @@ Deno.serve(async (req) => {
 
     // STEP 6 — Build rows and upsert
     const rows = results.map((c: any) => ({
+      account_id: accountId,
       user_id: userId,
       ad_account_id: adAccountId,
       meta_campaign_id: c.id,
