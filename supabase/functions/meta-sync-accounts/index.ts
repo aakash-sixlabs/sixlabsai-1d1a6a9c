@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
     // JWT issued by Lovable Cloud → validate against Lovable Cloud auth.
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
+      (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""),
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
