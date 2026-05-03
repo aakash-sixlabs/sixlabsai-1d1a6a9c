@@ -151,7 +151,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await admin
       .from('ad_sets')
       .upsert(rows, {
-        onConflict: 'campaign_id,meta_adset_id',
+        onConflict: 'meta_adset_id',
         ignoreDuplicates: false
       })
 
