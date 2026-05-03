@@ -153,9 +153,10 @@ Deno.serve(async (req) => {
   if (!authHeader?.startsWith("Bearer ")) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
+  // JWT was issued by Lovable Cloud auth → validate against Lovable Cloud.
   const supabase = createClient(
-    Deno.env.get("PROD_SUPABASE_URL")!,
-    Deno.env.get("PROD_SUPABASE_ANON_KEY")!,
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
   const { data: userData, error: userErr } = await supabase.auth.getUser(
