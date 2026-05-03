@@ -127,6 +127,7 @@ Deno.serve(async (req) => {
         const spend = parseFloat(r.spend ?? '0')
 
         return {
+          account_id: accountId,
           user_id: userId,
           ad_id: adMap[r.ad_id],
           date: r.date_start,
