@@ -181,6 +181,7 @@ Deno.serve(async (req) => {
     const rows = results
       .filter((a: any) => adSetMap[a.adset_id])
       .map((a: any) => ({
+        account_id: accountId,
         user_id: userId,
         ad_set_id: adSetMap[a.adset_id],
         meta_ad_id: a.id,
@@ -195,7 +196,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await admin
       .from('ads')
       .upsert(rows, {
-        onConflict: 'user_id,meta_ad_id',
+        onConflict: 'ad_set_id,meta_ad_id',
         ignoreDuplicates: false
       })
 
