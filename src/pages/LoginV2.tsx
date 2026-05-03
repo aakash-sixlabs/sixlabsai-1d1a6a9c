@@ -124,7 +124,6 @@ const LoginV2 = () => {
 
   /* ── After Meta auth: fetch ad accounts from DB ──────────── */
   const loadAccountsAndContinue = async () => {
-    setConnecting(false);
     setPhase("select-account");
     try {
       const { data, error } = await supabase
