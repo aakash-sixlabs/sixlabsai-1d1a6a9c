@@ -9,11 +9,9 @@ const PROD_SUPABASE_URL = "https://jkzbuypbhqbssmqjpdtj.supabase.co";
 const PROD_SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpremJ1eXBiaHFic3NtcWpwZHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NzI0MjUsImV4cCI6MjA4OTI0ODQyNX0.u0Kk3br2iq71ESnN_ipmwe2_KqpvsBlUqSlvbQMTSA4";
 
-// Edge functions live on the Lovable Cloud project (this is fixed by the
-// platform). They authenticate the prod JWT manually using the prod admin
-// client built from PROD_SUPABASE_* secrets.
-const FUNCTIONS_URL =
-  "https://bhcusyaonpevmwaruvlx.supabase.co/functions/v1";
+// Edge functions are invoked on the prod Supabase project (same host as
+// auth/DB), so JWTs validate natively and no functionsUrl override is needed.
+const FUNCTIONS_URL = `${PROD_SUPABASE_URL}/functions/v1`;
 
 export const supabase = createClient<Database>(
   PROD_SUPABASE_URL,
@@ -24,16 +22,8 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
     },
-    global: {},
   },
 );
-
-// Override the functions endpoint so invoke() hits Lovable Cloud, not prod.
-// `supabase.functions` is a getter that constructs a new FunctionsClient from
-// `this.functionsUrl` on every access, so we must override `functionsUrl`
-// itself — mutating `supabase.functions.url` only affects a throwaway instance.
-// @ts-expect-error — internal but stable across supabase-js v2.
-supabase.functionsUrl = new URL(FUNCTIONS_URL);
 
 export const SUPABASE_URL = PROD_SUPABASE_URL;
 export const SUPABASE_PUBLISHABLE_KEY = PROD_SUPABASE_ANON_KEY;
