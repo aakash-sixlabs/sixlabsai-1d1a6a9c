@@ -202,6 +202,7 @@ export const LandingStep = () => {
 
   const handleConnectMeta = async () => {
     setConnecting(true);
+    sessionStorage.setItem("auth_flow_version", "v2");
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
       const { data, error } = await supabase.functions.invoke("meta-oauth?action=get-auth-url", { body: { redirectUri } });
