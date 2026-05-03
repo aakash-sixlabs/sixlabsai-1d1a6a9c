@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
     const since = cutoffDate.toISOString().split('T')[0]
     const until = new Date().toISOString().split('T')[0]
 
-    const { data: adAccount, error: adAccountErr } = await admin
+    const { data: adAccount, error: adAccountErr } = await prodAdmin
       .from('ad_accounts')
       .select('account_id, user_id, account_id_meta')
       .eq('id', adAccountId)
@@ -65,6 +65,7 @@ Deno.serve(async (req) => {
       ? adAccount.account_id_meta
       : `act_${adAccount.account_id_meta}`
     const userId = adAccount.user_id
+    const accountId = adAccount.account_id
 
     // STEP 1 — Pull ALL ACTIVE ad sets
     const activeAdSets = await fetchAllPages(
