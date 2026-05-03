@@ -290,14 +290,30 @@ export default function DebugSyncPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ad Account ID (Supabase UUID)
+              Ad Account (from ad_accounts table)
             </label>
-            <input
+            <select
               value={adAccountId}
               onChange={(e) => setAdAccountId(e.target.value)}
-              placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
+              disabled={loadingAccounts}
+              className="w-full border rounded px-3 py-2 text-sm bg-white"
+            >
+              <option value="">
+                {loadingAccounts
+                  ? 'Loading ad accounts…'
+                  : adAccountOptions.length === 0
+                  ? 'No ad accounts found'
+                  : 'Select an ad account…'}
+              </option>
+              {adAccountOptions.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.account_name} — {acc.account_id_meta} ({acc.id.slice(0, 8)}…)
+                </option>
+              ))}
+            </select>
+            {adAccountId && (
+              <p className="text-xs text-gray-500 mt-1 font-mono">UUID: {adAccountId}</p>
+            )}
           </div>
 
           <div>
