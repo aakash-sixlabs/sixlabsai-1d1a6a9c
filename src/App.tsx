@@ -23,6 +23,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DebugSyncPage from "./pages/DebugSyncPage";
 import GenerationDetail from "./pages/GenerationDetail";
 import OnboardingV1Live from "./pages/OnboardingV1Live";
+import LoginV2 from "./pages/LoginV2";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/debug-sync" element={<DebugSyncPage />} />
             <Route path="/onboardingv1" element={<OnboardingV1Live />} />
+            <Route path="/loginv2" element={<LoginV2 />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
