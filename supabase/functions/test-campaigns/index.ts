@@ -30,7 +30,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = createClient(getProdSupabaseUrl(), Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!);
+    const prodAdmin = createClient(getProdSupabaseUrl(), Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!);
+    const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const { adAccountId, accessToken, dateRangeDays = 90 } = await req.json();
 
@@ -40,7 +41,7 @@ Deno.serve(async (req) => {
     const until = new Date().toISOString().split("T")[0];
 
     // Get user_id and meta account id
-    const { data: adAccount, error: adAccountErr } = await admin
+    const { data: adAccount, error: adAccountErr } = await prodAdmin
       .from("ad_accounts")
       .select("account_id, user_id, account_id_meta")
       .eq("id", adAccountId)
@@ -61,6 +62,7 @@ Deno.serve(async (req) => {
       ? adAccount.account_id_meta
       : `act_${adAccount.account_id_meta}`;
     const userId = adAccount.user_id;
+    const accountId = adAccount.account_id;
 
     // STEP 1 — Pull ALL ACTIVE campaigns
     const activeCampaigns = await fetchAllPages(
@@ -109,6 +111,7 @@ Deno.serve(async (req) => {
 
     // STEP 6 — Build rows and upsert
     const rows = results.map((c: any) => ({
+      account_id: accountId,
       user_id: userId,
       ad_account_id: adAccountId,
       meta_campaign_id: c.id,

@@ -15,14 +15,18 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = createClient(
+    const prodAdmin = createClient(
       getProdSupabaseUrl(),
       Deno.env.get('PROD_SUPABASE_SERVICE_ROLE_KEY')!
+    )
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
     const { adAccountId, accessToken } = await req.json()
 
-    const { data: adAccount, error: adAccountErr } = await admin
+    const { data: adAccount, error: adAccountErr } = await prodAdmin
       .from('ad_accounts')
       .select('account_id, user_id, account_id_meta')
       .eq('id', adAccountId)
@@ -39,6 +43,7 @@ Deno.serve(async (req) => {
       ? adAccount.account_id_meta
       : `act_${adAccount.account_id_meta}`
     const userId = adAccount.user_id
+    const accountId = adAccount.account_id
 
     const { data: adsData } = await admin
       .from('ads')
@@ -218,6 +223,7 @@ Deno.serve(async (req) => {
           null
 
         return {
+          account_id: accountId,
           user_id: userId,
           ad_id: adMap[c.id],
           meta_creative_id: c.id,
@@ -281,7 +287,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await admin
       .from('ad_creatives')
       .upsert(rows, {
-        onConflict: 'user_id,meta_creative_id',
+        onConflict: 'ad_id,meta_creative_id',
         ignoreDuplicates: false
       })
 

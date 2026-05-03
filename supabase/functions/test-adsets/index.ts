@@ -32,9 +32,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = createClient(
+    const prodAdmin = createClient(
       getProdSupabaseUrl(),
       Deno.env.get('PROD_SUPABASE_SERVICE_ROLE_KEY')!
+    )
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     )
 
     const { adAccountId, accessToken, dateRangeDays = 90 } = await req.json()
@@ -44,7 +48,7 @@ Deno.serve(async (req) => {
     const since = cutoffDate.toISOString().split('T')[0]
     const until = new Date().toISOString().split('T')[0]
 
-    const { data: adAccount, error: adAccountErr } = await admin
+    const { data: adAccount, error: adAccountErr } = await prodAdmin
       .from('ad_accounts')
       .select('account_id, user_id, account_id_meta')
       .eq('id', adAccountId)
@@ -61,6 +65,7 @@ Deno.serve(async (req) => {
       ? adAccount.account_id_meta
       : `act_${adAccount.account_id_meta}`
     const userId = adAccount.user_id
+    const accountId = adAccount.account_id
 
     // STEP 1 — Pull ALL ACTIVE ad sets
     const activeAdSets = await fetchAllPages(
@@ -126,6 +131,7 @@ Deno.serve(async (req) => {
     const filteredResults = results.filter((s: any) => campaignMap[s.campaign_id])
 
     const rows = filteredResults.map((s: any) => ({
+      account_id: accountId,
       user_id: userId,
       campaign_id: campaignMap[s.campaign_id],
       meta_adset_id: s.id,
@@ -145,7 +151,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await admin
       .from('ad_sets')
       .upsert(rows, {
-        onConflict: 'user_id,meta_adset_id',
+        onConflict: 'campaign_id,meta_adset_id',
         ignoreDuplicates: false
       })
 
