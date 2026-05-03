@@ -413,32 +413,48 @@ export const BrandKitStep = ({
       }
 
       const lovableAccountId = await getCurrentAccountId();
-      const { error: upsertErr } = await supabase
-        .from("ad_account_profiles")
-        .upsert(
-          {
-            account_id: lovableAccountId,
-            ad_account_id: adAccountId,
-            user_id: user.id,
-            brand_name: edits.brand_name || null,
-            logo_url: edits.logo_url || null,
-            primary_color: edits.primary_color,
-            secondary_color: edits.secondary_color,
-            accent_color: edits.accent_color,
-            font_family: edits.body_font,
-            tagline: edits.tagline || null,
-            tone_of_voice: kit.tone_of_voice, // hidden from UI, still saved
-            product_categories: kit.product_categories, // hidden from UI, still saved
-            website_url: kit.website_url,
-            brand_kit: brandKitJson,
-            brand_kit_status: "completed",
-            brand_kit_updated_at: new Date().toISOString(),
-            confirmed: true,
-          },
-          { onConflict: "user_id,ad_account_id" },
-        );
+      const payload = {
+        account_id: lovableAccountId,
+        ad_account_id: adAccountId,
+        user_id: user.id,
+        brand_name: edits.brand_name || null,
+        logo_url: edits.logo_url || null,
+        primary_color: edits.primary_color,
+        secondary_color: edits.secondary_color,
+        accent_color: edits.accent_color,
+        font_family: edits.body_font,
+        tagline: edits.tagline || null,
+        tone_of_voice: kit.tone_of_voice,
+        product_categories: kit.product_categories,
+        website_url: kit.website_url,
+        brand_kit: brandKitJson,
+        brand_kit_status: "completed" as const,
+        brand_kit_updated_at: new Date().toISOString(),
+        confirmed: true,
+      };
 
-      if (upsertErr) throw upsertErr;
+      // Manual upsert — prod DB may not have the (user_id, ad_account_id) unique
+      // constraint, so we can't rely on PostgREST onConflict.
+      const { data: existing, error: selectErr } = await supabase
+        .from("ad_account_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("ad_account_id", adAccountId)
+        .maybeSingle();
+      if (selectErr) throw selectErr;
+
+      if (existing?.id) {
+        const { error: updateErr } = await supabase
+          .from("ad_account_profiles")
+          .update(payload)
+          .eq("id", existing.id);
+        if (updateErr) throw updateErr;
+      } else {
+        const { error: insertErr } = await supabase
+          .from("ad_account_profiles")
+          .insert(payload);
+        if (insertErr) throw insertErr;
+      }
       toast.success("Brand kit saved!");
       onComplete();
     } catch (err: any) {
