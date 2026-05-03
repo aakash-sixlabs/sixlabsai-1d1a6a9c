@@ -168,15 +168,24 @@ const OnboardingV2 = () => {
       dateRange: "90",
     });
 
-    const { data: accountProfile } = await supabase
-      .from("ad_account_profiles")
-      .select("brand_kit_status, confirmed")
-      .eq("ad_account_id", account.id)
-      .maybeSingle();
-
-    if (accountProfile?.brand_kit_status === "completed" || accountProfile?.confirmed) {
-      navigate("/home", { replace: true });
-      return;
+    // Re-evaluate the full onboarding state for this account so we resume
+    // from the first incomplete step instead of jumping straight to /home.
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const onboarding = await getOnboardingState(user.id);
+      if (onboarding.complete) {
+        navigate("/home", { replace: true });
+        return;
+      }
+      if (onboarding.resumePhase === "add-icp") {
+        setPhase("add-icp");
+        return;
+      }
+      if (onboarding.resumePhase === "pulling") {
+        setPhase("pulling");
+        setTimeout(() => startPull(), 0);
+        return;
+      }
     }
 
     setPhase("brand-kit");
