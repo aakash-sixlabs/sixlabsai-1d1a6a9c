@@ -23,12 +23,23 @@ export const getOnboardingState = async (
 ): Promise<OnboardingState> => {
   // Source of truth for "is onboarding done?" → ad_accounts.onboarding_completed.
   // We still compute resumePhase so OnboardingV2 knows which step to show.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("default_ad_account_id")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const defaultId = profile?.default_ad_account_id ?? null;
+
   const { data: allAccounts } = await supabase
     .from("ad_accounts")
     .select("id, account_name, account_id_meta, onboarding_completed, created_at")
+    .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  const completedAcct = (allAccounts || []).find((a: any) => a.onboarding_completed);
+  const completedAcct = (allAccounts || []).find(
+    (a: any) => a.onboarding_completed && (!defaultId || a.id === defaultId),
+  );
   if (completedAcct) {
     return {
       complete: true,
@@ -39,13 +50,6 @@ export const getOnboardingState = async (
     };
   }
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("default_ad_account_id")
-    .eq("id", userId)
-    .maybeSingle();
-
-  const defaultId = profile?.default_ad_account_id ?? null;
   const acct =
     (allAccounts || []).find((a: any) => a.id === defaultId) ||
     (allAccounts || [])[0] ||

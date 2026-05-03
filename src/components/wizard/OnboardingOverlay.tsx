@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/prod/client";
 import { toast } from "sonner";
 import { useWizard } from "@/context/WizardContext";
+import { getOnboardingState } from "@/lib/onboardingState";
 
 /* ─── Profile completion overlay ─── */
 
@@ -226,19 +227,13 @@ export const AccountSelectOverlay = ({
     });
 
     if (skipCompletedAccountSetup && onReturningAccountSelected) {
-      const { data: accountProfile } = await supabase
-        .from("ad_account_profiles")
-        .select("brand_kit_status, confirmed")
-        .eq("ad_account_id", account.id)
-        .maybeSingle();
-
-      if (
-        previousDefaultAccountId === account.id ||
-        accountProfile?.brand_kit_status === "completed" ||
-        accountProfile?.confirmed
-      ) {
-        onReturningAccountSelected();
-        return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const onboarding = await getOnboardingState(user.id);
+        if (previousDefaultAccountId === account.id && onboarding.complete) {
+          onReturningAccountSelected();
+          return;
+        }
       }
     }
 

@@ -96,13 +96,19 @@ export const DataSyncStep = ({
     let syncJobId: string | null = null;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-    const handleJobUpdate = (job: any) => {
+    const handleJobUpdate = async (job: any) => {
       if (!job) return;
       if (job.current_step) setCurrentStep(job.current_step);
       if (job.status === "completed") {
         setIsComplete(true);
         updateState({ syncComplete: true });
         if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+        if (state.selectedAccount) {
+          await supabase
+            .from("ad_accounts")
+            .update({ onboarding_completed: true })
+            .eq("id", state.selectedAccount);
+        }
         setTimeout(() => handleComplete(), 1000);
       }
       if (job.status === "failed" || job.status === "error") {
@@ -119,7 +125,7 @@ export const DataSyncStep = ({
           .select("status, current_step, error_message")
           .eq("id", jobId)
           .maybeSingle();
-        if (data) handleJobUpdate(data);
+        if (data) void handleJobUpdate(data);
       }, 3000);
     };
 
@@ -143,7 +149,7 @@ export const DataSyncStep = ({
     const channel = supabase
       .channel("sync-progress")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "sync_jobs" }, (payload) => {
-        handleJobUpdate(payload.new);
+        void handleJobUpdate(payload.new);
       })
       .subscribe();
 
