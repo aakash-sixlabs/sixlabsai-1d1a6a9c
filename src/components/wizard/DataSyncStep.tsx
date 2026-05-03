@@ -3,7 +3,7 @@ import { useWizard } from "@/context/WizardContext";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Check, Loader2, AlertCircle, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 

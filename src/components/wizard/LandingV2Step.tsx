@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Loader2, Zap, Bug, KeyRound } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWizard } from "@/context/WizardContext";
 import metaLogo from "@/assets/meta-logo.png";

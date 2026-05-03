@@ -14,7 +14,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Users, Plus, Trash2, ArrowRight, Loader2, SkipForward } from "lucide-react";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 import { getCurrentUserAndAccount } from "@/lib/accountContext";
 import { toast } from "sonner";
 

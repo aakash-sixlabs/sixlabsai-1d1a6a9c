@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdAccountProfileDialog } from "./AdAccountProfileDialog";

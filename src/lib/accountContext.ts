@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Returns the current user's primary Lovable account_id (the multi-tenant

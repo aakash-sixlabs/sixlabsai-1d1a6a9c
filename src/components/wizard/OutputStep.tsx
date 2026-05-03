@@ -5,7 +5,7 @@ import { Download, RefreshCw, ChevronLeft, ChevronRight, ImageOff, ThumbsUp, Thu
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface GeneratedCreative {

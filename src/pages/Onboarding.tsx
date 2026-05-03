@@ -7,7 +7,7 @@ import { ToolExplanationOverlay } from "@/components/wizard/ToolExplanationOverl
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 import { getOnboardingState } from "@/lib/onboardingState";
 
 type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "add-icp" | "data-sync";

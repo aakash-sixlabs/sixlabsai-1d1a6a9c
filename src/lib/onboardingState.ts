@@ -1,7 +1,7 @@
 // Single source of truth for onboarding completion.
 // The flow is: pick ad account → confirm brand kit → add ICPs → run data sync.
 // Until ALL four are satisfied we keep the user inside /onboarding-v2.
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export type OnboardingResumePhase =
   | "select-account" // no default ad account chosen
