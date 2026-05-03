@@ -637,17 +637,6 @@ function fallbackKit(website: string): BrandKit {
   };
 }
 
-const PhaseShell = ({ children }: { children: React.ReactNode }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -12 }}
-    transition={{ duration: 0.25 }}
-    className="min-h-screen flex items-center justify-center px-4 py-10"
-  >
-    {children}
-  </motion.div>
-);
 
 const ExplainerTile = ({
   icon,
