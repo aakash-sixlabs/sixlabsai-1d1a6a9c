@@ -7,6 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LandingV2Step } from "@/components/wizard/LandingV2Step";
+import { DashboardBackground } from "@/components/wizard/DashboardBackground";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Building2,
@@ -20,6 +28,7 @@ import {
   Rocket,
   Wand2,
   BarChart3,
+  Star,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────────── */
