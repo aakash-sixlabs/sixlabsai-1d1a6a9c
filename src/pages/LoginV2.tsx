@@ -87,7 +87,7 @@ const LoginV2 = () => {
   const [brandStepIdx, setBrandStepIdx] = useState(0);
   const [adsStepIdx, setAdsStepIdx] = useState(0);
 
-  /* ── On mount: check session / handle ?meta=connected return ── */
+  /* ── On mount: handle ?meta=connected return ─────────────── */
   useEffect(() => {
     sessionStorage.setItem("auth_flow_version", "v2new");
 
@@ -96,19 +96,13 @@ const LoginV2 = () => {
         data: { session },
       } = await supabase.auth.getSession();
 
-      if (!session) {
-        setPhase("auth");
-        return;
-      }
-
       // Returning from Meta OAuth fallback redirect
-      if (searchParams.get("meta") === "connected") {
+      if (session && searchParams.get("meta") === "connected") {
         await loadAccountsAndContinue();
         return;
       }
 
-      // Already authed but no Meta yet
-      setPhase("connect-meta");
+      setPhase("landing");
     };
     init();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,71 +116,11 @@ const LoginV2 = () => {
         const conn = event.data.connectionData;
         sessionStorage.setItem("meta_connection", JSON.stringify(conn));
         loadAccountsAndContinue();
-      } else if (event.data?.type === "META_AUTH_ERROR") {
-        toast.error(event.data.error || "Meta connection failed");
-        setConnecting(false);
       }
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
   }, []);
-
-  /* ── Auth: email/password sign-in (or sign-up if not exists) ── */
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) {
-        // try sign-up as a fallback
-        const { error: signUpErr } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin + "/loginv2" },
-        });
-        if (signUpErr) throw signUpErr;
-        toast.success("Account created — check your email to confirm.");
-        return;
-      }
-      setPhase("connect-meta");
-    } catch (err: any) {
-      toast.error(err.message || "Sign in failed");
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
-  /* ── Meta OAuth ──────────────────────────────────────────── */
-  const handleConnectMeta = async () => {
-    setConnecting(true);
-    try {
-      const redirectUri = `${window.location.origin}/auth/callback`;
-      const { data, error } = await supabase.functions.invoke(
-        "meta-oauth?action=get-auth-url",
-        { body: { redirectUri } }
-      );
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      // Open in popup; fall back to full redirect if blocked
-      const popup = window.open(
-        data.authUrl,
-        "meta-oauth",
-        "width=600,height=720"
-      );
-      if (!popup) {
-        window.location.href = data.authUrl;
-        return;
-      }
-      popupRef.current = popup;
-    } catch (err: any) {
-      toast.error(err.message || "Failed to start Meta connection");
-      setConnecting(false);
-    }
-  };
 
   /* ── After Meta auth: fetch ad accounts from DB ──────────── */
   const loadAccountsAndContinue = async () => {
