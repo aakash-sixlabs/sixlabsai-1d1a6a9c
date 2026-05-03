@@ -37,9 +37,16 @@ Deno.serve(async (req) => {
 
     const { data: adAccount } = await admin
       .from('ad_accounts')
-      .select('account_id, user_id')
+      .select('account_id, user_id, account_id_meta')
       .eq('id', adAccountId)
-      .single()
+      .maybeSingle()
+
+    if (!adAccount) {
+      return new Response(
+        JSON.stringify({ success: false, error: `Ad account ${adAccountId} not found` }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
 
     const metaAccountId = adAccount.account_id_meta.startsWith('act_')
       ? adAccount.account_id_meta
