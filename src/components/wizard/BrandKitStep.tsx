@@ -111,6 +111,37 @@ function normalizeKit(raw: any): ExtractedKit {
   };
 }
 
+function cirkulStubKit(): ExtractedKit {
+  return normalizeKit({
+    brand_name: "Cirkul",
+    tagline: "Drink More Water. Enjoy Every Sip.",
+    website_url: "https://drinkcirkul.com",
+    logo_url: "https://www.google.com/s2/favicons?domain=drinkcirkul.com&sz=128",
+    favicon_url: "https://www.google.com/s2/favicons?domain=drinkcirkul.com&sz=64",
+    screenshot_url: null,
+    colors: {
+      primary: "#00B4E4",
+      secondary: "#0A2540",
+      accent: "#FF6B35",
+      background: "#FFFFFF",
+      text_primary: "#0A2540",
+      text_secondary: "#4A5A6A",
+    },
+    fonts: { primary: "Inter", heading: "Inter", all: ["Inter"] },
+    tone_of_voice: "energetic, friendly, health-forward",
+    product_categories: ["hydration", "flavor cartridges", "water bottles"],
+    target_audience:
+      "Health-conscious consumers, athletes, and busy professionals who want to drink more water with great-tasting, customizable flavors.",
+    value_propositions: [
+      "Personalized flavor and caffeine dial",
+      "Helps you drink more water effortlessly",
+      "Zero sugar options with vitamins and electrolytes",
+    ],
+    raw: { stub: "cirkul" },
+    warnings: [],
+  });
+}
+
 function devStubKit(brandName?: string): ExtractedKit {
   const name = brandName || "Acme Co";
   return normalizeKit({
@@ -292,116 +323,22 @@ export const BrandKitStep = ({
     setLogs([]);
     setPhase("building");
 
-    if (isDevMode) {
-      // Simulate streaming logs in dev mode
-      const fake = [
-        "Scanning your website…",
-        "Reading your colors and fonts…",
-        "Analyzing your brand voice…",
-        "Brand kit ready ✓",
-      ];
-      for (const m of fake) {
-        await new Promise((r) => setTimeout(r, 450));
-        setLogs((prev) => [...prev, m]);
-      }
-      const stub = devStubKit(defaultBrandName);
-      setKit(stub);
-      seedEdits(stub);
-      setPhase("preview");
-      return;
+    // STUBBED: skip real extract-brand-kit / Firecrawl call.
+    // Replay friendly logs and hand back hardcoded Drink Cirkul data.
+    const fake = [
+      "Scanning your website…",
+      "Reading your colors and fonts…",
+      "Analyzing your brand voice…",
+      "Brand kit ready ✓",
+    ];
+    for (const m of fake) {
+      await new Promise((r) => setTimeout(r, 450));
+      setLogs((prev) => [...prev, m]);
     }
-
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) throw new Error("Not authenticated");
-
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      const url = `https://bhcusyaonpevmwaruvlx.supabase.co/functions/v1/extract-brand-kit`;
-      // NOTE: apikey header is required by the Lovable Cloud functions gateway,
-      // even when verify_jwt=false. Without it the gateway returns 401 before
-      // our code runs. Use the prod anon key (same key the supabase-js client
-      // uses internally for invoke()).
-      const { SUPABASE_PUBLISHABLE_KEY } = await import("@/integrations/prod/client");
-      const resp = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-          apikey: SUPABASE_PUBLISHABLE_KEY,
-        },
-        body: JSON.stringify({ websiteUrl: trimmed }),
-        signal: controller.signal,
-      });
-
-      if (!resp.ok || !resp.body) {
-        const text = await resp.text().catch(() => "");
-        throw new Error(`Extractor failed [${resp.status}]: ${text.slice(0, 200)}`);
-      }
-
-      const reader = resp.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let currentEvent: string | null = null;
-      let finished = false;
-
-      while (!finished) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        let nl: number;
-        while ((nl = buffer.indexOf("\n")) !== -1) {
-          let line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-
-          if (line === "") {
-            currentEvent = null;
-            continue;
-          }
-          if (line.startsWith("event: ")) {
-            currentEvent = line.slice(7).trim();
-            continue;
-          }
-          if (line.startsWith("data: ")) {
-            const payload = line.slice(6);
-            try {
-              const data = JSON.parse(payload);
-              if (currentEvent === "log") {
-                const friendly = friendlyLog(String(data?.message ?? ""));
-                setLogs((prev) => [...prev, friendly]);
-                console.debug("[brand-kit log]", data);
-              } else if (currentEvent === "result") {
-                const normalized = normalizeKit(data);
-                setKit(normalized);
-                seedEdits(normalized);
-                setPhase("preview");
-                finished = true;
-                break;
-              } else if (currentEvent === "error") {
-                throw new Error(data?.error || "Extractor error");
-              }
-            } catch (parseErr) {
-              if (currentEvent === "error") throw parseErr;
-              // partial JSON — re-buffer
-              buffer = line + "\n" + buffer;
-              break;
-            }
-          }
-        }
-      }
-
-      if (!finished) throw new Error("Stream ended before result was received.");
-    } catch (err: any) {
-      if (err?.name === "AbortError") return;
-      console.error("Brand kit extraction error:", err);
-      setError(err?.message || "Failed to build brand kit.");
-      setPhase("input");
-    }
+    const stub = isDevMode ? devStubKit(defaultBrandName) : cirkulStubKit();
+    setKit(stub);
+    seedEdits(stub);
+    setPhase("preview");
   };
 
   const handleConfirm = async () => {
