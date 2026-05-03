@@ -23,6 +23,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import DebugSyncPage from "./pages/DebugSyncPage";
 import GenerationDetail from "./pages/GenerationDetail";
 import OnboardingV1Live from "./pages/OnboardingV1Live";
+import LoginV2 from "./pages/LoginV2";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
