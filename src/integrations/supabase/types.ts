@@ -192,6 +192,7 @@ export type Database = {
           created_at: string
           currency: string | null
           id: string
+          onboarding_completed: boolean
           timezone: string | null
           updated_at: string
           user_id: string
@@ -205,6 +206,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           id?: string
+          onboarding_completed?: boolean
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -218,6 +220,7 @@ export type Database = {
           created_at?: string
           currency?: string | null
           id?: string
+          onboarding_completed?: boolean
           timezone?: string | null
           updated_at?: string
           user_id?: string
