@@ -129,6 +129,25 @@ export default function DebugSyncPage() {
   const [adAccountId, setAdAccountId] = useState('')
   const [accessToken, setAccessToken] = useState('')
   const [showToken, setShowToken] = useState(false)
+  const [adAccountOptions, setAdAccountOptions] = useState<AdAccountOption[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ad_accounts')
+          .select('id, account_name, account_id_meta, account_id')
+          .order('created_at', { ascending: false })
+        if (error) throw error
+        setAdAccountOptions((data ?? []) as AdAccountOption[])
+      } catch (e) {
+        console.error('Failed to load ad accounts', e)
+      } finally {
+        setLoadingAccounts(false)
+      }
+    })()
+  }, [])
 
   const [campaignState, setCampaignState] = useState<CardState>(initialState)
   const [adSetState, setAdSetState] = useState<CardState>(initialState)
