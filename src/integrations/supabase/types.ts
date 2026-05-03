@@ -317,13 +317,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ad_creatives_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ad_creatives_ad_id_fkey"
             columns: ["ad_id"]
             isOneToOne: false
@@ -413,13 +406,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ad_performance_daily_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ad_performance_daily_ad_id_fkey"
             columns: ["ad_id"]
             isOneToOne: false
@@ -488,13 +474,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ad_sets_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "ad_sets_campaign_id_fkey"
             columns: ["campaign_id"]
             isOneToOne: false
@@ -550,13 +529,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "ads_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "ads_ad_set_id_fkey"
             columns: ["ad_set_id"]
@@ -794,22 +766,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "campaigns_account_id_fkey"
-            columns: ["account_id"]
-            isOneToOne: false
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "campaigns_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       competitor_ads: {
         Row: {
