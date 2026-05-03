@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
     const { adAccountId, accessToken } = await req.json()
 
-    const { data: adAccount, error: adAccountErr } = await admin
+    const { data: adAccount, error: adAccountErr } = await prodAdmin
       .from('ad_accounts')
       .select('account_id, user_id, account_id_meta')
       .eq('id', adAccountId)
@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
       ? adAccount.account_id_meta
       : `act_${adAccount.account_id_meta}`
     const userId = adAccount.user_id
+    const accountId = adAccount.account_id
 
     const { data: adsData } = await admin
       .from('ads')
