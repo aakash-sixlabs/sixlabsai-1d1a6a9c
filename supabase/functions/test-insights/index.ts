@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getProdSupabaseUrl } from '../_shared/supabase-url.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,21 +30,21 @@ Deno.serve(async (req) => {
 
   try {
     const admin = createClient(
-      Deno.env.get('PROD_SUPABASE_URL')!,
+      getProdSupabaseUrl(),
       Deno.env.get('PROD_SUPABASE_SERVICE_ROLE_KEY')!
     )
 
     const { adAccountId, accessToken } = await req.json()
 
-    const { data: adAccount } = await admin
+    const { data: adAccount, error: adAccountErr } = await admin
       .from('ad_accounts')
       .select('account_id, user_id, account_id_meta')
       .eq('id', adAccountId)
       .maybeSingle()
 
-    if (!adAccount) {
+    if (adAccountErr || !adAccount) {
       return new Response(
-        JSON.stringify({ success: false, error: `Ad account ${adAccountId} not found` }),
+        JSON.stringify({ success: false, error: `Ad account ${adAccountId} not found`, db_error: adAccountErr?.message ?? null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
