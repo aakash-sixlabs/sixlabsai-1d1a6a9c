@@ -52,9 +52,12 @@ const MetaCallback = () => {
           return;
         }
 
-        // Fallback: direct navigation (if popup was blocked)
+        // Fallback: direct navigation (if popup was blocked).
+        // Honor the auth flow version set by the originating login page.
         sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
-        navigate("/onboarding-v2?meta=connected");
+        const flowVersion = sessionStorage.getItem("auth_flow_version");
+        const dest = flowVersion === "v1" ? "/onboarding?meta=connected" : "/onboarding-v2?meta=connected";
+        navigate(dest);
       } catch (err: any) {
         console.error("Token exchange error:", err);
         handleError(err.message || "Failed to connect Meta account.");
