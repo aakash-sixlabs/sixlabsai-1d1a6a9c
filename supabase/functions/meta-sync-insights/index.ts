@@ -262,6 +262,13 @@ Deno.serve(async (req) => {
           cursor_date: null,
           updated_at: new Date().toISOString(),
         }).eq("id", syncId!);
+
+        // Mark the ad account as fully onboarded — this is the single flag
+        // the frontend uses to gate access to /home.
+        await admin
+          .from("ad_accounts")
+          .update({ onboarding_completed: true, updated_at: new Date().toISOString() })
+          .eq("id", adAccountId);
       } catch (err: any) {
         console.error("meta-sync-insights error:", err);
         await failJob(err?.message || "Insights phase failed");
