@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface GenerationNotification {
   id: string; // job id

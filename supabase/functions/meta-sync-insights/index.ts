@@ -4,7 +4,6 @@
 // Self-chains via sync_jobs.cursor_date when approaching wall limit.
 // On final day → REFRESH MATERIALIZED VIEW campaign_ad_data, mark complete.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getProdSupabaseUrl } from "../_shared/supabase-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,8 +58,8 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(
-    getProdSupabaseUrl(),
-    Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   let syncId: string | null = null;
@@ -143,7 +142,7 @@ Deno.serve(async (req) => {
             }).eq("id", syncId!);
 
             const functionsHost = Deno.env.get("SUPABASE_URL")!;
-            const serviceKey = Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!;
+            const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
             await fetch(`${functionsHost}/functions/v1/meta-sync-insights`, {
               method: "POST",
               headers: {

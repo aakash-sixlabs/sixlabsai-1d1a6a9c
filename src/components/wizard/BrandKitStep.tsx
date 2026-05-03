@@ -23,7 +23,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { supabase } from "@/integrations/prod/client";
+import { supabase } from "@/integrations/supabase/client";
 import { getCurrentAccountId } from "@/lib/accountContext";
 import { toast } from "sonner";
 

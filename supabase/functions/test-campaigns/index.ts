@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getProdSupabaseUrl } from "../_shared/supabase-url.ts";
 
 const TEST_MAX_RECORDS = 200;
 
@@ -30,7 +29,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const prodAdmin = createClient(getProdSupabaseUrl(), Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!);
+    const prodAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
     const { adAccountId, accessToken, dateRangeDays = 90 } = await req.json();

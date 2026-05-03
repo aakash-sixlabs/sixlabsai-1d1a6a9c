@@ -4,7 +4,6 @@
 // Chains to meta-sync-creatives.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getUserAccountId } from "../_shared/account.ts";
-import { getProdSupabaseUrl } from "../_shared/supabase-url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -66,8 +65,8 @@ Deno.serve(async (req) => {
     // JWT is issued by the prod Supabase project (frontend auth lives there),
     // so validate against prod, not Lovable Cloud.
     const supabase = createClient(
-      getProdSupabaseUrl(),
-      Deno.env.get("PROD_SUPABASE_ANON_KEY")!,
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
 
@@ -83,8 +82,8 @@ Deno.serve(async (req) => {
     const { adAccountId, dateRangeDays } = await req.json();
 
     const admin = createClient(
-      getProdSupabaseUrl(),
-      Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const { data: adAccount } = await admin
@@ -386,9 +385,9 @@ Deno.serve(async (req) => {
         });
 
         // Chain to phase 2 — edge functions live on the Lovable Cloud project,
-        // so call back via SUPABASE_URL (Cloud), not PROD_SUPABASE_URL.
+        // so call back via SUPABASE_URL (Cloud), not SUPABASE_URL.
         const functionsHost = Deno.env.get("SUPABASE_URL")!;
-        const serviceKey = Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         await fetch(`${functionsHost}/functions/v1/meta-sync-creatives`, {
           method: "POST",
           headers: {

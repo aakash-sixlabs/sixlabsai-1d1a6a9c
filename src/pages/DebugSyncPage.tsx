@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { supabase } from '@/integrations/prod/client'
+import { supabase } from '@/integrations/supabase/client'
 import BrandKitTestCard from '@/components/debug/BrandKitTestCard'
 
 interface AdAccountOption {
