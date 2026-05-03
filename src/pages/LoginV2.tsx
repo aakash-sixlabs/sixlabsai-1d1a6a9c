@@ -1,12 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/prod/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { LandingV2Step } from "@/components/wizard/LandingV2Step";
+import { DashboardBackground } from "@/components/wizard/DashboardBackground";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Building2,
@@ -20,6 +27,7 @@ import {
   Rocket,
   Wand2,
   BarChart3,
+  Star,
 } from "lucide-react";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -222,181 +230,237 @@ const LoginV2 = () => {
   const selectedAccountName =
     accounts.find((a) => a.id === selectedAccountId)?.account_name ?? "";
 
+  // Landing phase: full-screen split layout (matches LoginV1)
+  if (phase === "landing") {
+    return (
+      <div className="min-h-screen bg-background">
+        <LandingV2Step />
+      </div>
+    );
+  }
+
+  // All subsequent phases: dashboard skeleton background + modal dialogs (matches OnboardingV2)
   return (
-    <div className="min-h-screen bg-background">
-      <AnimatePresence mode="wait">
-        {phase === "landing" && (
+    <>
+      <DashboardBackground />
+
+      {/* Phase: Select Account */}
+      <Dialog open={phase === "select-account"} modal>
+        <DialogContent
+          className="sm:max-w-lg [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Star className="w-4 h-4 text-primary" />
+              </div>
+              Select Your Default Ad Account
+            </DialogTitle>
+            <DialogDescription>
+              Choose the primary account you'd like to analyze. You can change this later.
+            </DialogDescription>
+          </DialogHeader>
           <motion.div
-            key="landing"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4 pt-2"
           >
-            <LandingV2Step />
+            {accounts.length === 0 ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {accounts.map((acc) => (
+                  <button
+                    key={acc.id}
+                    onClick={() => setSelectedAccountId(acc.id)}
+                    className={`w-full p-3 rounded-lg border text-left transition-all ${
+                      selectedAccountId === acc.id
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border bg-card hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center">
+                        <Building2 className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-semibold text-sm text-foreground">
+                          {acc.account_name}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {acc.account_id_meta}
+                          {acc.currency ? ` · ${acc.currency}` : ""}
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            <Button
+              className="w-full gap-2"
+              size="lg"
+              disabled={!selectedAccountId}
+              onClick={handleAccountContinue}
+            >
+              Set as Default & Continue <ArrowRight className="w-4 h-4" />
+            </Button>
           </motion.div>
-        )}
+        </DialogContent>
+      </Dialog>
 
-        {phase === "select-account" && (
-          <PhaseShell key="select-account">
-            <Card className="w-full max-w-lg p-8">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="w-5 h-5 text-primary" />
-                <h2 className="text-xl font-bold text-foreground">
-                  Select your default ad account
-                </h2>
+      {/* Phase: Explainer */}
+      <Dialog open={phase === "explainer"} modal>
+        <DialogContent
+          className="sm:max-w-2xl [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Rocket className="w-4 h-4 text-primary" />
               </div>
-              <p className="text-sm text-muted-foreground mb-5">
-                You can change this later in settings.
-              </p>
-              {accounts.length === 0 ? (
-                <div className="py-10 flex flex-col items-center gap-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground">
-                    Loading your ad accounts…
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-72 overflow-y-auto mb-4">
-                  {accounts.map((acc) => (
-                    <button
-                      key={acc.id}
-                      onClick={() => setSelectedAccountId(acc.id)}
-                      className={`w-full p-3 rounded-lg border text-left transition-all ${
-                        selectedAccountId === acc.id
-                          ? "border-primary bg-primary/5 ring-1 ring-primary"
-                          : "border-border hover:border-primary/40"
-                      }`}
-                    >
-                      <div className="font-semibold text-sm text-foreground">
-                        {acc.account_name}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {acc.account_id_meta}
-                        {acc.currency ? ` · ${acc.currency}` : ""}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-              <Button
-                className="w-full gap-2"
-                size="lg"
-                disabled={!selectedAccountId}
-                onClick={handleAccountContinue}
-              >
-                Continue <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Card>
-          </PhaseShell>
-        )}
+              Here's what SixLabs will do for you
+            </DialogTitle>
+            <DialogDescription>
+              Three things, all running in the background.
+            </DialogDescription>
+          </DialogHeader>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-5 pt-2"
+          >
+            <div className="grid sm:grid-cols-3 gap-3">
+              <ExplainerTile
+                icon={<Palette className="w-5 h-5" />}
+                title="Build your brand kit"
+                body="Colors, fonts, voice — pulled straight from your site."
+              />
+              <ExplainerTile
+                icon={<BarChart3 className="w-5 h-5" />}
+                title="Analyze your ads"
+                body="We sync your Meta ads, creatives & performance data."
+              />
+              <ExplainerTile
+                icon={<Wand2 className="w-5 h-5" />}
+                title="Generate winning creatives"
+                body="On-brand ad variations, ready to ship."
+              />
+            </div>
+            <Button
+              size="lg"
+              className="w-full gap-2"
+              onClick={() => setPhase("website-input")}
+            >
+              Let's go <ArrowRight className="w-4 h-4" />
+            </Button>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
 
-        {phase === "explainer" && (
-          <PhaseShell key="explainer">
-            <Card className="w-full max-w-2xl p-10">
-              <div className="text-center mb-8">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Rocket className="w-7 h-7 text-primary" />
-                </div>
-                <h2 className="text-3xl font-bold text-foreground mb-2">
-                  Here's what SixLabs will do for you
-                </h2>
-                <p className="text-muted-foreground">
-                  Three things, all running in the background.
-                </p>
+      {/* Phase: Website Input */}
+      <Dialog open={phase === "website-input"} modal>
+        <DialogContent
+          className="sm:max-w-md [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Globe className="w-4 h-4 text-primary" />
               </div>
-              <div className="grid sm:grid-cols-3 gap-4 mb-8">
-                <ExplainerTile
-                  icon={<Palette className="w-5 h-5" />}
-                  title="Build your brand kit"
-                  body="Colors, fonts, voice — pulled straight from your site."
-                />
-                <ExplainerTile
-                  icon={<BarChart3 className="w-5 h-5" />}
-                  title="Analyze your ads"
-                  body="We sync your Meta ads, creatives & performance data."
-                />
-                <ExplainerTile
-                  icon={<Wand2 className="w-5 h-5" />}
-                  title="Generate winning creatives"
-                  body="On-brand ad variations, ready to ship."
-                />
-              </div>
-              <Button
-                size="lg"
-                className="w-full gap-2"
-                onClick={() => setPhase("website-input")}
-              >
-                Let's go <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Card>
-          </PhaseShell>
-        )}
+              What's your website?
+            </DialogTitle>
+            <DialogDescription>
+              We'll use it to build your brand kit (logo, colors, fonts).
+            </DialogDescription>
+          </DialogHeader>
+          <motion.form
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            onSubmit={(e) => {
+              e.preventDefault();
+              startBrandPull();
+            }}
+            className="space-y-4 pt-2"
+          >
+            <Input
+              placeholder="yourbrand.com"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+              autoFocus
+            />
+            <Button type="submit" className="w-full gap-2" size="lg">
+              Analyze brand <ArrowRight className="w-4 h-4" />
+            </Button>
+          </motion.form>
+        </DialogContent>
+      </Dialog>
 
-        {phase === "website-input" && (
-          <PhaseShell key="website-input">
-            <Card className="w-full max-w-md p-8">
-              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
-                <Globe className="w-6 h-6 text-primary" />
+      {/* Phase: Brand Loading */}
+      <Dialog open={phase === "brand-loading"} modal>
+        <DialogContent
+          className="sm:max-w-md [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
               </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                What's your website?
-              </h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                We'll use it to build your brand kit.
-              </p>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  startBrandPull();
-                }}
-                className="space-y-4"
-              >
-                <Input
-                  placeholder="yourbrand.com"
-                  value={website}
-                  onChange={(e) => setWebsite(e.target.value)}
-                  autoFocus
-                />
-                <Button type="submit" className="w-full gap-2" size="lg">
-                  Analyze brand <ArrowRight className="w-4 h-4" />
-                </Button>
-              </form>
-            </Card>
-          </PhaseShell>
-        )}
+              Building your brand kit
+            </DialogTitle>
+            <DialogDescription>
+              Analyzing your website to extract brand details.
+            </DialogDescription>
+          </DialogHeader>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="pt-2"
+          >
+            <StepList steps={BRAND_STEPS} activeIdx={brandStepIdx} />
+          </motion.div>
+        </DialogContent>
+      </Dialog>
 
-        {phase === "brand-loading" && (
-          <PhaseShell key="brand-loading">
-            <Card className="w-full max-w-md p-8">
-              <div className="flex items-center gap-3 mb-5">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <h2 className="text-xl font-bold text-foreground">
-                  Building your brand kit
-                </h2>
+      {/* Phase: Brand Preview */}
+      <Dialog open={phase === "brand-preview" && !!brandKit} modal>
+        <DialogContent
+          className="sm:max-w-2xl [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Sparkles className="w-4 h-4 text-primary" />
               </div>
-              <StepList steps={BRAND_STEPS} activeIdx={brandStepIdx} />
-            </Card>
-          </PhaseShell>
-        )}
-
-        {phase === "brand-preview" && brandKit && (
-          <PhaseShell key="brand-preview">
-            <Card className="w-full max-w-2xl p-8">
-              <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <h2 className="text-2xl font-bold text-foreground">
-                  Your brand kit
-                </h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-6">
-                Here's what we found for{" "}
-                <span className="font-medium text-foreground">
-                  {brandKit.brand_name || website}
-                </span>
-                .
-              </p>
-
-              <div className="grid sm:grid-cols-2 gap-5 mb-6">
+              Your brand kit
+            </DialogTitle>
+            <DialogDescription>
+              Here's what we found for{" "}
+              <span className="font-medium text-foreground">
+                {brandKit?.brand_name || website}
+              </span>
+              .
+            </DialogDescription>
+          </DialogHeader>
+          {brandKit && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-5 pt-2"
+            >
+              <div className="grid sm:grid-cols-2 gap-5">
                 <div>
                   <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
                     Brand
@@ -478,62 +542,82 @@ const LoginV2 = () => {
                   </div>
                 </div>
               </div>
-
-              <Button size="lg" className="w-full gap-2" onClick={startAdsPull}>
-                Looks good — pull my ads <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Card>
-          </PhaseShell>
-        )}
-
-        {phase === "ads-loading" && (
-          <PhaseShell key="ads-loading">
-            <Card className="w-full max-w-md p-8">
-              <div className="flex items-center gap-3 mb-1">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                <h2 className="text-xl font-bold text-foreground">
-                  Pulling your Meta data
-                </h2>
-              </div>
-              <p className="text-sm text-muted-foreground mb-5">
-                Hang tight — this takes a moment.
-              </p>
-              <StepList steps={ADS_STEPS} activeIdx={adsStepIdx} />
-            </Card>
-          </PhaseShell>
-        )}
-
-        {phase === "complete" && (
-          <PhaseShell key="complete">
-            <Card className="w-full max-w-md p-10 text-center">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ type: "spring", stiffness: 200 }}
-                className="w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mx-auto mb-5"
-              >
-                <PartyPopper className="w-8 h-8 text-emerald-600" />
-              </motion.div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                You're all set!
-              </h2>
-              <p className="text-sm text-muted-foreground mb-6">
-                {selectedAccountName
-                  ? `${selectedAccountName} is connected and your data is ready.`
-                  : "Your account is connected and your data is ready."}
-              </p>
               <Button
                 size="lg"
                 className="w-full gap-2"
-                onClick={() => navigate("/home")}
+                onClick={startAdsPull}
               >
-                Go to dashboard <ArrowRight className="w-4 h-4" />
+                Looks good — pull my ads <ArrowRight className="w-4 h-4" />
               </Button>
-            </Card>
-          </PhaseShell>
-        )}
-      </AnimatePresence>
-    </div>
+            </motion.div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Phase: Ads Loading */}
+      <Dialog open={phase === "ads-loading"} modal>
+        <DialogContent
+          className="sm:max-w-md [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Loader2 className="w-4 h-4 text-primary animate-spin" />
+              </div>
+              Pulling Your Data
+            </DialogTitle>
+            <DialogDescription>
+              We're importing your campaign, ad, and creative data from Meta.
+            </DialogDescription>
+          </DialogHeader>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="pt-2"
+          >
+            <StepList steps={ADS_STEPS} activeIdx={adsStepIdx} />
+          </motion.div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Phase: Complete */}
+      <Dialog open={phase === "complete"} modal>
+        <DialogContent
+          className="sm:max-w-md [&>button]:hidden"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+                <PartyPopper className="w-4 h-4 text-emerald-600" />
+              </div>
+              You're all set!
+            </DialogTitle>
+            <DialogDescription>
+              {selectedAccountName
+                ? `${selectedAccountName} is connected and your data is ready.`
+                : "Your account is connected and your data is ready."}
+            </DialogDescription>
+          </DialogHeader>
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="pt-2"
+          >
+            <Button
+              size="lg"
+              className="w-full gap-2"
+              onClick={() => navigate("/home")}
+            >
+              Go to dashboard <ArrowRight className="w-4 h-4" />
+            </Button>
+          </motion.div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
@@ -553,17 +637,6 @@ function fallbackKit(website: string): BrandKit {
   };
 }
 
-const PhaseShell = ({ children }: { children: React.ReactNode }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -12 }}
-    transition={{ duration: 0.25 }}
-    className="min-h-screen flex items-center justify-center px-4 py-10"
-  >
-    {children}
-  </motion.div>
-);
 
 const ExplainerTile = ({
   icon,
