@@ -207,6 +207,10 @@ export const LandingV1Step = () => {
 
   const handleConnectMeta = async () => {
     setConnecting(true);
+    // Mark this auth attempt as originating from v1 so MetaCallback's
+    // fallback navigation (when the popup is blocked) routes to /onboarding
+    // instead of /onboarding-v2.
+    sessionStorage.setItem("auth_flow_version", "v1");
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
       const { data, error } = await supabase.functions.invoke("meta-oauth?action=get-auth-url", { body: { redirectUri } });
