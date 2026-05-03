@@ -154,6 +154,17 @@ Deno.serve(async (req) => {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: userData, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
+  console.log('[extract-brand-kit] auth result:', {
+    hasUser: !!userData?.user,
+    userId: userData?.user?.id ?? null,
+    error: userErr ? {
+      message: userErr.message,
+      status: (userErr as any).status,
+      name: userErr.name,
+    } : null,
+    prodUrl: Deno.env.get("PROD_SUPABASE_URL")?.slice(0, 40),
+    hasAnonKey: !!Deno.env.get("PROD_SUPABASE_ANON_KEY"),
+  });
   if (userErr || !userData?.user) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
