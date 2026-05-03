@@ -51,9 +51,7 @@ async function firecrawlScrape(url: string, apiKey: string) {
   });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    throw new Error(
-      `Firecrawl scrape failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`,
-    );
+    throw new Error(`Firecrawl scrape failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`);
   }
   return data?.data ?? data;
 }
@@ -104,9 +102,7 @@ async function inferBrandMeta(
   if (!resp.ok) {
     if (resp.status === 429) throw new Error("AI rate limit exceeded — try again in a moment.");
     if (resp.status === 402) throw new Error("AI credits exhausted — please top up your workspace.");
-    throw new Error(
-      `AI inference failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`,
-    );
+    throw new Error(`AI inference failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`);
   }
   const content = data?.choices?.[0]?.message?.content;
   if (!content) throw new Error("AI inference returned empty content");
@@ -153,15 +149,11 @@ Deno.serve(async (req) => {
   if (!authHeader?.startsWith("Bearer ")) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
-  // JWT was issued by Lovable Cloud auth → validate against Lovable Cloud.
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const { data: userData, error: userErr } = await supabase.auth.getUser(
-    authHeader.replace("Bearer ", ""),
-  );
+  // JWT was issued by Mubeen's prod auth → validate against prod.
+  const supabase = createClient(Deno.env.get("PROD_SUPABASE_URL")!, Deno.env.get("PROD_SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: userData, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
   if (userErr || !userData?.user) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
@@ -187,11 +179,8 @@ Deno.serve(async (req) => {
           /* controller closed */
         }
       };
-      const log = (
-        level: "info" | "warn" | "error" | "success",
-        message: string,
-        meta?: any,
-      ) => send("log", { ts: new Date().toISOString(), level, message, meta });
+      const log = (level: "info" | "warn" | "error" | "success", message: string, meta?: any) =>
+        send("log", { ts: new Date().toISOString(), level, message, meta });
 
       const t0 = Date.now();
       const warnings: string[] = [];
@@ -237,11 +226,7 @@ Deno.serve(async (req) => {
         log("info", "🧠 Analyzing brand voice and positioning");
         let aiInferred: AiInferred = {};
         try {
-          const { inferred, usage, durationMs } = await inferBrandMeta(
-            markdown,
-            metadata,
-            LOVABLE_API_KEY,
-          );
+          const { inferred, usage, durationMs } = await inferBrandMeta(markdown, metadata, LOVABLE_API_KEY);
           aiInferred = inferred;
           log("success", `✓ Voice analysis complete (${durationMs}ms)`, { usage });
         } catch (e) {
@@ -254,8 +239,7 @@ Deno.serve(async (req) => {
         const faviconUrl = branding?.images?.favicon ?? null;
 
         const result = {
-          brand_name:
-            aiInferred.brand_name || metadata?.title?.split(/[|\-–—:]/)[0]?.trim() || null,
+          brand_name: aiInferred.brand_name || metadata?.title?.split(/[|\-–—:]/)[0]?.trim() || null,
           tagline: aiInferred.tagline ?? null,
           website_url: websiteUrl,
           logo_url: logoUrl,
