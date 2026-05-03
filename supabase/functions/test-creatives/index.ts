@@ -223,6 +223,7 @@ Deno.serve(async (req) => {
           null
 
         return {
+          account_id: accountId,
           user_id: userId,
           ad_id: adMap[c.id],
           meta_creative_id: c.id,
