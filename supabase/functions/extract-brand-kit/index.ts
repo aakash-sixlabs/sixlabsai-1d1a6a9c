@@ -150,7 +150,8 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "No Bearer token provided" }, 401);
   }
   // JWT was issued by Mubeen's prod auth → validate against prod.
-  const supabase = createClient(Deno.env.get("PROD_SUPABASE_URL")!, Deno.env.get("PROD_SUPABASE_ANON_KEY")!, {
+  const prodUrl = (Deno.env.get("PROD_SUPABASE_URL") ?? "").replace(/\/$/, "");
+  const supabase = createClient(prodUrl, Deno.env.get("PROD_SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
   const { data: userData, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
