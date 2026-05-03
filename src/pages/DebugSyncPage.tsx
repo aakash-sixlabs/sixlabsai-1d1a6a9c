@@ -1,6 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/prod/client'
 import BrandKitTestCard from '@/components/debug/BrandKitTestCard'
+
+interface AdAccountOption {
+  id: string
+  account_name: string
+  account_id_meta: string
+  account_id: string
+}
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'skipped'
 interface CardState {
