@@ -45,8 +45,7 @@ interface BrandKit {
 }
 
 type Phase =
-  | "auth"
-  | "connect-meta"
+  | "landing"
   | "select-account"
   | "explainer"
   | "website-input"
@@ -75,11 +74,7 @@ const LoginV2 = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  const [phase, setPhase] = useState<Phase>("auth");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [authLoading, setAuthLoading] = useState(false);
-  const [connecting, setConnecting] = useState(false);
+  const [phase, setPhase] = useState<Phase>("landing");
 
   const [accounts, setAccounts] = useState<AdAccount[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(
@@ -91,8 +86,6 @@ const LoginV2 = () => {
 
   const [brandStepIdx, setBrandStepIdx] = useState(0);
   const [adsStepIdx, setAdsStepIdx] = useState(0);
-
-  const popupRef = useRef<Window | null>(null);
 
   /* ── On mount: check session / handle ?meta=connected return ── */
   useEffect(() => {
