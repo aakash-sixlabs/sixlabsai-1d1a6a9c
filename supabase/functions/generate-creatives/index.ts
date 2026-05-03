@@ -116,14 +116,14 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
+      (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""),
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
 
     // Service-role client for status updates that should bypass RLS
     const admin = createClient(
-      Deno.env.get("PROD_SUPABASE_URL")!,
+      (Deno.env.get("PROD_SUPABASE_URL") ?? "").replace(/\/$/, ""),
       Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
