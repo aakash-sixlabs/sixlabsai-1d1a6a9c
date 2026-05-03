@@ -111,14 +111,14 @@ Deno.serve(async (req) => {
 
     // JWT issued by Lovable Cloud → validate against Lovable Cloud auth.
     const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
+      (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""),
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
 
     // Admin client for DB operations (bypasses RLS, hits prod DB).
     const admin = createClient(
-      Deno.env.get("PROD_SUPABASE_URL")!,
+      (Deno.env.get("PROD_SUPABASE_URL") ?? "").replace(/\/$/, ""),
       Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
