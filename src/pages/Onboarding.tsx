@@ -8,7 +8,7 @@ import { DataSyncStep } from "@/components/wizard/DataSyncStep";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
 import { supabase } from "@/integrations/prod/client";
-import { isSuperAdmin } from "@/lib/superAdmin";
+import { getOnboardingState } from "@/lib/onboardingState";
 
 type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "add-icp" | "data-sync";
 
@@ -22,12 +22,10 @@ const Onboarding = () => {
 
   useEffect(() => {
     const init = async () => {
-      // Gate: only super admin can access v1 onboarding
+      // V1 login must stay in the V1 onboarding flow. Do not bounce to V2.
       if (!isDevMode) {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) { navigate("/loginv1"); return; }
-        const { data: profile } = await supabase.from("profiles").select("email").eq("id", user.id).single();
-        if (!isSuperAdmin(profile?.email)) { navigate("/onboarding-v2"); return; }
       }
       // Dev mode: skip auth check
       if (isDevMode) {
@@ -43,18 +41,22 @@ const Onboarding = () => {
         return;
       }
 
-      // Returning-user shortcut: once a default ad account exists, onboarding
-      // has already been completed for this user. /home triggers the non-blocking
-      // 30-day resync on landing.
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("default_ad_account_id")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-      if (profile?.default_ad_account_id) {
+      const onboarding = await getOnboardingState(session.user.id);
+      if (onboarding.complete) {
         navigate("/home", { replace: true });
         return;
+      }
+
+      if (onboarding.adAccountId) {
+        updateState({
+          selectedAccount: onboarding.adAccountId,
+          selectedAccountName: onboarding.adAccountName,
+          selectedMetaAccountId: onboarding.metaAccountId,
+          dateRange: "90",
+        });
+        if (onboarding.resumePhase === "brand-kit") { setPhase("brand-kit"); return; }
+        if (onboarding.resumePhase === "add-icp") { setPhase("add-icp"); return; }
+        if (onboarding.resumePhase === "pulling") { setPhase("data-sync"); return; }
       }
 
       if (searchParams.get("meta") === "connected") {
