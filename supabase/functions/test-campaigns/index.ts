@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     const until = new Date().toISOString().split("T")[0];
 
     // Get user_id and meta account id
-    const { data: adAccount, error: adAccountErr } = await admin
+    const { data: adAccount, error: adAccountErr } = await prodAdmin
       .from("ad_accounts")
       .select("account_id, user_id, account_id_meta")
       .eq("id", adAccountId)
