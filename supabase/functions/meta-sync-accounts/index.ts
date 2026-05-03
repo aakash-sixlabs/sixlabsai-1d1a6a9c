@@ -361,7 +361,9 @@ Deno.serve(async (req) => {
         );
 
         const mergedAds = dedupeById([...activeAds, ...relevantPausedAds]);
-        const rawAds = mergedAds.slice(0, TEST_MODE_LIMIT);
+        const rawAds = mergedAds
+          .filter((ad: any) => adsetMap.has(ad.adset_id))
+          .slice(0, TEST_MODE_LIMIT);
         console.log(
           `Ads: ${activeAds.length} active/with-issues + ${relevantPausedAds.length} paused-with-impressions ` +
             `(${pausedAds.length - relevantPausedAds.length} paused excluded) → using ${rawAds.length}`,
@@ -369,7 +371,7 @@ Deno.serve(async (req) => {
 
         const adRecords = rawAds.map((ad: any) => ({
           account_id: accountId,
-          ad_set_id: adsetMap.get(ad.adset_id) || null,
+          ad_set_id: adsetMap.get(ad.adset_id),
           user_id: userId,
           meta_ad_id: ad.id,
           name: ad.name || "",
