@@ -26,7 +26,7 @@ export const supabase = createClient<Database>(
   },
 );
 // Override functions URL to point at Lovable Cloud where edge functions are deployed.
-(supabase as any).functionsUrl = FUNCTIONS_URL;
+(supabase as any).functionsUrl = new URL(FUNCTIONS_URL);
 
 export const SUPABASE_URL = PROD_SUPABASE_URL;
 export const SUPABASE_PUBLISHABLE_KEY = PROD_SUPABASE_ANON_KEY;
