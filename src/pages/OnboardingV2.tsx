@@ -127,8 +127,7 @@ const OnboardingV2 = () => {
         if (onboarding.resumePhase === "pulling") {
           // Kick the data sync again — the only way out is a completed job.
           setPhase("pulling");
-          // startPull reads `selected`; defer one tick so state settles.
-          setTimeout(() => startPull(), 0);
+          setTimeout(() => startPull(onboarding.adAccountId), 0);
           return;
         }
       } catch (err) {
@@ -183,7 +182,7 @@ const OnboardingV2 = () => {
       }
       if (onboarding.resumePhase === "pulling") {
         setPhase("pulling");
-        setTimeout(() => startPull(), 0);
+        setTimeout(() => startPull(onboarding.adAccountId), 0);
         return;
       }
     }
@@ -192,9 +191,9 @@ const OnboardingV2 = () => {
   };
 
   /* ── Step 2: brand kit confirmed → start data pull ── */
-  const startPull = async () => {
-    if (!selected) return;
-    const account = accounts.find((a) => a.id === selected);
+  const startPull = async (accountId = selected) => {
+    if (!accountId) return;
+    const account = accounts.find((a) => a.id === accountId);
     if (!account) return;
 
     setPhase("pulling");
@@ -231,11 +230,11 @@ const OnboardingV2 = () => {
             updateState({ syncComplete: true });
             // Safety net: also flip the flag from the client in case the edge
             // function update didn't land. /home gating relies on this.
-            if (selected) {
+            if (accountId) {
               supabase
                 .from("ad_accounts")
                 .update({ onboarding_completed: true })
-                .eq("id", selected)
+                .eq("id", accountId)
                 .then(() => {});
             }
             setPhase("add-icp");
