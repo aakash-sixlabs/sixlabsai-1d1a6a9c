@@ -9,9 +9,10 @@ const PROD_SUPABASE_URL = "https://jkzbuypbhqbssmqjpdtj.supabase.co";
 const PROD_SUPABASE_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpremJ1eXBiaHFic3NtcWpwZHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NzI0MjUsImV4cCI6MjA4OTI0ODQyNX0.u0Kk3br2iq71ESnN_ipmwe2_KqpvsBlUqSlvbQMTSA4";
 
-// Edge functions are invoked on the prod Supabase project (same host as
-// auth/DB), so JWTs validate natively and no functionsUrl override is needed.
-const FUNCTIONS_URL = `${PROD_SUPABASE_URL}/functions/v1`;
+// Edge functions are hosted on Lovable Cloud, not the prod Supabase project,
+// so route functions calls there explicitly. The prod-issued JWT is forwarded
+// and validated in-code by each edge function against Lovable Cloud auth.
+const FUNCTIONS_URL = "https://bhcusyaonpevmwaruvlx.supabase.co/functions/v1";
 
 export const supabase = createClient<Database>(
   PROD_SUPABASE_URL,
@@ -24,6 +25,8 @@ export const supabase = createClient<Database>(
     },
   },
 );
+// Override functions URL to point at Lovable Cloud where edge functions are deployed.
+(supabase as any).functionsUrl = FUNCTIONS_URL;
 
 export const SUPABASE_URL = PROD_SUPABASE_URL;
 export const SUPABASE_PUBLISHABLE_KEY = PROD_SUPABASE_ANON_KEY;
