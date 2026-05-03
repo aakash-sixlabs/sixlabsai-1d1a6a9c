@@ -150,25 +150,27 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "No Bearer token provided" }, 401);
   }
   // JWT was issued by Mubeen's prod auth → validate against prod.
-  const prodUrl = (Deno.env.get("PROD_SUPABASE_URL") ?? "").replace(/\/$/, "");
-  const supabase = createClient(prodUrl, Deno.env.get("PROD_SUPABASE_ANON_KEY")!, {
+  const supabase = createClient(Deno.env.get("PROD_SUPABASE_URL")!, Deno.env.get("PROD_SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
-  const { data: userData, error: userErr } = await supabase.auth.getUser(authHeader.replace("Bearer ", ""));
-  console.log('[extract-brand-kit] auth result:', {
-    hasUser: !!userData?.user,
-    userId: userData?.user?.id ?? null,
-    error: userErr ? {
-      message: userErr.message,
-      status: (userErr as any).status,
-      name: userErr.name,
-    } : null,
-    prodUrl: Deno.env.get("PROD_SUPABASE_URL")?.slice(0, 40),
-    hasAnonKey: !!Deno.env.get("PROD_SUPABASE_ANON_KEY"),
+  const prodUrl = (Deno.env.get("PROD_SUPABASE_URL") ?? "").replace(/\/$/, "");
+  const prodAnonKey = Deno.env.get("PROD_SUPABASE_ANON_KEY") ?? "";
+
+  const userResponse = await fetch(`${prodUrl}/auth/v1/user`, {
+    headers: {
+      Authorization: authHeader,
+      apikey: prodAnonKey,
+    },
   });
-  if (userErr || !userData?.user) {
+
+  const userData = await userResponse.json();
+  console.log("[extract-brand-kit] direct auth:", userResponse.status, userData?.id ?? userData?.msg);
+
+  if (!userResponse.ok || !userData?.id) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
+
+  const userId = userData.id;
 
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
