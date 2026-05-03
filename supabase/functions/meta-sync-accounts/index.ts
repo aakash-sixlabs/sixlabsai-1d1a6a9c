@@ -239,9 +239,12 @@ Deno.serve(async (req) => {
           stop_time: c.stop_time || null,
         }));
         if (campaignRecords.length > 0) {
-          await admin.from("campaigns").upsert(campaignRecords, {
-            onConflict: "ad_account_id,meta_campaign_id",
+          const { error: campaignUpsertError } = await admin.from("campaigns").upsert(campaignRecords, {
+            onConflict: "meta_campaign_id",
           });
+          if (campaignUpsertError) {
+            throw new Error(`campaigns upsert failed: ${campaignUpsertError.message}`);
+          }
         }
 
         const { data: storedCampaigns } = await admin
@@ -311,9 +314,12 @@ Deno.serve(async (req) => {
           end_time: as.end_time || null,
         }));
         if (adsetRecords.length > 0) {
-          await admin.from("ad_sets").upsert(adsetRecords, {
-            onConflict: "campaign_id,meta_adset_id",
+          const { error: adsetUpsertError } = await admin.from("ad_sets").upsert(adsetRecords, {
+            onConflict: "meta_adset_id",
           });
+          if (adsetUpsertError) {
+            throw new Error(`ad_sets upsert failed: ${adsetUpsertError.message}`);
+          }
         }
 
         const { data: storedAdsets } = await admin
@@ -374,9 +380,12 @@ Deno.serve(async (req) => {
           meta_creative_id: ad.creative?.id || null,
         }));
         if (adRecords.length > 0) {
-          await admin.from("ads").upsert(adRecords, {
-            onConflict: "ad_set_id,meta_ad_id",
+          const { error: adsUpsertError } = await admin.from("ads").upsert(adRecords, {
+            onConflict: "meta_ad_id",
           });
+          if (adsUpsertError) {
+            throw new Error(`ads upsert failed: ${adsUpsertError.message}`);
+          }
         }
 
         await updateStep("Pulling creatives", {
