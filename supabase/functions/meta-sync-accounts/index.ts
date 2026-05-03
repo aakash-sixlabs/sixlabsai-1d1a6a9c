@@ -63,10 +63,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // JWT issued by Lovable Cloud → validate against Lovable Cloud auth.
+    // JWT is issued by the prod Supabase project (frontend auth lives there),
+    // so validate against prod, not Lovable Cloud.
     const supabase = createClient(
-      (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""),
-      Deno.env.get("SUPABASE_ANON_KEY")!,
+      getProdSupabaseUrl(),
+      Deno.env.get("PROD_SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
     );
 
