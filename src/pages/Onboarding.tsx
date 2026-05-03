@@ -130,7 +130,7 @@ const Onboarding = () => {
   };
 
   const handleSyncComplete = () => {
-    navigate("/home");
+    navigate("/home", { replace: true });
   };
 
   return (
