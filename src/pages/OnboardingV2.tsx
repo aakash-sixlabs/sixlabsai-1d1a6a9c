@@ -531,7 +531,7 @@ const OnboardingV2 = () => {
             <Button
               size="lg"
               className="w-full gap-2"
-              onClick={() => navigate("/")}
+              onClick={() => navigate("/home")}
             >
               Go to Homepage <ArrowRight className="w-4 h-4" />
             </Button>
