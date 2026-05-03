@@ -28,12 +28,12 @@ async function fetchAllPages(url: string) {
         err?.error_subcode === 2446079 ||
         /rate limit|too many calls|user request limit/i.test(err?.message || "");
       if (!isRateLimited) break;
-      // Up to 8 attempts with exponential backoff capped at 2 minutes per wait.
-      // Total worst-case wait ≈ 8.5 min — long enough to clear most Meta hourly buckets.
-      if (attempt >= 8) {
+      // Keep retries inside Lovable Cloud function limits. If Meta keeps rate
+      // limiting, fail the sync visibly instead of leaving the UI spinning.
+      if (attempt >= 3) {
         throw new Error(`Meta rate limit hit after ${attempt} retries: ${err?.message || res.status}`);
       }
-      const waitMs = Math.min(120_000, 15_000 * Math.pow(2, attempt));
+      const waitMs = 5_000 * Math.pow(2, attempt);
       console.warn(`Rate limited by Meta (attempt ${attempt + 1}), waiting ${waitMs}ms`);
       await new Promise((r) => setTimeout(r, waitMs));
       attempt++;
@@ -239,9 +239,12 @@ Deno.serve(async (req) => {
           stop_time: c.stop_time || null,
         }));
         if (campaignRecords.length > 0) {
-          await admin.from("campaigns").upsert(campaignRecords, {
-            onConflict: "ad_account_id,meta_campaign_id",
+          const { error: campaignUpsertError } = await admin.from("campaigns").upsert(campaignRecords, {
+            onConflict: "meta_campaign_id",
           });
+          if (campaignUpsertError) {
+            throw new Error(`campaigns upsert failed: ${campaignUpsertError.message}`);
+          }
         }
 
         const { data: storedCampaigns } = await admin
@@ -311,9 +314,12 @@ Deno.serve(async (req) => {
           end_time: as.end_time || null,
         }));
         if (adsetRecords.length > 0) {
-          await admin.from("ad_sets").upsert(adsetRecords, {
-            onConflict: "campaign_id,meta_adset_id",
+          const { error: adsetUpsertError } = await admin.from("ad_sets").upsert(adsetRecords, {
+            onConflict: "meta_adset_id",
           });
+          if (adsetUpsertError) {
+            throw new Error(`ad_sets upsert failed: ${adsetUpsertError.message}`);
+          }
         }
 
         const { data: storedAdsets } = await admin
@@ -374,9 +380,12 @@ Deno.serve(async (req) => {
           meta_creative_id: ad.creative?.id || null,
         }));
         if (adRecords.length > 0) {
-          await admin.from("ads").upsert(adRecords, {
-            onConflict: "ad_set_id,meta_ad_id",
+          const { error: adsUpsertError } = await admin.from("ads").upsert(adRecords, {
+            onConflict: "meta_ad_id",
           });
+          if (adsUpsertError) {
+            throw new Error(`ads upsert failed: ${adsUpsertError.message}`);
+          }
         }
 
         await updateStep("Pulling creatives", {

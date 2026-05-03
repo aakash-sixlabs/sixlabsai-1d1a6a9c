@@ -440,7 +440,7 @@ Deno.serve(async (req) => {
               raw_object_story_spec: oss && Object.keys(oss).length ? oss : null,
               raw_data: creative,
             },
-            { onConflict: "ad_id,meta_creative_id" },
+            { onConflict: "meta_creative_id" },
           );
 
           if (creativeUpsertError) {

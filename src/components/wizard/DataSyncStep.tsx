@@ -30,6 +30,7 @@ export const DataSyncStep = ({
   const [currentStep, setCurrentStep] = useState("Connecting to Meta");
   const [error, setError] = useState<string | null>(null);
   const [syncStarted, setSyncStarted] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
   const [simulatedIdx, setSimulatedIdx] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -158,7 +159,7 @@ export const DataSyncStep = ({
       supabase.removeChannel(channel);
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, []);
+  }, [retryKey]);
 
   const effectiveIdx = currentIdx >= 0 ? currentIdx : 0;
 
@@ -171,7 +172,7 @@ export const DataSyncStep = ({
             <span className="text-sm font-medium text-destructive">Sync Error</span>
           </div>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => { setError(null); setSyncStarted(false); }}>
+          <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => { setCurrentStep("Connecting to Meta"); setSimulatedIdx(0); setIsComplete(false); setError(null); setSyncStarted(false); setRetryKey((key) => key + 1); }}>
             <RefreshCw className="w-3 h-3" /> Retry
           </Button>
         </div>
