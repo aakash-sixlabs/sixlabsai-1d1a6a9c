@@ -31,7 +31,9 @@ const Insights = () => {
       // ICPs → first completed sync) is done, send the user back to retry it.
       const onboarding = await getOnboardingState(user.id);
       if (!onboarding.complete) {
-        navigate("/onboarding-v2", { replace: true });
+        const flowVersion = sessionStorage.getItem("auth_flow_version");
+        const dest = flowVersion === "v1" ? "/onboarding" : "/onboarding-v2";
+        navigate(dest, { replace: true });
         return;
       }
 
