@@ -116,6 +116,12 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } },
     );
 
+    // Admin client for DB operations (bypasses RLS, hits prod DB).
+    const admin = createClient(
+      Deno.env.get("PROD_SUPABASE_URL")!,
+      Deno.env.get("PROD_SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
     if (userError || !userData?.user) {
