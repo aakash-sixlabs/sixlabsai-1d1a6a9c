@@ -226,91 +226,15 @@ const LoginV2 = () => {
   return (
     <div className="min-h-screen bg-background">
       <AnimatePresence mode="wait">
-        {phase === "auth" && (
-          <PhaseShell key="auth">
-            <Card className="w-full max-w-sm p-8">
-              <div className="flex items-center gap-2 justify-center mb-6">
-                <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                  <Sparkles className="w-4 h-4 text-primary-foreground" />
-                </div>
-                <span className="font-display font-bold text-lg text-foreground">
-                  SixLabs
-                </span>
-              </div>
-              <h2 className="text-xl font-bold text-foreground text-center mb-1">
-                Welcome to SixLabs
-              </h2>
-              <p className="text-sm text-muted-foreground text-center mb-6">
-                Sign in to continue
-              </p>
-              <form onSubmit={handleAuth} className="space-y-4">
-                <Input
-                  type="email"
-                  placeholder="Email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-                <Input
-                  type="password"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-                <Button
-                  type="submit"
-                  className="w-full gap-2"
-                  disabled={authLoading}
-                >
-                  {authLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <>
-                      Continue <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-            </Card>
-          </PhaseShell>
-        )}
-
-        {phase === "connect-meta" && (
-          <PhaseShell key="connect-meta">
-            <Card className="w-full max-w-md p-10 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-5">
-                <svg
-                  viewBox="0 0 24 24"
-                  className="w-7 h-7 text-primary"
-                  fill="currentColor"
-                >
-                  <path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                Connect your Meta Ads account
-              </h2>
-              <p className="text-muted-foreground mb-6 text-sm">
-                We'll pull your ad accounts so you can pick the one you want to
-                analyze. Read-only access.
-              </p>
-              <Button
-                size="lg"
-                className="gap-2 w-full"
-                onClick={handleConnectMeta}
-                disabled={connecting}
-              >
-                {connecting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="w-4 h-4" />
-                )}
-                {connecting ? "Connecting…" : "Connect with Meta"}
-              </Button>
-            </Card>
-          </PhaseShell>
+        {phase === "landing" && (
+          <motion.div
+            key="landing"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <LandingV2Step />
+          </motion.div>
         )}
 
         {phase === "select-account" && (
