@@ -1,6 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '@/integrations/prod/client'
 import BrandKitTestCard from '@/components/debug/BrandKitTestCard'
+
+interface AdAccountOption {
+  id: string
+  account_name: string
+  account_id_meta: string
+  account_id: string
+}
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'skipped'
 interface CardState {
@@ -122,6 +129,25 @@ export default function DebugSyncPage() {
   const [adAccountId, setAdAccountId] = useState('')
   const [accessToken, setAccessToken] = useState('')
   const [showToken, setShowToken] = useState(false)
+  const [adAccountOptions, setAdAccountOptions] = useState<AdAccountOption[]>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(true)
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ad_accounts')
+          .select('id, account_name, account_id_meta, account_id')
+          .order('created_at', { ascending: false })
+        if (error) throw error
+        setAdAccountOptions((data ?? []) as AdAccountOption[])
+      } catch (e) {
+        console.error('Failed to load ad accounts', e)
+      } finally {
+        setLoadingAccounts(false)
+      }
+    })()
+  }, [])
 
   const [campaignState, setCampaignState] = useState<CardState>(initialState)
   const [adSetState, setAdSetState] = useState<CardState>(initialState)
@@ -264,14 +290,30 @@ export default function DebugSyncPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Ad Account ID (Supabase UUID)
+              Ad Account (from ad_accounts table)
             </label>
-            <input
+            <select
               value={adAccountId}
               onChange={(e) => setAdAccountId(e.target.value)}
-              placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000"
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
+              disabled={loadingAccounts}
+              className="w-full border rounded px-3 py-2 text-sm bg-white"
+            >
+              <option value="">
+                {loadingAccounts
+                  ? 'Loading ad accounts…'
+                  : adAccountOptions.length === 0
+                  ? 'No ad accounts found'
+                  : 'Select an ad account…'}
+              </option>
+              {adAccountOptions.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.account_name} — {acc.account_id_meta} ({acc.id.slice(0, 8)}…)
+                </option>
+              ))}
+            </select>
+            {adAccountId && (
+              <p className="text-xs text-gray-500 mt-1 font-mono">UUID: {adAccountId}</p>
+            )}
           </div>
 
           <div>
