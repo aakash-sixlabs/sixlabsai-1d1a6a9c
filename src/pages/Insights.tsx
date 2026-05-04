@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
 import { InsightsStep } from "@/components/wizard/InsightsStep";
 import { BrandKitBanner } from "@/components/wizard/BrandKitBanner";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, FlaskConical } from "lucide-react";
 import { isDevSession } from "@/lib/devMode";
+import { isSuperAdmin } from "@/lib/superAdmin";
 
 const Insights = () => {
   const navigate = useNavigate();
