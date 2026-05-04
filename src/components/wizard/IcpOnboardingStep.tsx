@@ -52,7 +52,11 @@ export const IcpOnboardingStep = ({ open, adAccountId, isDevMode = false, onComp
     if (drafts.length === 0 || isDevMode) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
+    const { getCurrentAccountId } = await import("@/lib/accountContext");
+    const accountId = await getCurrentAccountId();
+    if (!accountId) throw new Error("No account found");
     const rows = drafts.map((d) => ({
+      account_id: accountId,
       user_id: user.id,
       ad_account_id: adAccountId,
       name: d.name,
