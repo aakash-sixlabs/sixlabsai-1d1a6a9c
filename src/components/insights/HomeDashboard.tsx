@@ -34,6 +34,7 @@ interface Props {
   onDateRangeChange: (v: DateRangeKey) => void;
   onAdClick?: (id: string) => void;
   onViewAllGenerations?: () => void;
+  onKpisChange?: (kpis: { label: string; value: string; hint?: string }[]) => void;
 }
 
 // ── Utilities ───────────────────────────────────────────────────────
