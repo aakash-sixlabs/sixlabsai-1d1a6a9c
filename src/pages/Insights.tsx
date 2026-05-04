@@ -14,6 +14,7 @@ const Insights = () => {
   const { state, updateState } = useWizard();
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showReplay, setShowReplay] = useState(false);
 
   useEffect(() => {
     const check = async () => {
