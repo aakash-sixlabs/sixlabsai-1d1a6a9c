@@ -252,13 +252,6 @@ export const HomeDashboard = ({
           </Button>
         </div>
 
-        {/* KPI strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-          <KpiCard label="Avg ROAS" value={kpis.roasAvg ? `${kpis.roasAvg.toFixed(2)}x` : "—"} delta={`${kpis.activeCreatives} creatives`} subtle />
-          <KpiCard label="CTR" value={kpis.ctrAvg ? `${kpis.ctrAvg.toFixed(2)}%` : "—"} delta={`${compact(kpis.totalImpr)} impressions`} subtle />
-          <KpiCard label="Avg CAC" value={kpis.cac != null ? `$${kpis.cac.toFixed(2)}` : "—"} delta={`${kpis.totalPurchases.toLocaleString()} purchases`} subtle />
-          <KpiCard label="Total Spend" value={compact(kpis.totalSpend, "$")} delta={`${MOCK_COMPETITORS.length} competitors tracked`} subtle />
-        </div>
       </motion.section>
 
       {/* ─────────── Action summary: Opportunities + What's working snapshot ─────────── */}
