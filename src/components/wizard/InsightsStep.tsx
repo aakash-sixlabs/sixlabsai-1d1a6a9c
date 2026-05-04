@@ -430,6 +430,10 @@ export const InsightsStep = () => {
     // Prevent overlapping syncs in this tab
     if (syncStatus === "syncing") return;
 
+    // Mark this account as just-synced so the hourly auto-refresh doesn't
+    // immediately re-fire after a manual resync.
+    try { localStorage.setItem(`last_auto_sync_${accountId}`, String(Date.now())); } catch {}
+
     setSyncStatus("syncing");
     setSyncStep("Connecting to Meta");
 
@@ -483,10 +487,13 @@ export const InsightsStep = () => {
     if (isFresh) return;
 
     try {
-      // Resync only the last 30 days — Meta's attribution windows close by 28 days,
+      // Resync only the last 28 days — Meta's attribution windows close by 28 days,
       // so older days won't change. Keeps repulls fast and bounded.
+      // Edge functions upsert on (account_id, meta_*_id) and
+      // ad_performance_daily upserts on (ad_id, date), so re-runs replace
+      // existing rows instead of duplicating them.
       const { data, error } = await supabase.functions.invoke("meta-sync-accounts", {
-        body: { adAccountId: accountId, dateRangeDays: "30" },
+        body: { adAccountId: accountId, dateRangeDays: "28" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -499,13 +506,15 @@ export const InsightsStep = () => {
     }
   }, [state.selectedAccount, state.dateRange, fetchData, syncStatus]);
 
-  // Initial load: fetch existing data immediately, then sync in background
+  // Initial load: fetch existing data immediately, then sync in background.
+  // Also schedules an hourly auto-refresh for as long as the tab stays open.
   useEffect(() => {
+    let hourly: ReturnType<typeof setInterval> | null = null;
+    let devInterval: ReturnType<typeof setInterval> | null = null;
+
     fetchData().then(() => {
-      // New user just completed onboarding sync — skip redundant background sync
       if (state.syncComplete) return;
 
-      // For dev mode, simulate a background sync — never call real sync edge fn
       const isDevMode =
         isDevSession() ||
         sessionStorage.getItem("meta_connection")?.includes("mock");
@@ -520,32 +529,38 @@ export const InsightsStep = () => {
           "Preparing insights",
         ];
         let i = 0;
-        const interval = setInterval(() => {
+        devInterval = setInterval(() => {
           if (i < steps.length) {
             setSyncStep(steps[i]);
             i++;
           } else {
-            clearInterval(interval);
+            if (devInterval) clearInterval(devInterval);
             setSyncStatus("complete");
           }
         }, 1200);
         return;
       }
-      // Returning user — sync in background, but throttle auto-resync to once
-      // per hour per account. Manual resync button bypasses this.
+
       if (state.selectedAccount) {
         const AUTO_SYNC_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
         const key = `last_auto_sync_${state.selectedAccount}`;
-        try {
-          const last = Number(localStorage.getItem(key) || 0);
-          if (Date.now() - last < AUTO_SYNC_COOLDOWN_MS) {
-            return;
-          }
-          localStorage.setItem(key, String(Date.now()));
-        } catch {}
-        triggerBackgroundSync();
+        const maybeAutoSync = () => {
+          try {
+            const last = Number(localStorage.getItem(key) || 0);
+            if (Date.now() - last < AUTO_SYNC_COOLDOWN_MS) return;
+            localStorage.setItem(key, String(Date.now()));
+          } catch {}
+          triggerBackgroundSync();
+        };
+        maybeAutoSync();
+        hourly = setInterval(maybeAutoSync, AUTO_SYNC_COOLDOWN_MS);
       }
     });
+
+    return () => {
+      if (hourly) clearInterval(hourly);
+      if (devInterval) clearInterval(devInterval);
+    };
   }, []);
 
   // Derived data
