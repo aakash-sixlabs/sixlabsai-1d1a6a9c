@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${serviceKey}`,
               },
-              body: JSON.stringify({ syncId, adAccountId, userId, brandId }),
+              body: JSON.stringify({ syncId, adAccountId, userId, brandId, accountId }),
             });
             return;
           }
