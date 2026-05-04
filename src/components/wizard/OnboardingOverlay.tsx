@@ -83,11 +83,6 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
             <Label htmlFor="email" className="flex items-center gap-1.5 text-sm"><Mail className="w-3.5 h-3.5 text-muted-foreground" />Email</Label>
             <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" type="email" />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="brandWebsite" className="flex items-center gap-1.5 text-sm"><Globe className="w-3.5 h-3.5 text-muted-foreground" />Brand Website</Label>
-            <Input id="brandWebsite" value={brandWebsite} onChange={(e) => setBrandWebsite(e.target.value)} placeholder="yourbrand.com" />
-            <p className="text-xs text-muted-foreground">We'll use this to build your brand kit (logo, colors, fonts).</p>
-          </div>
           {accounts.length > 0 && (
             <div className="space-y-2">
               <Label className="flex items-center gap-1.5 text-sm"><Building2 className="w-3.5 h-3.5 text-muted-foreground" />Connected Ad Accounts</Label>
