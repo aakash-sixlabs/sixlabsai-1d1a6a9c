@@ -135,6 +135,10 @@ const Onboarding = () => {
   };
 
   const handleCompetitorsComplete = () => {
+    if (skipSync) {
+      navigate("/home");
+      return;
+    }
     setPhase("data-sync");
   };
 
