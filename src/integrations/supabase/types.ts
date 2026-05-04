@@ -1517,6 +1517,81 @@ export type Database = {
           },
         ]
       }
+      offers: {
+        Row: {
+          account_id: string
+          ad_account_id: string
+          additional_notes: string | null
+          bogo_discount: string | null
+          brand_id: string | null
+          buy_qty: string | null
+          created_at: string
+          custom_offer_headline: string | null
+          disclaimer_ids: string[]
+          discount_value: string | null
+          end_date: string | null
+          freebie_description: string | null
+          get_qty: string | null
+          id: string
+          is_active: boolean
+          name: string
+          offer_type: string
+          promo_code: string | null
+          start_date: string | null
+          trial_price: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          ad_account_id: string
+          additional_notes?: string | null
+          bogo_discount?: string | null
+          brand_id?: string | null
+          buy_qty?: string | null
+          created_at?: string
+          custom_offer_headline?: string | null
+          disclaimer_ids?: string[]
+          discount_value?: string | null
+          end_date?: string | null
+          freebie_description?: string | null
+          get_qty?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          offer_type: string
+          promo_code?: string | null
+          start_date?: string | null
+          trial_price?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          ad_account_id?: string
+          additional_notes?: string | null
+          bogo_discount?: string | null
+          brand_id?: string | null
+          buy_qty?: string | null
+          created_at?: string
+          custom_offer_headline?: string | null
+          disclaimer_ids?: string[]
+          discount_value?: string | null
+          end_date?: string | null
+          freebie_description?: string | null
+          get_qty?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          offer_type?: string
+          promo_code?: string | null
+          start_date?: string | null
+          trial_price?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           account_id: string
