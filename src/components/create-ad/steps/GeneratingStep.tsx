@@ -105,17 +105,19 @@ export const GeneratingStep = ({ state }: GeneratingStepProps) => {
             (state.promoDetails as any)?.offerName ??
             state.promoDetails?.customOfferHeadline ??
             null;
-          const icpName = (state.icpName ?? "").toLowerCase();
+          const normalize = (s: string) =>
+            s.toLowerCase().replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
+          const icpName = normalize(state.icpName ?? "");
 
           let query = supabase.from("mock_creative_library").select("*");
           if (goal) query = query.eq("goal", goal);
           if (offerName) query = query.eq("offer_name", offerName);
           const { data: libRows } = await query;
 
-          // Filter by ICP keyword (substring, case-insensitive) if any.
+          // Filter by ICP keyword (substring, case-insensitive, ignoring _/-).
           const matched = (libRows ?? []).filter((r: any) => {
             if (!r.icp_keyword) return true;
-            return icpName.includes(String(r.icp_keyword).toLowerCase());
+            return icpName.includes(normalize(String(r.icp_keyword)));
           });
 
           if (matched.length > 0) {
