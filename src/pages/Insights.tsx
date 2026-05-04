@@ -4,17 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
 import { InsightsStep } from "@/components/wizard/InsightsStep";
 import { BrandKitBanner } from "@/components/wizard/BrandKitBanner";
-import { Button } from "@/components/ui/button";
-import { Loader2, FlaskConical } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { isDevSession } from "@/lib/devMode";
-import { isSuperAdmin } from "@/lib/superAdmin";
 
 const Insights = () => {
   const navigate = useNavigate();
   const { state, updateState } = useWizard();
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showReplay, setShowReplay] = useState(false);
 
   useEffect(() => {
     const check = async () => {
@@ -28,14 +25,6 @@ const Insights = () => {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/loginvcollect"); return; }
-
-      // Show replay CTA only for super admin (v1 onboarding tester).
-      const { data: meProfile } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("id", user.id)
-        .maybeSingle();
-      if (isSuperAdmin(meProfile?.email)) setShowReplay(true);
 
       // Hydrate wizard state from profile so background resync can run
       // for returning users who land here directly.
@@ -81,19 +70,6 @@ const Insights = () => {
   return (
     <>
       <BrandKitBanner />
-      {showReplay && (
-        <div className="fixed bottom-4 right-4 z-50">
-          <Button
-            size="sm"
-            variant="secondary"
-            className="gap-2 shadow-lg border border-border"
-            onClick={() => navigate("/onboarding?replay=true&skipSync=true")}
-          >
-            <FlaskConical className="w-4 h-4" />
-            Replay onboarding v1 (skip sync)
-          </Button>
-        </div>
-      )}
       <InsightsStep />
     </>
   );
