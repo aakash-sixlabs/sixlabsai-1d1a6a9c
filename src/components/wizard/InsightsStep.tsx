@@ -334,7 +334,7 @@ export const InsightsStep = () => {
       for (const p of perf) {
         const ad = adById.get(p.ad_id);
         if (!ad) continue;
-        const c = creativeByAdId.get(p.ad_id);
+        const c = getCreative(ad);
         const adset = ad ? adsetMap.get((ad as any).ad_set_id) : undefined;
         const camp = adset ? campMap.get((adset as any).campaign_id) : undefined;
         rows.push({
@@ -345,7 +345,7 @@ export const InsightsStep = () => {
           campaign_name: camp ? (camp as any).name : "Unknown Campaign",
           creative_id: c ? (c as any).id : null,
           creative_type: c ? (c as any).creative_type : "static_single",
-          image_url: c ? ((c as any).stored_image_url || (c as any).image_url) : null,
+          image_url: c ? ((c as any).stored_image_url || (c as any).image_url || (c as any).thumbnail_url) : null,
           image_urls: c ? ((c as any).stored_image_urls || []) : [],
           date: p.date,
           spend: p.spend,
