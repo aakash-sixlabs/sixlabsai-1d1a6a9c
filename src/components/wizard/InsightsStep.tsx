@@ -379,34 +379,63 @@ export const InsightsStep = () => {
       perfByAd.get(p.ad_id)!.push(p);
     });
 
-    // Creative-first: iterate ads (one per creative impl), aggregate perf in window
-    const enriched: EnrichedAd[] = rawAds.map((ad: any) => {
-      const c = getCreative(ad);
-      const adset = adsetMap.get(ad.ad_set_id);
+    // Creative-first: group ads by their creative (Meta reuses one creative
+    // across many ads). Aggregate perf across all ads sharing that creative.
+    const groups = new Map<string, any[]>();
+    for (const ad of rawAds) {
+      const c: any = getCreative(ad);
+      const imgs = c ? ((c.stored_image_urls as any[]) || []) : [];
+      const imgKey = c ? (c.stored_image_url || c.image_url || c.thumbnail_url || imgs[0] || "") : "";
+      const key =
+        ad.meta_creative_id ||
+        (c && (c as any).meta_creative_id) ||
+        (imgKey ? `img:${imgKey}` : `ad:${ad.id}`);
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push(ad);
+    }
+
+    const enriched: EnrichedAd[] = Array.from(groups.values()).map((adsInGroup) => {
+      // Pick representative ad: prefer ACTIVE, else most recently updated/created
+      const rep =
+        adsInGroup.find((a: any) => String(a.effective_status || "").toUpperCase() === "ACTIVE") ||
+        [...adsInGroup].sort((a: any, b: any) =>
+          String(b.updated_at || b.created_at || "").localeCompare(String(a.updated_at || a.created_at || ""))
+        )[0];
+
+      const c: any = getCreative(rep);
+      const adset = adsetMap.get(rep.ad_set_id);
       const camp = adset ? campMap.get((adset as any).campaign_id) : undefined;
-      const perfRows = perfByAd.get(ad.id) || [];
-      let spend = 0, impressions = 0, clicks = 0, purchases = 0, roasSum = 0;
-      perfRows.forEach((p: any) => {
-        spend += Number(p.spend || 0);
-        impressions += Number(p.impressions || 0);
-        clicks += Number(p.clicks || 0);
-        purchases += Number(p.purchases || 0);
-        roasSum += Number(p.roas || 0);
-      });
-      const roas = perfRows.length > 0 ? roasSum / perfRows.length : 0;
+
+      let spend = 0, impressions = 0, clicks = 0, purchases = 0, revenue = 0;
+      for (const ad of adsInGroup) {
+        const perfRows = perfByAd.get(ad.id) || [];
+        for (const p of perfRows) {
+          spend += Number(p.spend || 0);
+          impressions += Number(p.impressions || 0);
+          clicks += Number(p.clicks || 0);
+          purchases += Number(p.purchases || 0);
+          revenue += Number(p.revenue || 0);
+        }
+      }
+      const roas = spend > 0 ? revenue / spend : 0;
       const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
-      const imgs = c ? ((c as any).stored_image_urls as any[]) || [] : [];
+      const imgs = c ? ((c.stored_image_urls as any[]) || []) : [];
       const imageUrl = c
-        ? ((c as any).stored_image_url || (c as any).image_url || (c as any).thumbnail_url || imgs[0] || null)
+        ? (c.stored_image_url || c.image_url || c.thumbnail_url || imgs[0] || null)
         : null;
+      const extra = adsInGroup.length > 1 ? ` (+${adsInGroup.length - 1})` : "";
+      const hasActive = adsInGroup.some(
+        (a: any) => String(a.effective_status || "").toUpperCase() === "ACTIVE"
+      );
+
       return {
-        id: ad.id,
-        creativeId: c ? (c as any).id : ad.id,
-        adName: ad.name || "Untitled",
+        id: rep.id,
+        creativeId: c ? c.id : rep.id,
+        adName: (rep.name || "Untitled") + extra,
         campaignName: camp ? (camp as any).name : "Unknown Campaign",
         campaignId: camp ? (camp as any).id : "",
         imageUrl,
-        creativeType: c ? (c as any).creative_type : "static_single",
+        creativeType: c ? c.creative_type : "static_single",
         score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
         decayScore: roas < 1 ? 80 : roas < 2 ? 50 : roas < 4 ? 25 : 10,
         spend,
@@ -415,7 +444,7 @@ export const InsightsStep = () => {
         impressions,
         purchases,
         costPerPurchase: purchases > 0 ? spend / purchases : null,
-        hasActiveAd: String(ad.effective_status || "").toUpperCase() === "ACTIVE",
+        hasActiveAd: hasActive,
       };
     });
     enriched.sort((a, b) => b.score - a.score);
