@@ -536,15 +536,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "disclaimers_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       generated_creatives: {
         Row: {
@@ -702,15 +694,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "icps_ad_account_id_fkey"
-            columns: ["ad_account_id"]
-            isOneToOne: false
-            referencedRelation: "ad_accounts"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       meta_connections: {
         Row: {

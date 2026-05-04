@@ -1,7 +1,6 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users, Package, Layers, Percent } from "lucide-react";
-import { STEP_CONTAINER, STEP_HEADING, STEP_SUBTITLE, CTA_SHAPE } from "./_shared";
+import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users } from "lucide-react";
 
 const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
   "sale-promo": { label: "Sale / Promotion", icon: Tag },
@@ -36,95 +35,88 @@ interface ReviewStepProps {
   onGenerate: () => void;
 }
 
-const SummaryCard = ({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon: React.ElementType;
-  children: React.ReactNode;
-}) => (
-  <div className="rounded-2xl border-2 border-border/80 bg-card p-5 transition-all hover:border-primary/30 hover:shadow-sm">
-    <div className="flex items-center gap-2 mb-2">
-      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-        <Icon className="w-3.5 h-3.5 text-primary" />
-      </div>
-      <p className="text-[11px] text-muted-foreground uppercase tracking-wide font-medium">{label}</p>
-    </div>
-    <div className="text-sm text-foreground">{children}</div>
-  </div>
-);
-
 export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
   const goalInfo = state.goal ? GOAL_LABELS[state.goal] : null;
-  const GoalIcon = goalInfo?.icon ?? Sparkles;
+  const GoalIcon = goalInfo?.icon;
 
   return (
-    <div className={STEP_CONTAINER}>
-      <h2 className={STEP_HEADING}>Review & Generate</h2>
-      <p className={STEP_SUBTITLE}>
+    <div>
+      <h2 className="text-2xl font-bold text-foreground mb-1">Review & Generate</h2>
+      <p className="text-muted-foreground mb-8">
         Here's a summary of your creative brief. Hit generate when you're ready.
       </p>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="space-y-4">
+        {/* Audience */}
         {state.icpName && (
-          <SummaryCard label="Audience" icon={Users}>
-            <p className="font-medium">{state.icpName}</p>
-          </SummaryCard>
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Audience</p>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              <p className="font-medium text-foreground">{state.icpName}</p>
+            </div>
+          </div>
         )}
 
-        <SummaryCard label="Goal" icon={GoalIcon}>
-          <p className="font-medium">
-            {goalInfo?.label}
-            {state.promoScope === "brand-wide" && " · Brand-wide"}
-            {state.promoScope === "product-specific" && " · Product-specific"}
-          </p>
-        </SummaryCard>
+        {/* Goal */}
+        <div className="p-4 rounded-lg bg-card border border-border">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Goal</p>
+          <div className="flex items-center gap-2">
+            {GoalIcon && <GoalIcon className="w-4 h-4 text-primary" />}
+            <p className="font-medium text-foreground">
+              {goalInfo?.label}
+              {state.promoScope === "brand-wide" && " · Brand-wide"}
+              {state.promoScope === "product-specific" && " · Product-specific"}
+            </p>
+          </div>
+        </div>
 
+        {/* Product */}
         {state.productInputMethod && (
-          <SummaryCard label="Product" icon={Package}>
-            <p className="font-medium truncate">
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Product</p>
+            <p className="font-medium text-foreground">
               {state.productInputMethod === "url" ? state.productUrl : "Uploaded image"}
             </p>
-          </SummaryCard>
+          </div>
         )}
 
-        <SummaryCard label="Formats" icon={Layers}>
-          <div className="flex flex-wrap gap-1.5 mt-0.5">
+        {/* Aspect Ratios */}
+        <div className="p-4 rounded-lg bg-card border border-border">
+          <p className="text-xs text-muted-foreground uppercase tracking-wide mb-2">Formats</p>
+          <div className="flex flex-wrap gap-2">
             {state.aspectRatios.map((r) => (
-              <span
-                key={r}
-                className="px-2.5 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium"
-              >
+              <span key={r} className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                 {r}
               </span>
             ))}
           </div>
-        </SummaryCard>
+        </div>
 
+        {/* Promo Details */}
         {state.promoDetails.offerType && (
-          <SummaryCard label="Promotion" icon={Percent}>
-            <p className="font-medium">
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Promotion</p>
+            <p className="font-medium text-foreground">
               {formatOffer(state.promoDetails)}
               {state.promoDetails.promoCode && ` · Code: ${state.promoDetails.promoCode}`}
             </p>
             {(state.promoDetails.startDate || state.promoDetails.endDate) && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {state.promoDetails.startDate && new Date(state.promoDetails.startDate).toLocaleDateString()}
                 {state.promoDetails.startDate && state.promoDetails.endDate && " – "}
                 {state.promoDetails.endDate && new Date(state.promoDetails.endDate).toLocaleDateString()}
               </p>
             )}
-          </SummaryCard>
+          </div>
         )}
       </div>
 
       <div className="mt-10 flex justify-between">
-        <Button variant="ghost" size="lg" onClick={onBack} className={CTA_SHAPE}>
+        <Button variant="ghost" size="lg" onClick={onBack} className="gap-2">
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button size="lg" onClick={onGenerate} className={CTA_SHAPE}>
+        <Button size="lg" onClick={onGenerate} className="gap-2">
           <Sparkles className="w-4 h-4" /> Create New Ad
         </Button>
       </div>

@@ -1,14 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
-import {
-  STEP_CONTAINER,
-  STEP_HEADING,
-  STEP_SUBTITLE,
-  CARD_BASE,
-  CARD_SELECTED,
-  CARD_IDLE,
-  CTA_SHAPE,
-} from "./_shared";
 
 const RATIOS = [
   { value: "1:1", label: "Square", desc: "Feed posts", width: 40, height: 40 },
@@ -35,9 +26,9 @@ export const AspectRatioStep = ({ selected, onUpdate, onNext, onBack }: AspectRa
   };
 
   return (
-    <div className={STEP_CONTAINER}>
-      <h2 className={STEP_HEADING}>Choose your ad formats</h2>
-      <p className={STEP_SUBTITLE}>
+    <div>
+      <h2 className="text-2xl font-bold text-foreground mb-1">Choose your ad formats</h2>
+      <p className="text-muted-foreground mb-8">
         Select one or more aspect ratios. We'll generate a creative for each format.
       </p>
 
@@ -48,15 +39,19 @@ export const AspectRatioStep = ({ selected, onUpdate, onNext, onBack }: AspectRa
             <button
               key={r.value}
               onClick={() => toggle(r.value)}
-              className={`${CARD_BASE} p-5 text-center ${isSelected ? CARD_SELECTED : CARD_IDLE}`}
+              className={`relative p-5 rounded-lg border-2 text-center transition-all ${
+                isSelected
+                  ? "border-primary bg-primary/5"
+                  : "border-border hover:border-primary/40 bg-card"
+              }`}
             >
               {isSelected && (
-                <div className="absolute top-3 right-3 z-10 w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm">
-                  <Check className="w-3.5 h-3.5 text-primary-foreground" />
+                <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                  <Check className="w-3 h-3 text-primary-foreground" />
                 </div>
               )}
               <div
-                className={`mx-auto mb-3 rounded-md border ${isSelected ? "border-primary/30 bg-primary/10" : "border-border bg-muted"}`}
+                className={`mx-auto mb-3 rounded border ${isSelected ? "border-primary/30 bg-primary/10" : "border-border bg-muted"}`}
                 style={{ width: r.width, height: r.height }}
               />
               <p className="font-semibold text-foreground text-sm">{r.label}</p>
@@ -67,11 +62,11 @@ export const AspectRatioStep = ({ selected, onUpdate, onNext, onBack }: AspectRa
         })}
       </div>
 
-      <div className="mt-10 flex justify-between">
-        <Button variant="ghost" size="lg" onClick={onBack} className={CTA_SHAPE}>
+      <div className="mt-8 flex justify-between">
+        <Button variant="ghost" size="lg" onClick={onBack} className="gap-2">
           <ArrowLeft className="w-4 h-4" /> Back
         </Button>
-        <Button size="lg" onClick={onNext} disabled={selected.length === 0} className={CTA_SHAPE}>
+        <Button size="lg" onClick={onNext} disabled={selected.length === 0} className="gap-2">
           Continue <ArrowRight className="w-4 h-4" />
         </Button>
       </div>
