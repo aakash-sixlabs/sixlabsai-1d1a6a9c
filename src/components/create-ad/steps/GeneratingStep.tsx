@@ -11,7 +11,7 @@ interface GeneratingStepProps {
   state: CreateAdState;
 }
 
-const MOCK_DELAY_MS = 20 * 1000; // 20 seconds
+const MOCK_DELAY_MS = 30 * 1000; // 30 seconds
 
 /**
  * Mock generation kickoff:
