@@ -292,19 +292,61 @@ export const InsightsStep = () => {
       if (!selectedAccountId) setSelectedAccountId(fetchedAccounts[0].id);
     }
 
-    // Primary source: campaign_ad_data materialized view (flattened, denormalized)
-    const { data: cadData } = await (supabase as any).from("campaign_ad_data").select("*");
-    const rows = cadData || [];
+    // Build rows from live tables (campaign_ad_data MV was removed in May 2026 schema rebuild).
+    const accountIdFilter = state.selectedAccount;
+    const [adsRes, creativesRes, perfRes, adsetsRes, campaignsRes] = await Promise.all([
+      supabase.from("ads").select("id, meta_ad_id, name, ad_set_id, effective_status, status").eq("ad_account_id", accountIdFilter as any).limit(1000),
+      supabase.from("ad_creatives").select("id, ad_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls").limit(1000),
+      supabase.from("ad_performance_daily").select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases").limit(1000),
+      supabase.from("ad_sets").select("id, campaign_id, name").limit(1000),
+      supabase.from("campaigns").select("id, name").eq("ad_account_id", accountIdFilter as any).limit(1000),
+    ]);
 
-    if (rows.length > 0) {
-      setCadRows(rows);
-      setMockAds(null);
-    } else {
+    const ads = adsRes.data || [];
+    const creatives = creativesRes.data || [];
+    const perf = perfRes.data || [];
+    const adsets = adsetsRes.data || [];
+    const campaigns = campaignsRes.data || [];
+
+    if (ads.length === 0) {
       setCadRows([]);
       setMockAds(generateMockData());
+    } else {
+      const adsetMap = new Map(adsets.map((a: any) => [a.id, a]));
+      const campMap = new Map(campaigns.map((c: any) => [c.id, c]));
+      const adById = new Map(ads.map((a: any) => [a.id, a]));
+      const creativeByAdId = new Map(creatives.map((c: any) => [c.ad_id, c]));
+
+      const rows: any[] = [];
+      for (const p of perf) {
+        const ad = adById.get(p.ad_id);
+        if (!ad) continue;
+        const c = creativeByAdId.get(p.ad_id);
+        const adset = ad ? adsetMap.get((ad as any).ad_set_id) : undefined;
+        const camp = adset ? campMap.get((adset as any).campaign_id) : undefined;
+        rows.push({
+          ad_id: p.ad_id,
+          ad_name: (ad as any).name,
+          ad_effective_status: (ad as any).effective_status,
+          campaign_id: camp ? (camp as any).id : "",
+          campaign_name: camp ? (camp as any).name : "Unknown Campaign",
+          creative_id: c ? (c as any).id : null,
+          creative_type: c ? (c as any).creative_type : "static_single",
+          image_url: c ? ((c as any).stored_image_url || (c as any).image_url) : null,
+          image_urls: c ? ((c as any).stored_image_urls || []) : [],
+          date: p.date,
+          spend: p.spend,
+          impressions: p.impressions,
+          clicks: p.clicks,
+          purchases: p.purchases,
+          roas: p.roas,
+        });
+      }
+      setCadRows(rows);
+      setMockAds(rows.length === 0 ? generateMockData() : null);
     }
     setLoading(false);
-  }, [selectedAccountId]);
+  }, [selectedAccountId, state.selectedAccount]);
 
   // Derive ads from raw cad rows + selected date range
   const ads: EnrichedAd[] = useMemo(() => {
