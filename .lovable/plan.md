@@ -1,51 +1,46 @@
-## Audit: what the create-ad flow collects vs what `generation_jobs` stores
+## Problem
 
-The `CreateAdState` (client) currently collects:
+When the Meta OAuth callback runs, the edge function fails with:
 
-- `goal` ✅ stored as `goal`
-- `promoScope` ✅ stored as `promo_scope`
-- `productImage` ✅ stored as `product_image_url`
-- `productUrl` ✅ stored as `product_url`
-- `productInputMethod` ✅ stored as `product_input_method`
-- `aspectRatios` ✅ stored as `aspect_ratios`
-- `promoDetails` (incl. offer fields, promo code, dates, notes, **disclaimerIds**, **disclaimers**) ✅ stored as `promo_details` jsonb — but disclaimers are buried inside this blob, not queryable
-- `icpId` / `icpName` / `icpDescription` ❌ **NOT stored anywhere** (lost after generation)
-- `adAccountId` ✅ stored as `ad_account_id`
-
-The full payload is also dumped into `service_request_payload` jsonb, so technically nothing is *lost* — but the things we'll likely want to query, filter, or report on (which ICP an ad targets, which disclaimers were attached) deserve first-class columns.
-
-## What's missing / worth adding
-
-Add three first-class fields to `generation_jobs`:
-
-1. **`icp_id` (uuid, nullable)** — references the chosen ICP. Lets us answer "show all creatives generated for ICP X" without scanning JSON.
-2. **`icp_snapshot` (jsonb, nullable)** — `{ name, description }` captured at generation time. Preserves intent even if the ICP is later edited or deleted.
-3. **`disclaimer_ids` (uuid[], nullable)** — array of disclaimer IDs used. Easy to join/filter. The full label+text snapshot stays inside `promo_details.disclaimers` for historical fidelity.
-
-Everything else in the flow is already covered by existing columns or the `service_request_payload` snapshot.
-
-## Implementation
-
-### 1. Migration
-Add columns to `generation_jobs`:
-```text
-icp_id          uuid       null
-icp_snapshot    jsonb      null
-disclaimer_ids  uuid[]     null  default '{}'
 ```
-No FK constraints (matches the table's existing convention of no FKs); nullable so existing rows stay valid.
+null value in column "account_id" of relation "meta_connections" violates not-null constraint
+```
 
-### 2. `supabase/functions/generate-creatives/index.ts`
-- Extend the `CreateAdState` interface with `icpId`, `icpName`, `icpDescription`, and `promoDetails.disclaimerIds` / `promoDetails.disclaimers`.
-- On insert into `generation_jobs`, populate the three new columns from the payload.
+The `meta_connections` table requires a non-null `account_id` (the Lovable tenant uuid), but `supabase/functions/meta-oauth/index.ts` upserts the row with only `user_id`, `access_token`, `meta_user_id`, etc. — no `account_id`. As a result the OAuth callback returns a non-2xx, which the UI surfaces as “Edge Function returned a non-2xx status code at auth”.
 
-### 3. `src/components/create-ad/steps/GeneratingStep.tsx`
-No change needed — it already spreads the entire `state` into the edge function body, so `icpId` / `icpName` / `icpDescription` will flow through automatically.
+Existing users always have at least one row in `account_users` (created by the `handle_new_user` trigger), so we just need to resolve it before the insert.
 
-### 4. `src/integrations/supabase/types.ts`
-Auto-regenerated after migration. No manual edit.
+## Fix
 
-## Out of scope
-- No UI changes.
-- No backfill of historical jobs (they keep `null` for the new columns).
-- Disclaimer label/text is intentionally left inside `promo_details` rather than duplicated into a snapshot column — `disclaimers` table rows aren't typically deleted, and the JSON snapshot is sufficient.
+Edit `supabase/functions/meta-oauth/index.ts`, in the `exchange-token` action, right before the `meta_connections` upsert:
+
+1. Resolve the user's account id:
+   ```ts
+   const { data: au, error: auErr } = await adminClient
+     .from("account_users")
+     .select("account_id")
+     .eq("user_id", userId)
+     .order("created_at", { ascending: true })
+     .limit(1)
+     .maybeSingle();
+
+   if (auErr || !au?.account_id) {
+     console.error("[meta-oauth] no account for user", userId, auErr);
+     return new Response(
+       JSON.stringify({ error: "No account found for user." }),
+       { status: 500, headers: corsHeaders },
+     );
+   }
+   const accountId = au.account_id;
+   ```
+
+2. Include `account_id: accountId` in the `meta_connections` upsert payload.
+
+3. Keep `onConflict: "user_id"` (one connection per user). If the unique constraint is actually `(account_id, user_id)`, switch to `onConflict: "account_id,user_id"` — verify via `\d meta_connections` if the first variant errors after the fix.
+
+No DB migration is required; the column already exists and is NOT NULL. No client changes needed.
+
+## Verification
+
+- Re-run the Meta OAuth flow from `/login` → callback should complete and `meta_connections` should contain the new row with `account_id` populated.
+- Edge function logs should no longer show the `23502` error.

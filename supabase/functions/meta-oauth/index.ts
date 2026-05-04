@@ -138,12 +138,31 @@ Deno.serve(async (req) => {
 
       const tokenHash = linkData.properties?.hashed_token;
 
+      // Resolve account_id (multi-tenant)
+      const { data: au, error: auErr } = await adminClient
+        .from("account_users")
+        .select("account_id")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (auErr || !au?.account_id) {
+        console.error("[meta-oauth] no account for user", userId, auErr);
+        return new Response(
+          JSON.stringify({ error: "No account found for user." }),
+          { status: 500, headers: corsHeaders },
+        );
+      }
+      const accountId = au.account_id;
+
       // Store Meta connection
       const { data: connection, error: insertError } = await adminClient
         .from("meta_connections")
         .upsert(
           {
             user_id: userId,
+            account_id: accountId,
             access_token: accessToken,
             token_expires_at: new Date(
               Date.now() + expiresIn * 1000
