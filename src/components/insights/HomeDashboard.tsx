@@ -321,9 +321,9 @@ export const HomeDashboard = ({
         </div>
       </div>
 
-      {/* ─────────── Section 2: What's working in your category ─────────── */}
+      {/* ─────────── Section 3: What's working in your category ─────────── */}
       <SectionHeader
-        eyebrow="Section 2"
+        eyebrow="Section 3"
         title="What's working in your category"
         subtitle="We're tracking your competitors so you don't have to."
         icon={Radar}
