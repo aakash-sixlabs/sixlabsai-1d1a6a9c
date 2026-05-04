@@ -301,6 +301,7 @@ Deno.serve(async (req) => {
         );
 
         const adsetRecords = adsets.map((as: any) => ({
+          account_id: accountId,
           campaign_id: campaignMap.get(as.campaign_id),
           user_id: userId,
           meta_adset_id: as.id,
@@ -317,14 +318,14 @@ Deno.serve(async (req) => {
         }));
         if (adsetRecords.length > 0) {
           await admin.from("ad_sets").upsert(adsetRecords, {
-            onConflict: "user_id,meta_adset_id",
+            onConflict: "account_id,meta_adset_id",
           });
         }
 
         const { data: storedAdsets } = await admin
           .from("ad_sets")
           .select("id, meta_adset_id")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
         const adsetMap = new Map(
           (storedAdsets || []).map((a: any) => [a.meta_adset_id, a.id]),
         );
