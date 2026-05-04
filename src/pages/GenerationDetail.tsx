@@ -19,6 +19,7 @@ import { AppShell } from "@/components/layout/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CreativeImageCard } from "@/components/insights/CreativeImageCard";
 
 interface GenerationJob {
   id: string;
@@ -413,8 +414,6 @@ const Field = ({
     {hint && <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{hint}</p>}
   </div>
 );
-
-import { CreativeImageCard } from "@/components/insights/CreativeImageCard";
 
 const CreativeCard = ({
   creative,
