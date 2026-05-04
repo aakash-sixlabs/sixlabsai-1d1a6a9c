@@ -468,10 +468,15 @@ export const BrandKitStep = ({
         }
       }
 
+      const { getCurrentAccountId } = await import("@/lib/accountContext");
+      const accountId = await getCurrentAccountId();
+      if (!accountId) throw new Error("No account found");
+
       const { error: upsertErr } = await supabase
         .from("ad_account_profiles")
         .upsert(
           {
+            account_id: accountId,
             ad_account_id: adAccountId,
             user_id: user.id,
             brand_name: edits.brand_name || null,
@@ -481,11 +486,11 @@ export const BrandKitStep = ({
             accent_color: edits.accent_color,
             font_family: edits.body_font,
             tagline: edits.tagline || null,
-            tone_of_voice: kit.tone_of_voice, // hidden from UI, still saved
-            product_categories: kit.product_categories, // hidden from UI, still saved
+            tone_of_voice: kit.tone_of_voice,
+            product_categories: kit.product_categories,
             website_url: kit.website_url,
             brand_kit: brandKitJson,
-            brand_kit_status: "ready",
+            brand_kit_status: "completed",
             brand_kit_updated_at: new Date().toISOString(),
             confirmed: true,
           },
