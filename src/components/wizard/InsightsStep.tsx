@@ -287,6 +287,19 @@ export const InsightsStep = () => {
     const accountsRes = await supabase.from("ad_accounts").select("id, account_id, account_name");
     const fetchedAccounts = accountsRes.data || [];
 
+    // Resolve user's default ad account (set during onboarding) so it's always
+    // pre-selected in the sidebar dropdown.
+    const { data: { user } } = await supabase.auth.getUser();
+    let defaultAdAccountId: string | null = null;
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("default_ad_account_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      defaultAdAccountId = profile?.default_ad_account_id ?? null;
+    }
+
     if (fetchedAccounts.length === 0) {
       const mockAccounts = [
         { id: "mock-acc-1", account_id: "act_111222333", account_name: "Glow Skin Co. Ads" },
@@ -296,8 +309,20 @@ export const InsightsStep = () => {
       setAdAccounts(mockAccounts);
       if (!selectedAccountId) setSelectedAccountId(mockAccounts[0].id);
     } else {
-      setAdAccounts(fetchedAccounts);
-      if (!selectedAccountId) setSelectedAccountId(fetchedAccounts[0].id);
+      // Sort so the default account appears first in the dropdown.
+      const sorted = defaultAdAccountId
+        ? [
+            ...fetchedAccounts.filter((a: any) => a.id === defaultAdAccountId),
+            ...fetchedAccounts.filter((a: any) => a.id !== defaultAdAccountId),
+          ]
+        : fetchedAccounts;
+      setAdAccounts(sorted);
+      if (!selectedAccountId) {
+        const preferred =
+          (defaultAdAccountId && sorted.find((a: any) => a.id === defaultAdAccountId)?.id) ||
+          sorted[0].id;
+        setSelectedAccountId(preferred);
+      }
     }
 
     // Scope strictly to the selected ad account: campaigns → adsets → ads.
