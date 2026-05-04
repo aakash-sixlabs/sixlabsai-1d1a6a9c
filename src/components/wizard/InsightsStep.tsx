@@ -296,7 +296,7 @@ export const InsightsStep = () => {
     // RLS already scopes everything to the user's account; filter campaigns/adsets to this ad_account.
     const accountIdFilter = state.selectedAccount;
     const [creativesRes, perfRes, adsetsRes, campaignsRes] = await Promise.all([
-      supabase.from("ad_creatives").select("id, ad_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls").limit(1000),
+      supabase.from("ad_creatives").select("id, ad_id, meta_creative_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls, thumbnail_url").limit(2000),
       supabase.from("ad_performance_daily").select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases").limit(1000),
       supabase.from("ad_sets").select("id, campaign_id, name").limit(1000),
       supabase.from("campaigns").select("id, name").eq("ad_account_id", accountIdFilter as any).limit(1000),
@@ -306,9 +306,9 @@ export const InsightsStep = () => {
     const adsetIds = new Set(adsetsScoped.map((a: any) => a.id));
     const adsRes = await supabase
       .from("ads")
-      .select("id, meta_ad_id, name, ad_set_id, effective_status, status")
-      .in("ad_set_id", Array.from(adsetIds) as string[])
-      .limit(2000);
+        .select("id, meta_ad_id, meta_creative_id, name, ad_set_id, effective_status, status")
+        .in("ad_set_id", Array.from(adsetIds) as string[])
+        .limit(5000);
 
     const ads = adsRes.data || [];
     const creatives = creativesRes.data || [];
@@ -326,12 +326,15 @@ export const InsightsStep = () => {
       const campMap = new Map(campaigns.map((c: any) => [c.id, c]));
       const adById = new Map(ads.map((a: any) => [a.id, a]));
       const creativeByAdId = new Map(creatives.map((c: any) => [c.ad_id, c]));
+      const creativeByMetaId = new Map(creatives.map((c: any) => [c.meta_creative_id, c]));
+      const getCreative = (ad: any) =>
+        creativeByAdId.get(ad.id) || creativeByMetaId.get(ad.meta_creative_id);
 
       const rows: any[] = [];
       for (const p of perf) {
         const ad = adById.get(p.ad_id);
         if (!ad) continue;
-        const c = creativeByAdId.get(p.ad_id);
+        const c = getCreative(ad);
         const adset = ad ? adsetMap.get((ad as any).ad_set_id) : undefined;
         const camp = adset ? campMap.get((adset as any).campaign_id) : undefined;
         rows.push({
@@ -342,7 +345,7 @@ export const InsightsStep = () => {
           campaign_name: camp ? (camp as any).name : "Unknown Campaign",
           creative_id: c ? (c as any).id : null,
           creative_type: c ? (c as any).creative_type : "static_single",
-          image_url: c ? ((c as any).stored_image_url || (c as any).image_url) : null,
+          image_url: c ? ((c as any).stored_image_url || (c as any).image_url || (c as any).thumbnail_url) : null,
           image_urls: c ? ((c as any).stored_image_urls || []) : [],
           date: p.date,
           spend: p.spend,
