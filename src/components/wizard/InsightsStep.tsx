@@ -276,7 +276,9 @@ export const InsightsStep = () => {
       ];
       setAdAccounts(mockAccounts);
       if (!selectedAccountId) setSelectedAccountId(mockAccounts[0].id);
-      setCadRows([]);
+      setRawAds([]);
+      setRawCreatives([]);
+      setRawPerf([]);
       setMockAds(generateMockData());
       setLoading(false);
       return;
@@ -298,79 +300,58 @@ export const InsightsStep = () => {
       if (!selectedAccountId) setSelectedAccountId(fetchedAccounts[0].id);
     }
 
-    // Build rows from live tables (campaign_ad_data MV was removed in May 2026 schema rebuild).
-    // RLS already scopes everything to the user's account; filter campaigns/adsets to this ad_account.
+    // Scope strictly to the selected ad account: campaigns → adsets → ads.
+    // We pull ALL creatives + perf for those ads (no row-cap on perf so date
+    // filters work). Videos are filtered out below — /home is image-creative-first.
     const accountIdFilter = state.selectedAccount;
-    const [creativesRes, perfRes, adsetsRes, campaignsRes] = await Promise.all([
-      supabase.from("ad_creatives").select("id, ad_id, meta_creative_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls, thumbnail_url").limit(2000),
-      supabase.from("ad_performance_daily").select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases").limit(1000),
-      supabase.from("ad_sets").select("id, campaign_id, name").limit(1000),
-      supabase.from("campaigns").select("id, name").eq("ad_account_id", accountIdFilter as any).limit(1000),
-    ]);
-    const campIds = new Set((campaignsRes.data || []).map((c: any) => c.id));
-    const adsetsScoped = (adsetsRes.data || []).filter((a: any) => campIds.has(a.campaign_id));
-    const adsetIds = new Set(adsetsScoped.map((a: any) => a.id));
-    const adsRes = await supabase
-      .from("ads")
-        .select("id, meta_ad_id, meta_creative_id, name, ad_set_id, effective_status, status")
-        .in("ad_set_id", Array.from(adsetIds) as string[])
-        .limit(5000);
-
-    const ads = adsRes.data || [];
-    const creatives = creativesRes.data || [];
-    const perf = perfRes.data || [];
-    const adsets = adsetsScoped;
+    const campaignsRes = await supabase
+      .from("campaigns").select("id, name").eq("ad_account_id", accountIdFilter as any).limit(2000);
     const campaigns = campaignsRes.data || [];
+    const campIds = campaigns.map((c: any) => c.id);
 
+    const adsetsRes = campIds.length
+      ? await supabase.from("ad_sets").select("id, campaign_id, name").in("campaign_id", campIds).limit(2000)
+      : { data: [] as any[] };
+    const adsets = adsetsRes.data || [];
+    const adsetIds = adsets.map((a: any) => a.id);
 
+    const adsRes = adsetIds.length
+      ? await supabase.from("ads")
+          .select("id, meta_ad_id, meta_creative_id, name, ad_set_id, effective_status, status, media_type")
+          .in("ad_set_id", adsetIds)
+          .limit(5000)
+      : { data: [] as any[] };
+    // Exclude videos — /home is creative-first focused on static & carousel images
+    const adsAll = adsRes.data || [];
+    const ads = adsAll.filter((a: any) => (a.media_type || "").toLowerCase() !== "video");
+    const adIds = ads.map((a: any) => a.id);
 
-    if (ads.length === 0) {
-      setCadRows([]);
-      setMockAds(generateMockData());
-    } else {
-      const adsetMap = new Map(adsets.map((a: any) => [a.id, a]));
-      const campMap = new Map(campaigns.map((c: any) => [c.id, c]));
-      const adById = new Map(ads.map((a: any) => [a.id, a]));
-      const creativeByAdId = new Map(creatives.map((c: any) => [c.ad_id, c]));
-      const creativeByMetaId = new Map(creatives.map((c: any) => [c.meta_creative_id, c]));
-      const getCreative = (ad: any) =>
-        creativeByAdId.get(ad.id) || creativeByMetaId.get(ad.meta_creative_id);
+    const [creativesRes, perfRes] = await Promise.all([
+      adIds.length
+        ? supabase.from("ad_creatives")
+            .select("id, ad_id, meta_creative_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls, thumbnail_url")
+            .in("ad_id", adIds).limit(5000)
+        : Promise.resolve({ data: [] as any[] }),
+      adIds.length
+        ? supabase.from("ad_performance_daily")
+            .select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases")
+            .in("ad_id", adIds).limit(50000)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
 
-      const rows: any[] = [];
-      for (const p of perf) {
-        const ad = adById.get(p.ad_id);
-        if (!ad) continue;
-        const c = getCreative(ad);
-        const adset = ad ? adsetMap.get((ad as any).ad_set_id) : undefined;
-        const camp = adset ? campMap.get((adset as any).campaign_id) : undefined;
-        rows.push({
-          ad_id: p.ad_id,
-          ad_name: (ad as any).name,
-          ad_effective_status: (ad as any).effective_status,
-          campaign_id: camp ? (camp as any).id : "",
-          campaign_name: camp ? (camp as any).name : "Unknown Campaign",
-          creative_id: c ? (c as any).id : null,
-          creative_type: c ? (c as any).creative_type : "static_single",
-          image_url: c ? ((c as any).stored_image_url || (c as any).image_url || (c as any).thumbnail_url) : null,
-          image_urls: c ? ((c as any).stored_image_urls || []) : [],
-          date: p.date,
-          spend: p.spend,
-          impressions: p.impressions,
-          clicks: p.clicks,
-          purchases: p.purchases,
-          roas: p.roas,
-        });
-      }
-      setCadRows(rows);
-      setMockAds(rows.length === 0 ? generateMockData() : null);
-    }
+    setRawAds(ads);
+    setRawCreatives(creativesRes.data || []);
+    setRawPerf(perfRes.data || []);
+    setRawAdsets(adsets);
+    setRawCampaigns(campaigns);
+    setMockAds(ads.length === 0 ? generateMockData() : null);
     setLoading(false);
   }, [selectedAccountId, state.selectedAccount]);
 
-  // Derive ads from raw cad rows + selected date range
+  // Derive ads from raw rows + selected date range
   const ads: EnrichedAd[] = useMemo(() => {
     if (mockAds) return mockAds;
-    if (!cadRows || cadRows.length === 0) return [];
+    if (!rawAds || rawAds.length === 0) return [];
 
     const cutoff = (() => {
       if (dateRange === "all") return null;
@@ -381,65 +362,65 @@ export const InsightsStep = () => {
       return d;
     })();
 
-    const inRange = cutoff
-      ? cadRows.filter((r) => r.date && new Date(r.date) >= cutoff)
-      : cadRows;
+    const adsetMap = new Map(rawAdsets.map((a: any) => [a.id, a]));
+    const campMap = new Map(rawCampaigns.map((c: any) => [c.id, c]));
+    const creativeByAdId = new Map(rawCreatives.map((c: any) => [c.ad_id, c]));
+    const creativeByMetaId = new Map(rawCreatives.map((c: any) => [c.meta_creative_id, c]));
+    const getCreative = (ad: any) =>
+      creativeByAdId.get(ad.id) || (ad.meta_creative_id && creativeByMetaId.get(ad.meta_creative_id));
 
-    const adAgg = new Map<string, any>();
-    inRange.forEach((row: any) => {
-      const key = row.ad_id || `${row.brand_id}-${row.date}`;
-      if (!adAgg.has(key)) {
-        const imgs = Array.isArray(row.image_urls) ? row.image_urls : [];
-        adAgg.set(key, {
-          id: key,
-          creativeId: row.creative_id || key,
-          adName: row.ad_name || "Unknown",
-          campaignName: row.campaign_name || "Unknown Campaign",
-          campaignId: row.campaign_id || "",
-          imageUrl: row.image_url || imgs[0] || null,
-          creativeType: row.creative_type || "static_single",
-          spend: 0, impressions: 0, clicks: 0, purchases: 0, roasSum: 0, days: 0,
-          hasActiveAd: false,
-        });
-      }
-      const agg = adAgg.get(key)!;
-      agg.spend += Number(row.spend || 0);
-      agg.impressions += Number(row.impressions || 0);
-      agg.clicks += Number(row.clicks || 0);
-      agg.purchases += Number(row.purchases || 0);
-      agg.roasSum += Number(row.roas || 0);
-      agg.days += 1;
-      if (String(row.ad_effective_status || "").toUpperCase() === "ACTIVE") {
-        agg.hasActiveAd = true;
-      }
+    // Filter performance rows by date range
+    const perfInRange = cutoff
+      ? rawPerf.filter((p: any) => p.date && new Date(p.date) >= cutoff)
+      : rawPerf;
+    const perfByAd = new Map<string, any[]>();
+    perfInRange.forEach((p: any) => {
+      if (!perfByAd.has(p.ad_id)) perfByAd.set(p.ad_id, []);
+      perfByAd.get(p.ad_id)!.push(p);
     });
 
-    const enriched: EnrichedAd[] = Array.from(adAgg.values()).map((agg: any) => {
-      const roas = agg.days > 0 ? agg.roasSum / agg.days : 0;
-      const ctr = agg.impressions > 0 ? (agg.clicks / agg.impressions) * 100 : 0;
-      const costPerPurchase = agg.purchases > 0 ? agg.spend / agg.purchases : null;
+    // Creative-first: iterate ads (one per creative impl), aggregate perf in window
+    const enriched: EnrichedAd[] = rawAds.map((ad: any) => {
+      const c = getCreative(ad);
+      const adset = adsetMap.get(ad.ad_set_id);
+      const camp = adset ? campMap.get((adset as any).campaign_id) : undefined;
+      const perfRows = perfByAd.get(ad.id) || [];
+      let spend = 0, impressions = 0, clicks = 0, purchases = 0, roasSum = 0;
+      perfRows.forEach((p: any) => {
+        spend += Number(p.spend || 0);
+        impressions += Number(p.impressions || 0);
+        clicks += Number(p.clicks || 0);
+        purchases += Number(p.purchases || 0);
+        roasSum += Number(p.roas || 0);
+      });
+      const roas = perfRows.length > 0 ? roasSum / perfRows.length : 0;
+      const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
+      const imgs = c ? ((c as any).stored_image_urls as any[]) || [] : [];
+      const imageUrl = c
+        ? ((c as any).stored_image_url || (c as any).image_url || (c as any).thumbnail_url || imgs[0] || null)
+        : null;
       return {
-        id: agg.id,
-        creativeId: agg.creativeId,
-        adName: agg.adName,
-        campaignName: agg.campaignName,
-        campaignId: agg.campaignId,
-        imageUrl: agg.imageUrl,
-        creativeType: agg.creativeType,
+        id: ad.id,
+        creativeId: c ? (c as any).id : ad.id,
+        adName: ad.name || "Untitled",
+        campaignName: camp ? (camp as any).name : "Unknown Campaign",
+        campaignId: camp ? (camp as any).id : "",
+        imageUrl,
+        creativeType: c ? (c as any).creative_type : "static_single",
         score: Math.min(100, Math.round(roas * 15 + ctr * 20)),
         decayScore: roas < 1 ? 80 : roas < 2 ? 50 : roas < 4 ? 25 : 10,
-        spend: agg.spend,
+        spend,
         roas,
         ctr,
-        impressions: agg.impressions,
-        purchases: agg.purchases,
-        costPerPurchase,
-        hasActiveAd: agg.hasActiveAd,
+        impressions,
+        purchases,
+        costPerPurchase: purchases > 0 ? spend / purchases : null,
+        hasActiveAd: String(ad.effective_status || "").toUpperCase() === "ACTIVE",
       };
     });
     enriched.sort((a, b) => b.score - a.score);
     return enriched;
-  }, [cadRows, mockAds, dateRange]);
+  }, [rawAds, rawCreatives, rawPerf, rawAdsets, rawCampaigns, mockAds, dateRange]);
 
 
   // Background sync for returning users (and manual resync)
