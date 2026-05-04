@@ -164,7 +164,7 @@ export const LandingV1Step = () => {
       setAdAccountInput("");
       setTokenDialogOpen(false);
       toast.success(`Connected as ${data.userName}`);
-      navigate(`${ONBOARDING_V1_PATH}?meta=connected`);
+      navigate(`${ONBOARDING_V1_PATH}?meta=connected${demoSuffix}`);
     } catch (err: any) {
       console.error("Token connect error:", err);
       toast.error(err.message || "Failed to connect with token");
@@ -194,7 +194,7 @@ export const LandingV1Step = () => {
     if (event.data?.type === "META_AUTH_COMPLETE") {
       const connectionData = event.data.connectionData;
       sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
-      navigate(`${ONBOARDING_V1_PATH}?meta=connected`);
+      navigate(`${ONBOARDING_V1_PATH}?meta=connected${demoSuffix}`);
       setConnecting(false);
     }
     if (event.data?.type === "META_AUTH_ERROR") {
