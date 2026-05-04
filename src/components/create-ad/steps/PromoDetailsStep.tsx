@@ -75,12 +75,56 @@ const isValid = (details: PromoDetails): boolean => {
 export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDetailsStepProps) => {
   const set = (partial: Partial<PromoDetails>) => onUpdate({ ...details, ...partial });
 
+  const [savedOffers, setSavedOffers] = useState<SavedOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
+  const [mode, setMode] = useState<"saved" | "new" | null>(null);
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
+
   const [startDate, setStartDate] = useState<Date | undefined>(
     details.startDate ? new Date(details.startDate) : undefined
   );
   const [endDate, setEndDate] = useState<Date | undefined>(
     details.endDate ? new Date(details.endDate) : undefined
   );
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingOffers(false); return; }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("default_ad_account_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile?.default_ad_account_id) { setLoadingOffers(false); return; }
+      const { data } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("ad_account_id", profile.default_ad_account_id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      const offers = (data as any as SavedOffer[]) ?? [];
+      setSavedOffers(offers);
+      setMode(offers.length > 0 ? "saved" : "new");
+      setLoadingOffers(false);
+    })();
+  }, []);
+
+  const handlePickSaved = (o: SavedOffer) => {
+    setSelectedSavedId(o.id);
+    onUpdate({
+      ...details,
+      offerType: o.offer_type,
+      discountValue: o.discount_value ?? "",
+      buyQty: o.buy_qty ?? "1",
+      getQty: o.get_qty ?? "1",
+      trialPrice: o.trial_price ?? "",
+      freebieDescription: o.freebie_description ?? "",
+      customOfferHeadline: o.custom_offer_headline ?? "",
+      promoCode: o.promo_code ?? "",
+      additionalNotes: o.additional_notes ?? "",
+    });
+  };
 
   const handleStartDate = (date: Date | undefined) => {
     setStartDate(date);
