@@ -4,11 +4,39 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine, Tag, Sparkles, Check } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { DisclaimerPicker } from "./DisclaimerPicker";
+
+interface SavedOffer {
+  id: string;
+  name: string;
+  offer_type: OfferType;
+  discount_value: string | null;
+  buy_qty: string | null;
+  get_qty: string | null;
+  trial_price: string | null;
+  freebie_description: string | null;
+  custom_offer_headline: string | null;
+  promo_code: string | null;
+  additional_notes: string | null;
+}
+
+const offerSummary = (o: SavedOffer): string => {
+  switch (o.offer_type) {
+    case "percentage": return `${o.discount_value}% off`;
+    case "fixed": return `$${o.discount_value} off`;
+    case "bogo": return `Buy ${o.buy_qty} Get ${o.get_qty} Free`;
+    case "trial": return `Try for $${o.trial_price}`;
+    case "freebie": return o.freebie_description ?? "";
+    case "custom": return o.custom_offer_headline ?? "";
+    default: return "";
+  }
+};
 
 interface PromoDetailsStepProps {
   details: PromoDetails;
@@ -47,12 +75,56 @@ const isValid = (details: PromoDetails): boolean => {
 export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDetailsStepProps) => {
   const set = (partial: Partial<PromoDetails>) => onUpdate({ ...details, ...partial });
 
+  const [savedOffers, setSavedOffers] = useState<SavedOffer[]>([]);
+  const [loadingOffers, setLoadingOffers] = useState(true);
+  const [mode, setMode] = useState<"saved" | "new" | null>(null);
+  const [selectedSavedId, setSelectedSavedId] = useState<string | null>(null);
+
   const [startDate, setStartDate] = useState<Date | undefined>(
     details.startDate ? new Date(details.startDate) : undefined
   );
   const [endDate, setEndDate] = useState<Date | undefined>(
     details.endDate ? new Date(details.endDate) : undefined
   );
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingOffers(false); return; }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("default_ad_account_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile?.default_ad_account_id) { setLoadingOffers(false); return; }
+      const { data } = await supabase
+        .from("offers")
+        .select("*")
+        .eq("ad_account_id", profile.default_ad_account_id)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      const offers = (data as any as SavedOffer[]) ?? [];
+      setSavedOffers(offers);
+      setMode(offers.length > 0 ? "saved" : "new");
+      setLoadingOffers(false);
+    })();
+  }, []);
+
+  const handlePickSaved = (o: SavedOffer) => {
+    setSelectedSavedId(o.id);
+    onUpdate({
+      ...details,
+      offerType: o.offer_type,
+      discountValue: o.discount_value ?? "",
+      buyQty: o.buy_qty ?? "1",
+      getQty: o.get_qty ?? "1",
+      trialPrice: o.trial_price ?? "",
+      freebieDescription: o.freebie_description ?? "",
+      customOfferHeadline: o.custom_offer_headline ?? "",
+      promoCode: o.promo_code ?? "",
+      additionalNotes: o.additional_notes ?? "",
+    });
+  };
 
   const handleStartDate = (date: Date | undefined) => {
     setStartDate(date);
@@ -64,14 +136,66 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
     set({ endDate: date?.toISOString() ?? "" });
   };
 
+  const showCreateForm = mode === "new" || savedOffers.length === 0;
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-foreground mb-1">Promotion details</h2>
       <p className="text-muted-foreground mb-8">
-        What kind of offer are you running?
+        Pick a saved offer or create a new one.
       </p>
 
-      <div className="space-y-8">
+      {!loadingOffers && savedOffers.length > 0 && (
+        <div className="mb-6 inline-flex rounded-lg border border-border bg-card p-1">
+          <button
+            onClick={() => { setMode("saved"); }}
+            className={cn(
+              "px-4 py-1.5 text-sm rounded-md transition-colors",
+              mode === "saved" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Tag className="w-3.5 h-3.5 inline mr-1.5" /> Saved offers
+          </button>
+          <button
+            onClick={() => { setMode("new"); setSelectedSavedId(null); }}
+            className={cn(
+              "px-4 py-1.5 text-sm rounded-md transition-colors",
+              mode === "new" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5 inline mr-1.5" /> Create new
+          </button>
+        </div>
+      )}
+
+      {!showCreateForm && savedOffers.length > 0 && (
+        <div className="space-y-3 mb-6">
+          {savedOffers.map((o) => (
+            <Card
+              key={o.id}
+              onClick={() => handlePickSaved(o)}
+              className={cn(
+                "p-4 cursor-pointer transition-all",
+                selectedSavedId === o.id
+                  ? "border-primary bg-primary/5"
+                  : "hover:border-primary/40"
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm">{o.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {offerSummary(o)}{o.promo_code && ` · Code: ${o.promo_code}`}
+                  </p>
+                </div>
+                {selectedSavedId === o.id && <Check className="w-4 h-4 text-primary shrink-0" />}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <div className={cn("space-y-8", !showCreateForm && "hidden")}>
         {/* Offer Type Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {OFFER_TYPES.map(({ type, label, description, icon: Icon }) => (
