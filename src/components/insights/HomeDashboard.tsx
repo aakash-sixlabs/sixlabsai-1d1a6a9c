@@ -103,6 +103,17 @@ export const HomeDashboard = ({
     return { ctrAvg, roasAvg, cac, totalImpr, totalSpend, totalPurchases, activeCreatives };
   }, [ads]);
 
+  // Push KPIs upward so the sidebar can render them
+  useEffect(() => {
+    if (!onKpisChange) return;
+    onKpisChange([
+      { label: "Avg ROAS", value: kpis.roasAvg ? `${kpis.roasAvg.toFixed(2)}x` : "—", hint: `${kpis.activeCreatives} creatives` },
+      { label: "CTR", value: kpis.ctrAvg ? `${kpis.ctrAvg.toFixed(2)}%` : "—", hint: `${compact(kpis.totalImpr)} impr.` },
+      { label: "Avg CAC", value: kpis.cac != null ? `$${kpis.cac.toFixed(2)}` : "—", hint: `${kpis.totalPurchases.toLocaleString()} purchases` },
+      { label: "Total Spend", value: compact(kpis.totalSpend, "$"), hint: `${MOCK_COMPETITORS.length} competitors tracked` },
+    ]);
+  }, [kpis, onKpisChange]);
+
   // ── Top creatives (by score) ──────────────────────────────────
   const topCreatives = useMemo(
     () => [...ads].filter((a) => a.imageUrl).sort((a, b) => b.score - a.score).slice(0, 6),
