@@ -292,8 +292,7 @@ export const LandingV1Step = () => {
             </div>
           </div>
           <h1 className="text-2xl font-display font-bold text-foreground text-center mb-2">Better ads, that actually work.</h1>
-          <p className="text-sm text-muted-foreground text-center mb-1">Connect your Meta account to get started</p>
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground/70 text-center mb-6">Onboarding · v1</p>
+          <p className="text-sm text-muted-foreground text-center mb-6">Connect your Meta account to get started</p>
           <Button size="lg" variant="outline" onClick={handleConnectMeta} disabled={connecting} className="w-full gap-1.5 h-12 text-sm font-medium border-border bg-background hover:bg-accent hover:text-accent-foreground rounded-full">
             {connecting ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Connecting…</>
