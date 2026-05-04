@@ -191,7 +191,7 @@ const Onboarding = () => {
         onContinue={handleToolExplanationContinue}
       />
       {phase === "data-sync" && (
-        <DataSyncStep asOverlay onComplete={handleSyncComplete} isDevMode={isDevMode} />
+        <DataSyncStep asOverlay onComplete={handleSyncComplete} isDevMode={isDevMode} isDemoMode={isDemoMode} />
       )}
     </>
   );
