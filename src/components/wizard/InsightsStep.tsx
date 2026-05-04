@@ -483,10 +483,13 @@ export const InsightsStep = () => {
     if (isFresh) return;
 
     try {
-      // Resync only the last 30 days — Meta's attribution windows close by 28 days,
+      // Resync only the last 28 days — Meta's attribution windows close by 28 days,
       // so older days won't change. Keeps repulls fast and bounded.
+      // Edge functions upsert on (account_id, meta_*_id) and
+      // ad_performance_daily upserts on (ad_id, date), so re-runs replace
+      // existing rows instead of duplicating them.
       const { data, error } = await supabase.functions.invoke("meta-sync-accounts", {
-        body: { adAccountId: accountId, dateRangeDays: "30" },
+        body: { adAccountId: accountId, dateRangeDays: "28" },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
