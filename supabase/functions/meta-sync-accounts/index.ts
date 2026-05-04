@@ -84,11 +84,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const accountId = await getUserAccountId(admin, userId);
+    if (!accountId) {
+      return new Response(JSON.stringify({ error: "No account membership" }), {
+        status: 403,
+        headers: corsHeaders,
+      });
+    }
+
     const { data: adAccount } = await admin
       .from("ad_accounts")
       .select("*, meta_connections(*)")
       .eq("id", adAccountId)
-      .eq("user_id", userId)
+      .eq("account_id", accountId)
       .single();
 
     if (!adAccount) {
@@ -99,35 +107,30 @@ Deno.serve(async (req) => {
     }
 
     const accessToken = adAccount.meta_connections.access_token;
-    const actId = adAccount.account_id.startsWith("act_")
-      ? adAccount.account_id
-      : `act_${adAccount.account_id}`;
+    const metaActId: string = adAccount.account_id_meta;
+    const actId = metaActId.startsWith("act_") ? metaActId : `act_${metaActId}`;
 
-    // Upsert brand (still used for analytics view)
+    // Brand row (per dictionary): one brand per ad account, keyed by ad_account_id.
     const { data: existingBrand } = await admin
       .from("brands")
       .select("id")
-      .eq("user_id", userId)
-      .eq("meta_account_id", adAccount.account_id)
+      .eq("ad_account_id", adAccountId)
       .maybeSingle();
 
-    let brandId: number;
+    let brandId: string;
     if (existingBrand) {
-      brandId = existingBrand.id;
+      brandId = existingBrand.id as string;
       await admin.from("brands").update({
         name: adAccount.account_name,
-        account_currency: adAccount.currency || "USD",
-        account_timezone: adAccount.timezone || null,
       }).eq("id", brandId);
     } else {
       const { data: newBrand } = await admin.from("brands").insert({
+        account_id: accountId,
         user_id: userId,
+        ad_account_id: adAccountId,
         name: adAccount.account_name,
-        meta_account_id: adAccount.account_id,
-        account_currency: adAccount.currency || "USD",
-        account_timezone: adAccount.timezone || null,
       }).select("id").single();
-      brandId = newBrand!.id;
+      brandId = newBrand!.id as string;
     }
 
     const dateEnd = new Date();
@@ -137,9 +140,10 @@ Deno.serve(async (req) => {
     const { data: syncJob } = await admin
       .from("sync_jobs")
       .insert({
+        account_id: accountId,
         user_id: userId,
         ad_account_id: adAccountId,
-        status: "syncing",
+        status: "running",
         phase: "accounts",
         current_step: "Pulling campaigns and ad sets",
         date_range_start: dateStart.toISOString().split("T")[0],
