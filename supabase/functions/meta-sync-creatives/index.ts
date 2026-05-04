@@ -273,11 +273,11 @@ Deno.serve(async (req) => {
         const metaActIdRaw: string = adAccount.account_id_meta;
         const metaActIdNoPrefix = metaActIdRaw.startsWith("act_") ? metaActIdRaw.slice(4) : metaActIdRaw;
 
-        // Load all stored ads for this user (new schema: meta_ad_id, meta_creative_id)
+        // Load all stored ads for this account (new schema: meta_ad_id, meta_creative_id)
         const { data: storedAds } = await admin
           .from("ads")
           .select("id, meta_ad_id, meta_creative_id")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
 
         const creativeIds = [
           ...new Set(
