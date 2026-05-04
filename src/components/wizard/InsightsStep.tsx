@@ -316,11 +316,7 @@ export const InsightsStep = () => {
     const adsets = adsetsScoped;
     const campaigns = campaignsRes.data || [];
 
-    const ads = adsRes.data || [];
-    const creatives = creativesRes.data || [];
-    const perf = perfRes.data || [];
-    const adsets = adsetsRes.data || [];
-    const campaigns = campaignsRes.data || [];
+
 
     if (ads.length === 0) {
       setCadRows([]);
