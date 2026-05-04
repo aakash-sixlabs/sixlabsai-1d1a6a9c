@@ -295,10 +295,10 @@ const GenerationDetail = () => {
                 {promo.discountValue && (
                   <Field label="Discount value" value={String(promo.discountValue)} />
                 )}
-                {promo.buyQty && promo.getQty && (
+                {job.offer_type === "bogo" && promo.buyQty && promo.getQty && (
                   <Field label="BOGO" value={`Buy ${promo.buyQty}, get ${promo.getQty}`} />
                 )}
-                {promo.bogoDiscount && (
+                {job.offer_type === "bogo" && promo.bogoDiscount && (
                   <Field label="BOGO discount" value={String(promo.bogoDiscount)} />
                 )}
                 {promo.trialPrice && (
