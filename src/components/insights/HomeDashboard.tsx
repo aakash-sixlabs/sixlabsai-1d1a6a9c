@@ -90,14 +90,16 @@ export const HomeDashboard = ({
     const totalSpend = ads.reduce((s, a) => s + (a.spend ?? 0), 0);
     const totalPurchases = ads.reduce((s, a) => s + (a.purchases ?? 0), 0);
     const totalImpr = ads.reduce((s, a) => s + (a.impressions ?? 0), 0);
-    const ctrAvg = ads.length
-      ? ads.reduce((s, a) => s + (a.ctr ?? 0), 0) / Math.max(1, ads.filter((a) => a.ctr != null).length)
+    // Impression-weighted CTR (more accurate than a flat average)
+    const ctrAvg = totalImpr > 0
+      ? ads.reduce((s, a) => s + ((a.ctr ?? 0) * (a.impressions ?? 0)), 0) / totalImpr
       : 0;
     const roasAvg = totalSpend > 0
       ? ads.reduce((s, a) => s + ((a.roas ?? 0) * (a.spend ?? 0)), 0) / totalSpend
       : 0;
     const cac = totalPurchases > 0 ? totalSpend / totalPurchases : null;
-    return { ctrAvg, roasAvg, cac, totalImpr };
+    const activeCreatives = ads.filter((a) => (a.spend ?? 0) > 0 || (a.impressions ?? 0) > 0).length;
+    return { ctrAvg, roasAvg, cac, totalImpr, totalSpend, totalPurchases, activeCreatives };
   }, [ads]);
 
   // ── Top creatives (by score) ──────────────────────────────────
@@ -240,10 +242,10 @@ export const HomeDashboard = ({
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-          <KpiCard label="Avg ROAS" value={kpis.roasAvg ? `${kpis.roasAvg.toFixed(2)}x` : "—"} delta="+12%" up />
-          <KpiCard label="CTR" value={kpis.ctrAvg ? `${kpis.ctrAvg.toFixed(2)}%` : "—"} delta="+0.4 pts" up />
-          <KpiCard label="Avg CAC" value={kpis.cac != null ? `$${kpis.cac.toFixed(2)}` : "—"} delta="−18%" up />
-          <KpiCard label="Opportunities" value={`${opportunities.length}`} delta={`${MOCK_COMPETITORS.length} competitors`} subtle />
+          <KpiCard label="Avg ROAS" value={kpis.roasAvg ? `${kpis.roasAvg.toFixed(2)}x` : "—"} delta={`${kpis.activeCreatives} creatives`} subtle />
+          <KpiCard label="CTR" value={kpis.ctrAvg ? `${kpis.ctrAvg.toFixed(2)}%` : "—"} delta={`${compact(kpis.totalImpr)} impressions`} subtle />
+          <KpiCard label="Avg CAC" value={kpis.cac != null ? `$${kpis.cac.toFixed(2)}` : "—"} delta={`${kpis.totalPurchases.toLocaleString()} purchases`} subtle />
+          <KpiCard label="Total Spend" value={compact(kpis.totalSpend, "$")} delta={`${MOCK_COMPETITORS.length} competitors tracked`} subtle />
         </div>
       </motion.section>
 

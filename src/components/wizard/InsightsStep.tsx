@@ -436,11 +436,13 @@ export const InsightsStep = () => {
       for (const ad of adsInGroup) {
         const perfRows = perfByAd.get(ad.id) || [];
         for (const p of perfRows) {
-          spend += Number(p.spend || 0);
+          const pSpend = Number(p.spend || 0);
+          spend += pSpend;
           impressions += Number(p.impressions || 0);
           clicks += Number(p.clicks || 0);
           purchases += Number(p.purchases || 0);
-          revenue += Number(p.revenue || 0);
+          // revenue isn't stored directly — derive from per-day roas × spend
+          revenue += pSpend * Number(p.roas || 0);
         }
       }
       const roas = spend > 0 ? revenue / spend : 0;
