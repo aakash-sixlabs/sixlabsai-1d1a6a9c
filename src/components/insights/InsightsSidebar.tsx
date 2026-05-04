@@ -41,6 +41,12 @@ interface AdAccount {
   account_name: string;
 }
 
+export interface SidebarKpi {
+  label: string;
+  value: string;
+  hint?: string;
+}
+
 interface InsightsSidebarProps {
   activeView: string;
   onViewChange: (view: string) => void;
@@ -48,6 +54,7 @@ interface InsightsSidebarProps {
   adAccounts?: AdAccount[];
   selectedAccountId?: string;
   onAccountChange?: (accountId: string) => void;
+  kpis?: SidebarKpi[];
 }
 
 export const InsightsSidebar = ({
@@ -56,6 +63,7 @@ export const InsightsSidebar = ({
   adAccounts = [],
   selectedAccountId,
   onAccountChange,
+  kpis,
 }: InsightsSidebarProps) => {
   return (
     <aside className="w-56 border-r border-border/60 bg-background flex flex-col h-full shrink-0">
