@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { BrandKitSettings } from "@/components/settings/BrandKitSettings";
 import { IcpSettings } from "@/components/settings/IcpSettings";
 import { DisclaimerSettings } from "@/components/settings/DisclaimerSettings";
+import { CompetitorSettings } from "@/components/settings/CompetitorSettings";
 import { isDevSession } from "@/lib/devMode";
 
 const Settings = () => {
@@ -65,6 +66,7 @@ const Settings = () => {
           <TabsList>
             <TabsTrigger value="brand">Brand Kit</TabsTrigger>
             <TabsTrigger value="icps">ICPs</TabsTrigger>
+            <TabsTrigger value="competitors">Competitors</TabsTrigger>
             <TabsTrigger value="disclaimers">Disclaimers</TabsTrigger>
           </TabsList>
           <TabsContent value="brand" className="mt-6">
@@ -72,6 +74,9 @@ const Settings = () => {
           </TabsContent>
           <TabsContent value="icps" className="mt-6">
             <IcpSettings adAccountId={adAccountId} />
+          </TabsContent>
+          <TabsContent value="competitors" className="mt-6">
+            <CompetitorSettings adAccountId={adAccountId} />
           </TabsContent>
           <TabsContent value="disclaimers" className="mt-6">
             <DisclaimerSettings adAccountId={adAccountId} />
