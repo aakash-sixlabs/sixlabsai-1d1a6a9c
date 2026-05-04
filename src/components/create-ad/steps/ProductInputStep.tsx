@@ -1,8 +1,9 @@
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, ArrowRight, Link2, ImagePlus } from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ArrowRight, Link2, ImagePlus, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface ProductInputStepProps {
   state: CreateAdState;
@@ -11,10 +12,35 @@ interface ProductInputStepProps {
   onBack: () => void;
 }
 
+const MAX_BYTES = 10 * 1024 * 1024;
+const ALLOWED = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+
 export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInputStepProps) => {
   const [method, setMethod] = useState<"url" | "image" | null>(state.productInputMethod);
   const [url, setUrl] = useState(state.productUrl);
   const [error, setError] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(state.productImage);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFile = (file: File) => {
+    if (!ALLOWED.includes(file.type) && !/\.(png|jpe?g|webp)$/i.test(file.name)) {
+      toast.error("Please upload a PNG, JPG, or WEBP image");
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error("Image too large. Max 10MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setImagePreview(dataUrl);
+      onUpdate({ productImage: dataUrl, productInputMethod: "image" });
+    };
+    reader.onerror = () => toast.error("Couldn't read that file. Try another.");
+    reader.readAsDataURL(file);
+  };
 
   const handleContinue = () => {
     if (method === "url") {
@@ -23,6 +49,7 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
       setError("");
       onUpdate({ productUrl: url, productInputMethod: "url" });
     } else if (method === "image") {
+      if (!imagePreview) { toast.error("Please upload an image first"); return; }
       onUpdate({ productInputMethod: "image" });
     }
     onNext();
