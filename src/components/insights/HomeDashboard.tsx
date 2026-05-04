@@ -261,21 +261,45 @@ export const HomeDashboard = ({
         </div>
       </motion.section>
 
-      {/* ─────────── Section 1: Opportunities (action-first) ─────────── */}
-      <SectionHeader
-        eyebrow="Start here"
-        title="Your biggest opportunities"
-        subtitle="Prioritized next moves, grounded in your brand data and category signals."
-        icon={Lightbulb}
-      />
+      {/* ─────────── Action summary: Opportunities + What's working snapshot ─────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-14">
+        {/* Left: Opportunities — visual, hookable */}
+        <div className="lg:col-span-3">
+          <SectionHeader
+            eyebrow="Start here"
+            title="Your biggest opportunities"
+            subtitle="Prioritized next moves, grounded in your brand data and category signals."
+            icon={Lightbulb}
+            compact
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {opportunities.slice(0, 4).map((op, i) => (
+              <OpportunityCard key={op.title} {...op} index={i} />
+            ))}
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-        {opportunities.map((op) => (
-          <OpportunityCard key={op.title} {...op} onGenerate={() => navigate("/create-ad")} />
-        ))}
+        {/* Right: Summary of what's working + category */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          <SummaryPanel
+            icon={Trophy}
+            title="Working for you"
+            tone="accent"
+            items={winningBreakdown.map((w) => ({ label: w.label, value: w.value }))}
+          />
+          <SummaryPanel
+            icon={Radar}
+            title="Working in your category"
+            tone="primary"
+            items={CATEGORY_TRENDS.slice(0, 4).map((t) => ({
+              label: t.up ? "Rising" : "Falling",
+              value: t.title,
+            }))}
+          />
+        </div>
       </div>
 
-      {/* ─────────── Section 2: What's working for your brand ─────────── */}
+      {/* ─────────── Section 2: What's working for your brand (deep-dive) ─────────── */}
       <SectionHeader
         eyebrow="Section 2"
         title="What's working for your brand"
