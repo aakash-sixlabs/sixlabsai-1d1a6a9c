@@ -48,6 +48,7 @@ export interface CreateAdState {
   icpId: string | null;
   icpName: string | null;
   icpDescription: string | null;
+  useBrandGuidelines: boolean;
 }
 
 const initialState: CreateAdState = {
