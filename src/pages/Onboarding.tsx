@@ -20,6 +20,8 @@ const Onboarding = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [phase, setPhase] = useState<OnboardingPhase>("loading");
   const isDevMode = searchParams.get("dev") === "true";
+  const replayMode = searchParams.get("replay") === "true";
+  const skipSync = searchParams.get("skipSync") === "true";
 
   useEffect(() => {
     const init = async () => {
@@ -44,21 +46,25 @@ const Onboarding = () => {
         return;
       }
 
-      // Returning-user shortcut: once a default ad account exists, onboarding
-      // has already been completed for this user. /home triggers the non-blocking
-      // 30-day resync on landing.
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("default_ad_account_id")
-        .eq("id", session.user.id)
-        .maybeSingle();
+      // Returning-user shortcut: skip when replay mode is active.
+      if (!replayMode) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("default_ad_account_id")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-      if (profile?.default_ad_account_id) {
-        navigate("/home", { replace: true });
-        return;
+        if (profile?.default_ad_account_id) {
+          navigate("/home", { replace: true });
+          return;
+        }
       }
 
-      if (searchParams.get("meta") === "connected") {
+      if (replayMode) {
+        // Replay from the very first step.
+        setShowProfileDialog(true);
+        setPhase("profile");
+      } else if (searchParams.get("meta") === "connected") {
         updateState({ metaConnected: true });
         await checkProfileComplete();
       } else if (state.selectedAccount && !state.syncComplete) {
@@ -129,6 +135,10 @@ const Onboarding = () => {
   };
 
   const handleCompetitorsComplete = () => {
+    if (skipSync) {
+      navigate("/home");
+      return;
+    }
     setPhase("data-sync");
   };
 
