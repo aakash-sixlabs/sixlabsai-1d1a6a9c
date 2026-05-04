@@ -200,7 +200,13 @@ export const InsightsStep = () => {
   const navigate = useNavigate();
   const { state } = useWizard();
   const [loading, setLoading] = useState(true);
-  const [cadRows, setCadRows] = useState<any[] | null>(null);
+  // Raw rows kept as separate arrays so the date-range filter can re-aggregate
+  // perf without losing creatives that happen to have zero recent spend.
+  const [rawAds, setRawAds] = useState<any[] | null>(null);
+  const [rawCreatives, setRawCreatives] = useState<any[]>([]);
+  const [rawPerf, setRawPerf] = useState<any[]>([]);
+  const [rawAdsets, setRawAdsets] = useState<any[]>([]);
+  const [rawCampaigns, setRawCampaigns] = useState<any[]>([]);
   const [mockAds, setMockAds] = useState<EnrichedAd[] | null>(null);
   const [activeView, setActiveView] = useState("discover");
   const [searchQuery, setSearchQuery] = useState("");
