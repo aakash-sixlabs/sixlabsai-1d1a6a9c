@@ -129,7 +129,7 @@ export const GeneratingStep = ({ state }: GeneratingStepProps) => {
               aspect_ratio: r.aspect_ratio,
               headline: r.headline,
               primary_text: r.primary_text,
-              status: "pending_review",
+              status: "draft" as const,
               metadata: { source: "mock_library", library_id: r.id },
             }));
             await supabase.from("generated_creatives").insert(rows);
