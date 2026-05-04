@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ImageOff, ThumbsUp, ThumbsDown, X } from "lucide-react";
+import { ImageOff, ThumbsUp, ThumbsDown, X, Download } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { downloadImage, extOf } from "@/lib/downloadImage";
 
 interface Creative {
   id: string;
@@ -37,6 +38,12 @@ export const CreativeImageCard = ({ creative, index, onFeedback }: Props) => {
 
   const aspectStyle = {
     aspectRatio: naturalRatio ?? ratioFallback(creative.aspect_ratio),
+  };
+
+  const filename = `variant-${creative.variant_index + 1}.${extOf(creative.image_url)}`;
+  const handleDownload = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    downloadImage(creative.image_url, filename);
   };
 
   return (
@@ -87,6 +94,15 @@ export const CreativeImageCard = ({ creative, index, onFeedback }: Props) => {
               tone="dislike"
               onClick={() => onFeedback("dislike")}
             />
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-secondary/80 transition-colors"
+              aria-label="Download"
+              title="Download"
+            >
+              <Download className="w-3.5 h-3.5" />
+            </button>
           </div>
         </div>
       </motion.div>
@@ -104,6 +120,14 @@ export const CreativeImageCard = ({ creative, index, onFeedback }: Props) => {
               aria-label="Close"
             >
               <X className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="absolute top-3 right-10 z-10 h-9 px-3 rounded-full bg-card/90 backdrop-blur border border-border shadow-md flex items-center gap-1.5 text-xs font-medium text-foreground hover:bg-secondary"
+              aria-label="Download image"
+            >
+              <Download className="w-3.5 h-3.5" /> Download
             </button>
             <img
               src={creative.image_url}
