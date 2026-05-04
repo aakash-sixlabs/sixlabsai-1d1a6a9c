@@ -327,6 +327,18 @@ export const LandingV1Step = () => {
             Dev Mode — Test New User Flow (v1)
           </Button>
 
+          <button
+            onClick={() => {
+              const url = new URL(window.location.href);
+              if (isDemoMode) url.searchParams.delete("demo");
+              else url.searchParams.set("demo", "true");
+              window.location.href = url.toString();
+            }}
+            className={`w-full mt-2 text-[11px] transition-colors ${isDemoMode ? "text-primary font-medium" : "text-muted-foreground/60 hover:text-foreground"}`}
+          >
+            {isDemoMode ? "🎬 Demo mode ON — sync will be mocked" : "🎬 Enable demo mode (mocks data sync)"}
+          </button>
+
           <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="/privacy" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
           {easterEgg && (
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="text-center mt-3 space-y-1.5">
