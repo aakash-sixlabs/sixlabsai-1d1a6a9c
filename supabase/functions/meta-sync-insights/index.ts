@@ -264,7 +264,7 @@ Deno.serve(async (req) => {
     console.error("meta-sync-insights fatal:", err);
     if (syncId) {
       await admin.from("sync_jobs").update({
-        status: "error",
+        status: "failed",
         error_message: err?.message || "Insights phase failed",
         updated_at: new Date().toISOString(),
       }).eq("id", syncId);
