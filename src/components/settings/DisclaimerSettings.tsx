@@ -51,8 +51,12 @@ export const DisclaimerSettings = ({ adAccountId }: Props) => {
       if (error) { toast.error("Failed to update"); return; }
       toast.success("Disclaimer updated");
     } else {
+      const { getCurrentAccountId } = await import("@/lib/accountContext");
+      const accountId = await getCurrentAccountId();
+      if (!accountId) { toast.error("No account context"); return; }
       const { error } = await supabase.from("disclaimers").insert({
         user_id: user.id,
+        account_id: accountId,
         ad_account_id: adAccountId,
         label: draft.label,
         text: draft.text,

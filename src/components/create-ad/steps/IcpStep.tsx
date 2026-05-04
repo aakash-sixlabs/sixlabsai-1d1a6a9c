@@ -98,10 +98,15 @@ export const IcpStep = ({ selectedIcpId, onSelect, onNext }: Props) => {
       return;
     }
 
+    const { getCurrentAccountId } = await import("@/lib/accountContext");
+    const accountId = await getCurrentAccountId();
+    if (!accountId) { toast.error("No account context"); return; }
+
     const { data, error } = await supabase
       .from("icps")
       .insert({
         user_id: user.id,
+        account_id: accountId,
         ad_account_id: adAccountId,
         name: draft.name,
         description: draft.description,

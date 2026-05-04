@@ -55,8 +55,12 @@ export const IcpSettings = ({ adAccountId }: Props) => {
       if (error) { toast.error("Failed to update"); return; }
       toast.success("ICP updated");
     } else {
+      const { getCurrentAccountId } = await import("@/lib/accountContext");
+      const accountId = await getCurrentAccountId();
+      if (!accountId) { toast.error("No account context"); return; }
       const { error } = await supabase.from("icps").insert({
         user_id: user.id,
+        account_id: accountId,
         ad_account_id: adAccountId,
         name: draft.name,
         description: draft.description,
