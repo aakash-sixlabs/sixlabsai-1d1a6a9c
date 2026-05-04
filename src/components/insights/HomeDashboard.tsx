@@ -242,10 +242,10 @@ export const HomeDashboard = ({
 
         {/* KPI strip */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-8">
-          <KpiCard label="Avg ROAS" value={kpis.roasAvg ? `${kpis.roasAvg.toFixed(2)}x` : "—"} delta="+12%" up />
-          <KpiCard label="CTR" value={kpis.ctrAvg ? `${kpis.ctrAvg.toFixed(2)}%` : "—"} delta="+0.4 pts" up />
-          <KpiCard label="Avg CAC" value={kpis.cac != null ? `$${kpis.cac.toFixed(2)}` : "—"} delta="−18%" up />
-          <KpiCard label="Opportunities" value={`${opportunities.length}`} delta={`${MOCK_COMPETITORS.length} competitors`} subtle />
+          <KpiCard label="Avg ROAS" value={kpis.roasAvg ? `${kpis.roasAvg.toFixed(2)}x` : "—"} delta={`${kpis.activeCreatives} creatives`} subtle />
+          <KpiCard label="CTR" value={kpis.ctrAvg ? `${kpis.ctrAvg.toFixed(2)}%` : "—"} delta={`${compact(kpis.totalImpr)} impressions`} subtle />
+          <KpiCard label="Avg CAC" value={kpis.cac != null ? `$${kpis.cac.toFixed(2)}` : "—"} delta={`${kpis.totalPurchases.toLocaleString()} purchases`} subtle />
+          <KpiCard label="Total Spend" value={compact(kpis.totalSpend, "$")} delta={`${MOCK_COMPETITORS.length} competitors tracked`} subtle />
         </div>
       </motion.section>
 
