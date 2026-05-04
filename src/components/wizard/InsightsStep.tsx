@@ -792,6 +792,7 @@ export const InsightsStep = () => {
           adAccounts={adAccounts}
           selectedAccountId={selectedAccountId}
           onAccountChange={setSelectedAccountId}
+          kpis={activeView === "discover" ? sidebarKpis : undefined}
         />
         <main className="flex-1 overflow-auto border-l border-border/60">
           {activeView === "generations" ? (
