@@ -52,6 +52,10 @@ import liquidIvLogo from "@/assets/competitors/liquid-iv.jpeg";
 import waterdropLogo from "@/assets/competitors/waterdrop.webp";
 import cureLogo from "@/assets/competitors/cure.avif";
 import dripdropLogo from "@/assets/competitors/dripdrop.jpeg";
+import liquidIvAd from "@/assets/competitors/ad-liquid-iv.png";
+import dripdropAd from "@/assets/competitors/ad-dripdrop.png";
+import cureAd from "@/assets/competitors/ad-cure.png";
+import waterdropAd from "@/assets/competitors/ad-waterdrop.png";
 
 const MOCK_COMPETITORS = [
   { name: "Liquid I.V.", logo: liquidIvLogo, active: 28, trend: "Heavy UGC usage", up: true },
@@ -61,12 +65,10 @@ const MOCK_COMPETITORS = [
 ];
 
 const MOCK_COMPETITOR_CREATIVES = [
-  { src: "https://images.unsplash.com/photo-1556909114-44e3e70034e2?w=400&h=500&fit=crop", brand: "Liquid I.V.", tag: "UGC" },
-  { src: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=500&fit=crop", brand: "Waterdrop", tag: "Offer-led" },
-  { src: "https://images.unsplash.com/photo-1502741338009-cac2772e18bc?w=400&h=500&fit=crop", brand: "Cure", tag: "Review" },
-  { src: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&h=500&fit=crop", brand: "DripDrop", tag: "Product feature" },
-  { src: "https://images.unsplash.com/photo-1494390248081-4e521a5940db?w=400&h=500&fit=crop", brand: "Liquid I.V.", tag: "Seasonal" },
-  { src: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=500&fit=crop", brand: "Cure", tag: "Founder-led" },
+  { src: liquidIvAd, brand: "Liquid I.V.", tag: "Collab" },
+  { src: dripdropAd, brand: "DripDrop", tag: "Offer-led" },
+  { src: cureAd, brand: "Cure", tag: "Stat-led" },
+  { src: waterdropAd, brand: "Waterdrop", tag: "Bold hook" },
 ];
 
 const CATEGORY_TRENDS = [
