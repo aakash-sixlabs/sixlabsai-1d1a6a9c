@@ -181,6 +181,38 @@ export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepPr
             </div>
           </div>
         )}
+
+        {/* Competitive Intelligence */}
+        <div className="p-4 rounded-lg bg-card border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="w-4 h-4 text-primary" />
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Competitive intelligence</p>
+          </div>
+          {competitors.length > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-3">
+                We'll pull insights from these brands to inform your creative.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {competitors.map((c) => (
+                  <span
+                    key={c.id}
+                    className="px-3 py-1 rounded-full bg-muted text-foreground text-sm font-medium"
+                  >
+                    {c.competitor_name ?? c.website_url ?? "Competitor"}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No competitors set ·{" "}
+              <Link to="/settings?tab=competitors" className="text-primary hover:underline">
+                Add competitors
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mt-10 flex justify-between">
