@@ -48,11 +48,16 @@ const compact = (n: number | null | undefined, prefix = "") => {
 // Mock competitor / category / opportunity data — kept self-contained so this
 // page reads as a "creative intelligence command center" even before the real
 // inference pipeline is wired up.
+import liquidIvLogo from "@/assets/competitors/liquid-iv.jpeg";
+import waterdropLogo from "@/assets/competitors/waterdrop.webp";
+import cureLogo from "@/assets/competitors/cure.avif";
+import dripdropLogo from "@/assets/competitors/dripdrop.jpeg";
+
 const MOCK_COMPETITORS = [
-  { name: "Liquid I.V.", logo: "https://logo.clearbit.com/liquid-iv.com", active: 28, trend: "Heavy UGC usage", up: true },
-  { name: "Waterdrop",   logo: "https://logo.clearbit.com/waterdrop.com", active: 19, trend: "Increasing promo volume", up: true },
-  { name: "Cure",        logo: "https://logo.clearbit.com/curehydration.com", active: 14, trend: "Review-led messaging", up: true },
-  { name: "DripDrop",    logo: "https://logo.clearbit.com/dripdrop.com", active: 11, trend: "Lifestyle imagery dropping", up: false },
+  { name: "Liquid I.V.", logo: liquidIvLogo, active: 28, trend: "Heavy UGC usage", up: true },
+  { name: "Waterdrop",   logo: waterdropLogo, active: 19, trend: "Increasing promo volume", up: true },
+  { name: "Cure",        logo: cureLogo, active: 14, trend: "Review-led messaging", up: true },
+  { name: "DripDrop",    logo: dripdropLogo, active: 11, trend: "Lifestyle imagery dropping", up: false },
 ];
 
 const MOCK_COMPETITOR_CREATIVES = [
