@@ -93,7 +93,7 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
               </div>
             </div>
           )}
-          <Button className="w-full gap-2" size="lg" onClick={handleSave} disabled={saving || !fullName.trim() || !email.trim() || !brandWebsite.trim()}>
+          <Button className="w-full gap-2" size="lg" onClick={handleSave} disabled={saving || !fullName.trim() || !email.trim()}>
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
             {saving ? "Saving…" : "Continue"}
           </Button>
