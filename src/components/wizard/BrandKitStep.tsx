@@ -497,6 +497,13 @@ export const BrandKitStep = ({
             brand_kit_status: "completed",
             brand_kit_updated_at: new Date().toISOString(),
             confirmed: true,
+            ...(guidelinesPath
+              ? {
+                  brand_guidelines_path: guidelinesPath,
+                  brand_guidelines_filename: guidelinesFilename,
+                  brand_guidelines_uploaded_at: new Date().toISOString(),
+                }
+              : {}),
           },
           { onConflict: "ad_account_id,user_id" },
         );
