@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Loader2, ArrowRight, Sparkles, Wand2, Trophy, Target, TrendingUp, ArrowUpDown, Check } from "lucide-react";
+// motion no longer used at top-level — Hero moved into HomeDashboard
+import { Loader2, ArrowUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,12 +14,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { isDevSession } from "@/lib/devMode";
 import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
-import { DigestCards, TopPerformerSlide } from "@/components/insights/DigestCards";
+import { TopPerformerSlide } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
 import { CreativePreviewDialog } from "@/components/insights/CreativePreviewDialog";
 import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
 import { GeneratedCreativesByJob } from "@/components/insights/GeneratedCreativesByJob";
 import { GenerationsTable } from "@/components/insights/GenerationsTable";
+import { HomeDashboard } from "@/components/insights/HomeDashboard";
 
 import { useWizard } from "@/context/WizardContext";
 
@@ -798,56 +799,22 @@ export const InsightsStep = () => {
               subtitle="Every creative you've generated, grouped by the request that produced it."
               hideEmptyJobs
             />
+          ) : activeView === "discover" ? (
+            <HomeDashboard
+              brandName={state.selectedAccountName}
+              accountName={adAccounts.find((a) => a.id === selectedAccountId)?.account_name ?? null}
+              ads={ads as any}
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+              onAdClick={(id) => setPreviewAdId(id)}
+              onViewAllGenerations={() => setActiveView("generations")}
+            />
           ) : (
           <div className="px-8 py-10 max-w-[1200px] mx-auto">
-            {/* Hero — Create your next ad */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="text-center mb-12"
-            >
-              <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full mb-4">
-                <Sparkles className="w-3.5 h-3.5" />
-                AI-Powered Creative Intelligence
-              </div>
-              <h1 className="font-display font-bold text-4xl text-foreground mb-3 tracking-tight">
-                Create your next winning ad
-              </h1>
-              <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-8 leading-relaxed">
-                Powered by what's already working in your account, what's winning for competitors, and what's trending right now.
-              </p>
-              <div className="flex flex-col items-center gap-4 mb-8">
-                <Button
-                  size="lg"
-                  className="gap-2.5 rounded-xl px-8 py-3 shadow-md hover:shadow-lg transition-shadow text-sm font-semibold h-12"
-                  onClick={() => navigate("/create-ad")}
-                >
-                  <Wand2 className="w-4 h-4" />
-                  Create New Ad
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
-              </div>
-              <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-4 py-2 shadow-sm"><Trophy className="w-3.5 h-3.5 text-accent" /> Your Top Performers</span>
-                <span className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-4 py-2 shadow-sm"><Target className="w-3.5 h-3.5 text-primary" /> Competitor Insights</span>
-                <span className="flex items-center gap-2 bg-card border border-border/60 rounded-xl px-4 py-2 shadow-sm"><TrendingUp className="w-3.5 h-3.5 text-accent" /> Industry Trends</span>
-              </div>
-            </motion.div>
-
             {/* Date range filter — controls all metrics on the page */}
             <div className="flex items-center justify-end mb-5">
               <DateRangeFilter value={dateRange} onChange={setDateRange} />
             </div>
-
-            {/* Digest Cards — only on Home */}
-            {activeView === "discover" && (
-              <DigestCards
-                activeCreativeCount={activeCreativeCount}
-                topPerformers={topPerformers}
-                formatMix={formatMix}
-              />
-            )}
 
             {/* Section header */}
             <div className="flex items-center justify-between mb-5 mt-2">
@@ -881,22 +848,10 @@ export const InsightsStep = () => {
               </div>
             </div>
 
-            {/* Top performers — on Home */}
-            {activeView === "discover" && (
-              <>
-                <AdCreativeGrid
-                  ads={topAds}
-                  title="🔥 Top Performers"
-                  subtitle="These creatives are driving the strongest returns — use them to inform your next ad"
-                  onAdClick={(id) => setPreviewAdId(id)}
-                />
-              </>
-            )}
-
             {/* Main grid */}
             <AdCreativeGrid
               ads={latestAds}
-              title={activeView === "discover" ? "All Ads" : viewTitle}
+              title={viewTitle}
               onAdClick={(id) => setPreviewAdId(id)}
             />
 
