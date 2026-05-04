@@ -93,6 +93,9 @@ export const LandingV1Step = () => {
   const [adAccountInput, setAdAccountInput] = useState("");
   const [submittingToken, setSubmittingToken] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isDemoMode = searchParams.get("demo") === "true";
+  const demoSuffix = isDemoMode ? "&demo=true" : "";
   const { updateState } = useWizard();
 
   const handleTokenSubmit = async () => {
