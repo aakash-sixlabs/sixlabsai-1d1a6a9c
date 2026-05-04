@@ -40,19 +40,18 @@ const titleCase = (s: string | null) =>
   s ? s.replace(/[_-]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "—";
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const tone =
-    status === "complete"
-      ? "bg-accent/15 text-accent"
-      : status === "error" || status === "failed"
-      ? "bg-destructive/10 text-destructive"
-      : "bg-primary/10 text-primary";
+  const isDone = status === "completed" || status === "complete";
+  const isFailed = status === "failed" || status === "error";
+  const tone = isDone
+    ? "bg-accent/15 text-accent"
+    : isFailed
+    ? "bg-destructive/10 text-destructive"
+    : "bg-primary/10 text-primary";
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize ${tone}`}
     >
-      {status !== "complete" && status !== "error" && status !== "failed" && (
-        <Loader2 className="w-3 h-3 animate-spin" />
-      )}
+      {!isDone && !isFailed && <Loader2 className="w-3 h-3 animate-spin" />}
       {status}
     </span>
   );
