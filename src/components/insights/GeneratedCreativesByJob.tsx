@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Loader2, ImageOff, ThumbsUp, ThumbsDown, ArrowRight } from "lucide-react";
+import { Loader2, ImageOff, ThumbsUp, ThumbsDown, ArrowRight, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isDevSession } from "@/lib/devMode";
 import { CreativeImageCard } from "./CreativeImageCard";
+import { downloadAll, extOf } from "@/lib/downloadImage";
 
 interface GeneratedCreative {
   id: string;
@@ -204,14 +205,31 @@ export const GeneratedCreativesByJob = ({
                 </p>
               </div>
               {group.creatives.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs gap-1.5"
-                  onClick={() => navigate(`/output?jobId=${group.job.id}`)}
-                >
-                  Open <ArrowRight className="w-3.5 h-3.5" />
-                </Button>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs gap-1.5"
+                    onClick={() =>
+                      downloadAll(
+                        group.creatives.map((c) => ({
+                          url: c.image_url,
+                          filename: `variant-${c.variant_index + 1}.${extOf(c.image_url)}`,
+                        })),
+                      )
+                    }
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download all
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-xs gap-1.5"
+                    onClick={() => navigate(`/output?jobId=${group.job.id}`)}
+                  >
+                    Open <ArrowRight className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
               )}
             </div>
 

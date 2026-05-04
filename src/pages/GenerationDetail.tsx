@@ -363,6 +363,23 @@ const GenerationDetail = () => {
                 ({creatives.length})
               </span>
             </h2>
+            {creatives.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() =>
+                  downloadAll(
+                    creatives.map((c) => ({
+                      url: c.image_url,
+                      filename: `variant-${c.variant_index + 1}.${extOf(c.image_url)}`,
+                    })),
+                  )
+                }
+              >
+                <Download className="w-3.5 h-3.5" /> Download all
+              </Button>
+            )}
           </div>
 
           {creatives.length === 0 ? (
