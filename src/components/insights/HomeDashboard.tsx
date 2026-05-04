@@ -240,9 +240,23 @@ export const HomeDashboard = ({
         </div>
       </motion.section>
 
-      {/* ─────────── Section 1: What's working for your brand ─────────── */}
+      {/* ─────────── Section 1: Opportunities (action-first) ─────────── */}
       <SectionHeader
-        eyebrow="Section 1"
+        eyebrow="Start here"
+        title="Your biggest opportunities"
+        subtitle="Prioritized next moves, grounded in your brand data and category signals."
+        icon={Lightbulb}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+        {opportunities.map((op) => (
+          <OpportunityCard key={op.title} {...op} onGenerate={() => navigate("/create-ad")} />
+        ))}
+      </div>
+
+      {/* ─────────── Section 2: What's working for your brand ─────────── */}
+      <SectionHeader
+        eyebrow="Section 2"
         title="What's working for your brand"
         subtitle="Patterns we found across your account's top-performing creatives."
         icon={Trophy}
