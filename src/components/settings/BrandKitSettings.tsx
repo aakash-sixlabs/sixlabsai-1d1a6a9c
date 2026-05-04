@@ -77,9 +77,13 @@ export const BrandKitSettings = ({ adAccountId }: Props) => {
   const handleSetupManual = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { toast.error("Not signed in"); return; }
+    const { getCurrentAccountId } = await import("@/lib/accountContext");
+    const accountId = await getCurrentAccountId();
+    if (!accountId) { toast.error("No account found"); return; }
     const { data, error } = await supabase
       .from("ad_account_profiles")
       .insert({
+        account_id: accountId,
         ad_account_id: adAccountId,
         user_id: user.id,
         brand_kit_status: "pending",
