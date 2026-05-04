@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Loader2, ArrowRight, Sparkles, Wand2, Trophy, Target, TrendingUp, ArrowUpDown, Check } from "lucide-react";
+// motion no longer used at top-level — Hero moved into HomeDashboard
+import { Loader2, ArrowUpDown, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { isDevSession } from "@/lib/devMode";
 import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
 import { InsightsTopBar } from "@/components/insights/InsightsTopBar";
-import { DigestCards, TopPerformerSlide } from "@/components/insights/DigestCards";
+import { TopPerformerSlide } from "@/components/insights/DigestCards";
 import { AdCreativeGrid } from "@/components/insights/AdCreativeGrid";
 import { CreativePreviewDialog } from "@/components/insights/CreativePreviewDialog";
 import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
