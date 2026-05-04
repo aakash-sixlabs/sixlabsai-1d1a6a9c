@@ -293,7 +293,7 @@ export const InsightsStep = () => {
     }
 
     // Primary source: campaign_ad_data materialized view (flattened, denormalized)
-    const { data: cadData } = await supabase.from("campaign_ad_data").select("*");
+    const { data: cadData } = await (supabase as any).from("campaign_ad_data").select("*");
     const rows = cadData || [];
 
     if (rows.length > 0) {
@@ -398,7 +398,7 @@ export const InsightsStep = () => {
       .from("sync_jobs")
       .select("id, status, current_step, updated_at")
       .eq("ad_account_id", accountId)
-      .in("status", ["syncing", "pending"])
+      .in("status", ["running", "pending"])
       .order("created_at", { ascending: false })
       .limit(1);
     const existing = existingJobs?.[0];

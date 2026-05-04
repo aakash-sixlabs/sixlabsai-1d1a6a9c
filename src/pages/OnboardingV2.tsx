@@ -150,7 +150,7 @@ const OnboardingV2 = () => {
       .eq("ad_account_id", account.id)
       .maybeSingle();
 
-    if (accountProfile?.brand_kit_status === "ready" || accountProfile?.confirmed) {
+    if (accountProfile?.brand_kit_status === "completed" || accountProfile?.confirmed) {
       navigate("/home", { replace: true });
       return;
     }

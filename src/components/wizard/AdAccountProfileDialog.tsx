@@ -141,10 +141,14 @@ export const AdAccountProfileDialog = ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+      const { getCurrentAccountId } = await import("@/lib/accountContext");
+      const accountId_ = await getCurrentAccountId();
+      if (!accountId_) throw new Error("No account found");
 
       const { error } = await supabase
         .from("ad_account_profiles")
         .upsert({
+          account_id: accountId_,
           ad_account_id: accountId,
           user_id: user.id,
           industry: industry || null,
