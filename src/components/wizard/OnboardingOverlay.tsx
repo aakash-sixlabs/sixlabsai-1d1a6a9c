@@ -39,8 +39,7 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Persist website into wizard state so the Brand Kit step can auto-extract from it.
-      updateState({ brandWebsite: brandWebsite.trim() });
+      // Brand website is collected later (after default account selection).
 
       if (isDevMode) {
         await new Promise((r) => setTimeout(r, 500));
