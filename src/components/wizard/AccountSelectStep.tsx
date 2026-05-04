@@ -8,9 +8,9 @@ import { AdAccountProfileDialog } from "@/components/wizard/AdAccountProfileDial
 
 interface AdAccount {
   id: string;
-  account_id_meta: string;
+  account_id: string;
   account_name: string;
-  currency: string | null;
+  currency: string;
   timezone: string | null;
 }
 
@@ -83,7 +83,7 @@ export const AccountSelectStep = () => {
     updateState({
       selectedAccount: account.id,
       selectedAccountName: account.account_name,
-      selectedMetaAccountId: account.account_id_meta,
+      selectedMetaAccountId: account.account_id,
       dateRange: range,
     });
     setStep("data-sync");
@@ -139,7 +139,7 @@ export const AccountSelectStep = () => {
                       <div className="flex-1">
                         <div className="font-semibold text-foreground">{acc.account_name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {acc.account_id_meta} · {acc.currency}
+                          {acc.account_id} · {acc.currency}
                         </div>
                       </div>
                     </div>
@@ -204,7 +204,7 @@ export const AccountSelectStep = () => {
           open={showAccountProfile}
           accountId={selectedAccountData.id}
           accountName={selectedAccountData.account_name}
-          metaAccountId={selectedAccountData.account_id_meta}
+          metaAccountId={selectedAccountData.account_id}
           onComplete={handleAccountProfileComplete}
           onCancel={() => setShowAccountProfile(false)}
         />

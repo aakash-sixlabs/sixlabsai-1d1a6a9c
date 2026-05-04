@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Upload, Pencil, Trash2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { IcpEditDialog, type IcpDraft } from "./IcpEditDialog";
-import { getCurrentUserAndAccount } from "@/lib/accountContext";
 
 interface Icp {
   id: string;
@@ -56,9 +55,7 @@ export const IcpSettings = ({ adAccountId }: Props) => {
       if (error) { toast.error("Failed to update"); return; }
       toast.success("ICP updated");
     } else {
-      const { accountId } = await getCurrentUserAndAccount();
       const { error } = await supabase.from("icps").insert({
-        account_id: accountId,
         user_id: user.id,
         ad_account_id: adAccountId,
         name: draft.name,
@@ -132,10 +129,10 @@ export const IcpSettings = ({ adAccountId }: Props) => {
         return;
       }
 
-      const { userId, accountId } = await getCurrentUserAndAccount();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       const rows = extracted.map((i) => ({
-        account_id: accountId,
-        user_id: userId,
+        user_id: user.id,
         ad_account_id: adAccountId,
         name: i.name,
         description: i.description,

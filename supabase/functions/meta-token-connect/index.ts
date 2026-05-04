@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getUserAccountId } from "../_shared/account.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -21,7 +20,7 @@ Deno.serve(async (req) => {
       return json({ error: "Missing Authorization header" }, 401);
     }
 
-    const supabaseUrl = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -104,9 +103,6 @@ Deno.serve(async (req) => {
     // 3. Upsert via service role (bypasses RLS for write but scoped to this user)
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Resolve the Lovable tenant account_id for this user
-    const tenantAccountId = await getUserAccountId(admin, user.id);
-
     // Reuse existing connection row for this user if present, else insert
     const { data: existingConn } = await admin
       .from("meta_connections")
@@ -133,7 +129,6 @@ Deno.serve(async (req) => {
         .from("meta_connections")
         .insert({
           user_id: user.id,
-          account_id: tenantAccountId,
           access_token: accessToken,
           meta_user_id: me.id,
           meta_user_name: me.name,
@@ -159,18 +154,16 @@ Deno.serve(async (req) => {
         .from("ad_accounts")
         .select("id")
         .eq("user_id", user.id)
-        .eq("account_id_meta", a.account_id)
+        .eq("account_id", a.account_id)
         .maybeSingle();
 
       const payload = {
         user_id: user.id,
-        account_id: tenantAccountId,
         connection_id: connectionId,
-        account_id_meta: a.account_id,
+        account_id: a.account_id,
         account_name: a.name,
         currency: a.currency || "USD",
         timezone: a.timezone_name || null,
-        connection_status: "connected",
       };
 
       if (existing?.id) {

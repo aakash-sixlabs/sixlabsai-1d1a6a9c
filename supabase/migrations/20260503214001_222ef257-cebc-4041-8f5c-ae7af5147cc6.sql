@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX IF NOT EXISTS ad_performance_daily_ad_id_date_uq ON public.ad_performance_daily (ad_id, date);

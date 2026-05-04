@@ -6,7 +6,6 @@ import { InsightsStep } from "@/components/wizard/InsightsStep";
 import { BrandKitBanner } from "@/components/wizard/BrandKitBanner";
 import { Loader2 } from "lucide-react";
 import { isDevSession } from "@/lib/devMode";
-import { getOnboardingState } from "@/lib/onboardingState";
 
 const Insights = () => {
   const navigate = useNavigate();
@@ -27,21 +26,35 @@ const Insights = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/loginvcollect"); return; }
 
-      // Hard gate: until the full onboarding flow (account → brand kit →
-      // ICPs → first completed sync) is done, send the user back to retry it.
-      const onboarding = await getOnboardingState(user.id);
-      if (!onboarding.complete) {
-        const flowVersion = sessionStorage.getItem("auth_flow_version");
-        const dest = flowVersion === "v1" ? "/onboarding" : "/onboarding-v2";
-        navigate(dest, { replace: true });
-        return;
-      }
-
+      // Hydrate wizard state from profile so background resync can run
+      // for returning users who land here directly.
       if (!state.selectedAccount) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("default_ad_account_id")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (!profile?.default_ad_account_id) {
+          navigate("/onboarding-v2");
+          return;
+        }
+
+        const { data: acct } = await supabase
+          .from("ad_accounts")
+          .select("id, account_id, account_name")
+          .eq("id", profile.default_ad_account_id)
+          .maybeSingle();
+
+        if (!acct) {
+          navigate("/onboarding-v2");
+          return;
+        }
+
         updateState({
-          selectedAccount: onboarding.adAccountId!,
-          selectedAccountName: onboarding.adAccountName,
-          selectedMetaAccountId: onboarding.metaAccountId,
+          selectedAccount: acct.id,
+          selectedAccountName: acct.account_name,
+          selectedMetaAccountId: acct.account_id,
         });
       }
 

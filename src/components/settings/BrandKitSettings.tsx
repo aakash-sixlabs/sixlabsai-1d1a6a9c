@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label";
 import { Loader2, RefreshCw, Save, Sparkles, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
-import { getCurrentUserAndAccount } from "@/lib/accountContext";
 
 interface Profile {
   id: string;
@@ -76,14 +75,13 @@ export const BrandKitSettings = ({ adAccountId }: Props) => {
   }
 
   const handleSetupManual = async () => {
-    const { userId, accountId } = await getCurrentUserAndAccount().catch(() => ({ userId: null as any, accountId: null as any }));
-    if (!userId) { toast.error("Not signed in"); return; }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { toast.error("Not signed in"); return; }
     const { data, error } = await supabase
       .from("ad_account_profiles")
       .insert({
-        account_id: accountId,
         ad_account_id: adAccountId,
-        user_id: userId,
+        user_id: user.id,
         brand_kit_status: "pending",
       })
       .select("id, brand_name, website_url, logo_url, primary_color, secondary_color, accent_color, font_family, tagline")

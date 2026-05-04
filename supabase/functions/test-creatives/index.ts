@@ -14,10 +14,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const prodAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -25,24 +21,16 @@ Deno.serve(async (req) => {
 
     const { adAccountId, accessToken } = await req.json()
 
-    const { data: adAccount, error: adAccountErr } = await prodAdmin
+    const { data: adAccount } = await admin
       .from('ad_accounts')
-      .select('account_id, user_id, account_id_meta')
+      .select('account_id, user_id')
       .eq('id', adAccountId)
-      .maybeSingle()
+      .single()
 
-    if (adAccountErr || !adAccount) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Ad account ${adAccountId} not found`, db_error: adAccountErr?.message ?? null }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const metaAccountId = adAccount.account_id_meta.startsWith('act_')
-      ? adAccount.account_id_meta
-      : `act_${adAccount.account_id_meta}`
+    const metaAccountId = adAccount.account_id.startsWith('act_')
+      ? adAccount.account_id
+      : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
-    const accountId = adAccount.account_id
 
     const { data: adsData } = await admin
       .from('ads')
@@ -222,7 +210,6 @@ Deno.serve(async (req) => {
           null
 
         return {
-          account_id: accountId,
           user_id: userId,
           ad_id: adMap[c.id],
           meta_creative_id: c.id,
@@ -286,7 +273,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await admin
       .from('ad_creatives')
       .upsert(rows, {
-        onConflict: 'meta_creative_id',
+        onConflict: 'user_id,meta_creative_id',
         ignoreDuplicates: false
       })
 

@@ -1,9 +1,5 @@
 project_id = "bhcusyaonpevmwaruvlx"
 
-# All edge functions disable platform JWT verification because tokens are
-# issued by the prod Supabase project (jkzbuypbhqbssmqjpdtj). Each function
-# validates the JWT in code against the prod admin client.
-
 [functions.meta-oauth]
 verify_jwt = false
 
@@ -17,43 +13,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.meta-sync-insights]
-verify_jwt = false
-
-[functions.meta-token-connect]
-verify_jwt = false
-
-[functions.generation-callback]
-verify_jwt = false
-
-[functions.generate-creatives]
-verify_jwt = false
-
-[functions.build-brand-kit]
-verify_jwt = false
-
-[functions.extract-brand-kit]
-verify_jwt = false
-
-[functions.parse-icps]
-verify_jwt = false
-
-[functions.generation-watchdog]
-verify_jwt = false
-
-[functions.test-brand-kit]
-verify_jwt = false
-
-[functions.test-ads]
-verify_jwt = false
-
-[functions.test-adsets]
-verify_jwt = false
-
-[functions.test-campaigns]
-verify_jwt = false
-
-[functions.test-creatives]
-verify_jwt = false
-
-[functions.test-insights]
 verify_jwt = false

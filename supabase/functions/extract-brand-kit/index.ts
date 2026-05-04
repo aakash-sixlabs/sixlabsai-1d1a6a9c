@@ -51,7 +51,9 @@ async function firecrawlScrape(url: string, apiKey: string) {
   });
   const data = await resp.json().catch(() => ({}));
   if (!resp.ok) {
-    throw new Error(`Firecrawl scrape failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`);
+    throw new Error(
+      `Firecrawl scrape failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`,
+    );
   }
   return data?.data ?? data;
 }
@@ -102,7 +104,9 @@ async function inferBrandMeta(
   if (!resp.ok) {
     if (resp.status === 429) throw new Error("AI rate limit exceeded — try again in a moment.");
     if (resp.status === 402) throw new Error("AI credits exhausted — please top up your workspace.");
-    throw new Error(`AI inference failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`);
+    throw new Error(
+      `AI inference failed [${resp.status}]: ${JSON.stringify(data).slice(0, 500)}`,
+    );
   }
   const content = data?.choices?.[0]?.message?.content;
   if (!content) throw new Error("AI inference returned empty content");
@@ -147,30 +151,19 @@ Deno.serve(async (req) => {
   // Auth check (this function runs with verify_jwt = false, so we validate manually)
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) {
-    return jsonResponse({ error: "No Bearer token provided" }, 401);
-  }
-  // JWT was issued by Mubeen's prod auth → validate against prod.
-  const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const prodUrl = (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, "");
-  const prodAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-
-  const userResponse = await fetch(`${prodUrl}/auth/v1/user`, {
-    headers: {
-      Authorization: authHeader,
-      apikey: prodAnonKey,
-    },
-  });
-
-  const userData = await userResponse.json();
-  console.log("[extract-brand-kit] direct auth:", userResponse.status, userData?.id ?? userData?.msg);
-
-  if (!userResponse.ok || !userData?.id) {
     return jsonResponse({ error: "Unauthorized" }, 401);
   }
-
-  const userId = userData.id;
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_ANON_KEY")!,
+    { global: { headers: { Authorization: authHeader } } },
+  );
+  const { data: userData, error: userErr } = await supabase.auth.getUser(
+    authHeader.replace("Bearer ", ""),
+  );
+  if (userErr || !userData?.user) {
+    return jsonResponse({ error: "Unauthorized" }, 401);
+  }
 
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -193,8 +186,11 @@ Deno.serve(async (req) => {
           /* controller closed */
         }
       };
-      const log = (level: "info" | "warn" | "error" | "success", message: string, meta?: any) =>
-        send("log", { ts: new Date().toISOString(), level, message, meta });
+      const log = (
+        level: "info" | "warn" | "error" | "success",
+        message: string,
+        meta?: any,
+      ) => send("log", { ts: new Date().toISOString(), level, message, meta });
 
       const t0 = Date.now();
       const warnings: string[] = [];
@@ -240,7 +236,11 @@ Deno.serve(async (req) => {
         log("info", "🧠 Analyzing brand voice and positioning");
         let aiInferred: AiInferred = {};
         try {
-          const { inferred, usage, durationMs } = await inferBrandMeta(markdown, metadata, LOVABLE_API_KEY);
+          const { inferred, usage, durationMs } = await inferBrandMeta(
+            markdown,
+            metadata,
+            LOVABLE_API_KEY,
+          );
           aiInferred = inferred;
           log("success", `✓ Voice analysis complete (${durationMs}ms)`, { usage });
         } catch (e) {
@@ -253,7 +253,8 @@ Deno.serve(async (req) => {
         const faviconUrl = branding?.images?.favicon ?? null;
 
         const result = {
-          brand_name: aiInferred.brand_name || metadata?.title?.split(/[|\-–—:]/)[0]?.trim() || null,
+          brand_name:
+            aiInferred.brand_name || metadata?.title?.split(/[|\-–—:]/)[0]?.trim() || null,
           tagline: aiInferred.tagline ?? null,
           website_url: websiteUrl,
           logo_url: logoUrl,

@@ -9,7 +9,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useWizard } from "@/context/WizardContext";
-import { getOnboardingState } from "@/lib/onboardingState";
 
 /* ─── Profile completion overlay ─── */
 
@@ -116,9 +115,9 @@ export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: 
 
 interface AdAccount {
   id: string;
-  account_id_meta: string;
+  account_id: string;
   account_name: string;
-  currency: string | null;
+  currency: string;
   timezone: string | null;
 }
 
@@ -222,18 +221,24 @@ export const AccountSelectOverlay = ({
     updateState({
       selectedAccount: account.id,
       selectedAccountName: account.account_name,
-      selectedMetaAccountId: account.account_id_meta,
+      selectedMetaAccountId: account.account_id,
       dateRange: "90",
     });
 
     if (skipCompletedAccountSetup && onReturningAccountSelected) {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const onboarding = await getOnboardingState(user.id);
-        if (previousDefaultAccountId === account.id && onboarding.complete) {
-          onReturningAccountSelected();
-          return;
-        }
+      const { data: accountProfile } = await supabase
+        .from("ad_account_profiles")
+        .select("brand_kit_status, confirmed")
+        .eq("ad_account_id", account.id)
+        .maybeSingle();
+
+      if (
+        previousDefaultAccountId === account.id ||
+        accountProfile?.brand_kit_status === "ready" ||
+        accountProfile?.confirmed
+      ) {
+        onReturningAccountSelected();
+        return;
       }
     }
 
@@ -241,7 +246,7 @@ export const AccountSelectOverlay = ({
   };
 
   const displayAccounts = isDevMode
-    ? mockAccounts.map((a) => ({ id: a.account_id, account_id_meta: a.account_id, account_name: a.name, currency: a.currency, timezone: null }))
+    ? mockAccounts.map((a) => ({ id: a.account_id, account_id: a.account_id, account_name: a.name, currency: a.currency, timezone: null }))
     : accounts;
 
   return (
@@ -269,7 +274,7 @@ export const AccountSelectOverlay = ({
                     <div className="w-9 h-9 rounded-lg bg-muted flex items-center justify-center"><Building2 className="w-4 h-4 text-muted-foreground" /></div>
                     <div className="flex-1">
                       <div className="font-semibold text-sm text-foreground">{acc.account_name}</div>
-                      <div className="text-xs text-muted-foreground">{acc.account_id_meta} · {acc.currency}</div>
+                      <div className="text-xs text-muted-foreground">{acc.account_id} · {acc.currency}</div>
                     </div>
                     {selected === acc.id && (
                       <Badge variant="default" className="text-[10px]">Default</Badge>

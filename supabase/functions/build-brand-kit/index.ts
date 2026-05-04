@@ -1,5 +1,4 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { getUserAccountId } from "../_shared/account.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -109,17 +108,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    // JWT issued by Lovable Cloud → validate against Lovable Cloud auth.
     const supabase = createClient(
-      (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""),
+      Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } },
-    );
-
-    // Admin client for DB operations (bypasses RLS, hits prod DB).
-    const admin = createClient(
-      (Deno.env.get("SUPABASE_URL") ?? "").replace(/\/$/, ""),
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const token = authHeader.replace("Bearer ", "");
@@ -148,19 +140,15 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Resolve Lovable tenant account_id (RLS requires it)
-    const tenantAccountId = await getUserAccountId(admin, userId);
-
-    // 1. Mark as processing (upsert preserves any pre-existing fields like industry / facebook_page_id)
-    await admin
+    // 1. Mark as scraping (upsert preserves any pre-existing fields like industry / facebook_page_id)
+    await supabase
       .from("ad_account_profiles")
       .upsert(
         {
           ad_account_id: body.adAccountId,
           user_id: userId,
-          account_id: tenantAccountId,
           website_url: parsed.origin,
-          brand_kit_status: "processing",
+          brand_kit_status: "scraping",
         },
         { onConflict: "ad_account_id,user_id" },
       );
@@ -169,7 +157,7 @@ Deno.serve(async (req) => {
     const kit = stubBrandKit(body.websiteUrl, body.brandName ?? null);
 
     // 3. Persist the derived fields
-    const { error: updateErr } = await admin
+    const { error: updateErr } = await supabase
       .from("ad_account_profiles")
       .update({
         brand_name: kit.brand_name,
@@ -182,14 +170,14 @@ Deno.serve(async (req) => {
         tagline: kit.tagline,
         product_categories: kit.product_categories,
         brand_kit: kit.raw,
-        brand_kit_status: "completed",
+        brand_kit_status: "ready",
         brand_kit_updated_at: new Date().toISOString(),
       })
       .eq("ad_account_id", body.adAccountId)
       .eq("user_id", userId);
 
     if (updateErr) {
-      await admin
+      await supabase
         .from("ad_account_profiles")
         .update({ brand_kit_status: "failed" })
         .eq("ad_account_id", body.adAccountId)

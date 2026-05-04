@@ -14,18 +14,11 @@ interface GeneratedCreative {
   aspect_ratio: string | null;
   image_url: string;
   thumbnail_url: string | null;
-  stored_image_url?: string | null;
-  stored_thumbnail_url?: string | null;
-  storage_status?: "pending" | "stored" | "failed" | null;
   headline: string | null;
   primary_text: string | null;
   description: string | null;
   feedback?: "like" | "dislike" | null;
 }
-
-const displayImage = (c: GeneratedCreative) => c.stored_image_url ?? c.image_url;
-const displayThumbnail = (c: GeneratedCreative) =>
-  c.stored_thumbnail_url ?? c.thumbnail_url ?? c.stored_image_url ?? c.image_url;
 
 const LazyImage = ({
   src,
@@ -130,33 +123,6 @@ export const OutputStep = () => {
   const selectedCreative = creatives.find((c) => c.id === selected);
   const selectedIndex = creatives.findIndex((c) => c.id === selected);
 
-  // Realtime: update creatives as background storage completes
-  useEffect(() => {
-    if (!jobId || jobId.startsWith("dev_")) return;
-    const channel = supabase
-      .channel(`output-storage-${jobId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "generated_creatives",
-          filter: `job_id=eq.${jobId}`,
-        },
-        (payload) => {
-          setCreatives((prev) =>
-            prev.map((c) =>
-              c.id === (payload.new as any).id ? { ...c, ...(payload.new as any) } : c,
-            ),
-          );
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [jobId]);
-
   // Preload neighbors in lightbox
   useEffect(() => {
     if (selectedIndex < 0) return;
@@ -164,7 +130,7 @@ export const OutputStep = () => {
       const c = creatives[i];
       if (c) {
         const img = new Image();
-        img.src = displayImage(c);
+        img.src = c.image_url;
       }
     });
   }, [selectedIndex, creatives]);
@@ -251,28 +217,11 @@ export const OutputStep = () => {
               className="group relative rounded-xl border border-border bg-card overflow-hidden cursor-pointer hover:shadow-md transition-all"
               onClick={() => setSelected(c.id)}
             >
-              <div className="relative">
-                <LazyImage
-                  src={displayThumbnail(c)}
-                  alt={c.headline ?? `Variant ${i + 1}`}
-                  aspectClass="aspect-square"
-                />
-                {c.storage_status === "pending" && (
-                  <span className="absolute top-2 right-2 bg-yellow-500/90 text-white text-[10px] font-medium rounded-full px-2 py-0.5 shadow-sm">
-                    Saving…
-                  </span>
-                )}
-                {c.storage_status === "stored" && (
-                  <span className="absolute top-2 right-2 bg-emerald-500/90 text-white text-[10px] font-medium rounded-full px-2 py-0.5 shadow-sm">
-                    ✓ Saved
-                  </span>
-                )}
-                {c.storage_status === "failed" && (
-                  <span className="absolute top-2 right-2 bg-destructive/90 text-white text-[10px] font-medium rounded-full px-2 py-0.5 shadow-sm">
-                    Save failed
-                  </span>
-                )}
-              </div>
+              <LazyImage
+                src={c.thumbnail_url ?? c.image_url}
+                alt={c.headline ?? `Variant ${i + 1}`}
+                aspectClass="aspect-square"
+              />
               <div className="px-3 py-2.5 flex items-center justify-between gap-2">
                 <span className="text-xs font-medium text-foreground truncate">
                   Variant {i + 1}
@@ -318,7 +267,7 @@ export const OutputStep = () => {
             <div className="flex flex-col">
               <div className="relative">
                 <LazyImage
-                  src={displayImage(selectedCreative)}
+                  src={selectedCreative.image_url}
                   alt={selectedCreative.headline ?? `Variant ${selectedIndex + 1}`}
                   aspectClass={aspectClassFor(selectedCreative.aspect_ratio)}
                 />
@@ -361,7 +310,7 @@ export const OutputStep = () => {
                   <Button
                     size="sm"
                     className="gap-1.5"
-                    onClick={() => window.open(displayImage(selectedCreative), "_blank")}
+                    onClick={() => window.open(selectedCreative.image_url, "_blank")}
                   >
                     <Download className="w-3.5 h-3.5" /> Download
                   </Button>

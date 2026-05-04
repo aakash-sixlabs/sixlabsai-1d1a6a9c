@@ -118,7 +118,7 @@ export const AdAccountProfileDialog = ({
       if (kit) {
         setPrimaryColor(kit.primary_color ?? "");
         setLogoUrl(kit.logo_url ?? null);
-        setBrandKitStatus("completed");
+        setBrandKitStatus("ready");
         toast.success("Brand kit updated!");
       }
     } catch (err: any) {
@@ -142,19 +142,16 @@ export const AdAccountProfileDialog = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { getCurrentAccountId } = await import("@/lib/accountContext");
-      const lovableAccountId = await getCurrentAccountId();
       const { error } = await supabase
         .from("ad_account_profiles")
         .upsert({
-          account_id: lovableAccountId,
           ad_account_id: accountId,
           user_id: user.id,
           industry: industry || null,
           facebook_page_id: selectedPageId || null,
           facebook_page_name: selectedPageName || null,
           confirmed: true,
-        }, { onConflict: "user_id,ad_account_id" });
+        }, { onConflict: "ad_account_id,user_id" });
 
       if (error) throw error;
 

@@ -24,7 +24,6 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentAccountId } from "@/lib/accountContext";
 import { toast } from "sonner";
 
 /* ── Types ──────────────────────────────────────────────────── */
@@ -109,37 +108,6 @@ function normalizeKit(raw: any): ExtractedKit {
     raw: raw?.raw ?? {},
     warnings: Array.isArray(raw?.warnings) ? raw.warnings : [],
   };
-}
-
-function cirkulStubKit(): ExtractedKit {
-  return normalizeKit({
-    brand_name: "Cirkul",
-    tagline: "Drink More Water. Enjoy Every Sip.",
-    website_url: "https://drinkcirkul.com",
-    logo_url: "https://www.google.com/s2/favicons?domain=drinkcirkul.com&sz=128",
-    favicon_url: "https://www.google.com/s2/favicons?domain=drinkcirkul.com&sz=64",
-    screenshot_url: null,
-    colors: {
-      primary: "#00B4E4",
-      secondary: "#0A2540",
-      accent: "#FF6B35",
-      background: "#FFFFFF",
-      text_primary: "#0A2540",
-      text_secondary: "#4A5A6A",
-    },
-    fonts: { primary: "Inter", heading: "Inter", all: ["Inter"] },
-    tone_of_voice: "energetic, friendly, health-forward",
-    product_categories: ["hydration", "flavor cartridges", "water bottles"],
-    target_audience:
-      "Health-conscious consumers, athletes, and busy professionals who want to drink more water with great-tasting, customizable flavors.",
-    value_propositions: [
-      "Personalized flavor and caffeine dial",
-      "Helps you drink more water effortlessly",
-      "Zero sugar options with vitamins and electrolytes",
-    ],
-    raw: { stub: "cirkul" },
-    warnings: [],
-  });
 }
 
 function devStubKit(brandName?: string): ExtractedKit {
@@ -323,22 +291,110 @@ export const BrandKitStep = ({
     setLogs([]);
     setPhase("building");
 
-    // STUBBED: skip real extract-brand-kit / Firecrawl call.
-    // Replay friendly logs and hand back hardcoded Drink Cirkul data.
-    const fake = [
-      "Scanning your website…",
-      "Reading your colors and fonts…",
-      "Analyzing your brand voice…",
-      "Brand kit ready ✓",
-    ];
-    for (const m of fake) {
-      await new Promise((r) => setTimeout(r, 450));
-      setLogs((prev) => [...prev, m]);
+    if (isDevMode) {
+      // Simulate streaming logs in dev mode
+      const fake = [
+        "Scanning your website…",
+        "Reading your colors and fonts…",
+        "Analyzing your brand voice…",
+        "Brand kit ready ✓",
+      ];
+      for (const m of fake) {
+        await new Promise((r) => setTimeout(r, 450));
+        setLogs((prev) => [...prev, m]);
+      }
+      const stub = devStubKit(defaultBrandName);
+      setKit(stub);
+      seedEdits(stub);
+      setPhase("preview");
+      return;
     }
-    const stub = isDevMode ? devStubKit(defaultBrandName) : cirkulStubKit();
-    setKit(stub);
-    seedEdits(stub);
-    setPhase("preview");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/extract-brand-kit`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ websiteUrl: trimmed }),
+        signal: controller.signal,
+      });
+
+      if (!resp.ok || !resp.body) {
+        const text = await resp.text().catch(() => "");
+        throw new Error(`Extractor failed [${resp.status}]: ${text.slice(0, 200)}`);
+      }
+
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent: string | null = null;
+      let finished = false;
+
+      while (!finished) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        let nl: number;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          let line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          if (line.endsWith("\r")) line = line.slice(0, -1);
+
+          if (line === "") {
+            currentEvent = null;
+            continue;
+          }
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+            continue;
+          }
+          if (line.startsWith("data: ")) {
+            const payload = line.slice(6);
+            try {
+              const data = JSON.parse(payload);
+              if (currentEvent === "log") {
+                const friendly = friendlyLog(String(data?.message ?? ""));
+                setLogs((prev) => [...prev, friendly]);
+                console.debug("[brand-kit log]", data);
+              } else if (currentEvent === "result") {
+                const normalized = normalizeKit(data);
+                setKit(normalized);
+                seedEdits(normalized);
+                setPhase("preview");
+                finished = true;
+                break;
+              } else if (currentEvent === "error") {
+                throw new Error(data?.error || "Extractor error");
+              }
+            } catch (parseErr) {
+              if (currentEvent === "error") throw parseErr;
+              // partial JSON — re-buffer
+              buffer = line + "\n" + buffer;
+              break;
+            }
+          }
+        }
+      }
+
+      if (!finished) throw new Error("Stream ended before result was received.");
+    } catch (err: any) {
+      if (err?.name === "AbortError") return;
+      console.error("Brand kit extraction error:", err);
+      setError(err?.message || "Failed to build brand kit.");
+      setPhase("input");
+    }
   };
 
   const handleConfirm = async () => {
@@ -384,7 +440,7 @@ export const BrandKitStep = ({
             product_categories: kit.product_categories,
             website_url: kit.website_url,
             brand_kit: brandKitJson,
-            brand_kit_status: "completed",
+            brand_kit_status: "ready",
             brand_kit_updated_at: new Date().toISOString(),
             confirmed: true,
           }),
@@ -412,49 +468,31 @@ export const BrandKitStep = ({
         }
       }
 
-      const lovableAccountId = await getCurrentAccountId();
-      const payload = {
-        account_id: lovableAccountId,
-        ad_account_id: adAccountId,
-        user_id: user.id,
-        brand_name: edits.brand_name || null,
-        logo_url: edits.logo_url || null,
-        primary_color: edits.primary_color,
-        secondary_color: edits.secondary_color,
-        accent_color: edits.accent_color,
-        font_family: edits.body_font,
-        tagline: edits.tagline || null,
-        tone_of_voice: kit.tone_of_voice,
-        product_categories: kit.product_categories,
-        website_url: kit.website_url,
-        brand_kit: brandKitJson,
-        brand_kit_status: "completed" as const,
-        brand_kit_updated_at: new Date().toISOString(),
-        confirmed: true,
-      };
-
-      // Manual upsert — prod DB may not have the (user_id, ad_account_id) unique
-      // constraint, so we can't rely on PostgREST onConflict.
-      const { data: existing, error: selectErr } = await supabase
+      const { error: upsertErr } = await supabase
         .from("ad_account_profiles")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("ad_account_id", adAccountId)
-        .maybeSingle();
-      if (selectErr) throw selectErr;
+        .upsert(
+          {
+            ad_account_id: adAccountId,
+            user_id: user.id,
+            brand_name: edits.brand_name || null,
+            logo_url: edits.logo_url || null,
+            primary_color: edits.primary_color,
+            secondary_color: edits.secondary_color,
+            accent_color: edits.accent_color,
+            font_family: edits.body_font,
+            tagline: edits.tagline || null,
+            tone_of_voice: kit.tone_of_voice, // hidden from UI, still saved
+            product_categories: kit.product_categories, // hidden from UI, still saved
+            website_url: kit.website_url,
+            brand_kit: brandKitJson,
+            brand_kit_status: "ready",
+            brand_kit_updated_at: new Date().toISOString(),
+            confirmed: true,
+          },
+          { onConflict: "ad_account_id,user_id" },
+        );
 
-      if (existing?.id) {
-        const { error: updateErr } = await supabase
-          .from("ad_account_profiles")
-          .update(payload)
-          .eq("id", existing.id);
-        if (updateErr) throw updateErr;
-      } else {
-        const { error: insertErr } = await supabase
-          .from("ad_account_profiles")
-          .insert(payload);
-        if (insertErr) throw insertErr;
-      }
+      if (upsertErr) throw upsertErr;
       toast.success("Brand kit saved!");
       onComplete();
     } catch (err: any) {

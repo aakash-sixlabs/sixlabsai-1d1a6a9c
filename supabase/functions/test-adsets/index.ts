@@ -31,10 +31,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const prodAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -47,24 +43,16 @@ Deno.serve(async (req) => {
     const since = cutoffDate.toISOString().split('T')[0]
     const until = new Date().toISOString().split('T')[0]
 
-    const { data: adAccount, error: adAccountErr } = await prodAdmin
+    const { data: adAccount } = await admin
       .from('ad_accounts')
-      .select('account_id, user_id, account_id_meta')
+      .select('account_id, user_id')
       .eq('id', adAccountId)
-      .maybeSingle()
+      .single()
 
-    if (adAccountErr || !adAccount) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Ad account ${adAccountId} not found`, db_error: adAccountErr?.message ?? null }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const metaAccountId = adAccount.account_id_meta.startsWith('act_')
-      ? adAccount.account_id_meta
-      : `act_${adAccount.account_id_meta}`
+    const metaAccountId = adAccount.account_id.startsWith('act_')
+      ? adAccount.account_id
+      : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
-    const accountId = adAccount.account_id
 
     // STEP 1 — Pull ALL ACTIVE ad sets
     const activeAdSets = await fetchAllPages(
@@ -130,7 +118,6 @@ Deno.serve(async (req) => {
     const filteredResults = results.filter((s: any) => campaignMap[s.campaign_id])
 
     const rows = filteredResults.map((s: any) => ({
-      account_id: accountId,
       user_id: userId,
       campaign_id: campaignMap[s.campaign_id],
       meta_adset_id: s.id,
@@ -150,7 +137,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await admin
       .from('ad_sets')
       .upsert(rows, {
-        onConflict: 'meta_adset_id',
+        onConflict: 'user_id,meta_adset_id',
         ignoreDuplicates: false
       })
 

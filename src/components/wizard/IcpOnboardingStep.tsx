@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Users, Plus, Trash2, ArrowRight, Loader2, SkipForward } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getCurrentUserAndAccount } from "@/lib/accountContext";
 import { toast } from "sonner";
 
 interface IcpDraft {
@@ -51,10 +50,10 @@ export const IcpOnboardingStep = ({ open, adAccountId, isDevMode = false, onComp
 
   const persist = async (drafts: IcpDraft[]) => {
     if (drafts.length === 0 || isDevMode) return;
-    const { userId, accountId } = await getCurrentUserAndAccount();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
     const rows = drafts.map((d) => ({
-      account_id: accountId,
-      user_id: userId,
+      user_id: user.id,
       ad_account_id: adAccountId,
       name: d.name,
       description: d.description,

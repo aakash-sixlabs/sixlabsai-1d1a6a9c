@@ -1,1 +1,0 @@
-REVOKE EXECUTE ON FUNCTION public.mirror_to_secondary() FROM PUBLIC, anon, authenticated;

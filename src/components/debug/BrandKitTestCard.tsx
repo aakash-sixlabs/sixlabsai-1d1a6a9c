@@ -157,8 +157,9 @@ function BrandKitTestCardInner() {
     setLogs([])
 
     try {
-      const fnUrl = `https://bhcusyaonpevmwaruvlx.supabase.co/functions/v1/test-brand-kit`
-      const anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpremJ1eXBiaHFic3NtcWpwZHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NzI0MjUsImV4cCI6MjA4OTI0ODQyNX0.u0Kk3br2iq71ESnN_ipmwe2_KqpvsBlUqSlvbQMTSA4"
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID
+      const fnUrl = `https://${projectId}.supabase.co/functions/v1/test-brand-kit`
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
 
       const resp = await fetch(fnUrl, {
         method: 'POST',

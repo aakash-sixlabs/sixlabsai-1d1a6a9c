@@ -6,7 +6,6 @@ import { useWizard } from "@/context/WizardContext";
 import { DashboardBackground } from "@/components/wizard/DashboardBackground";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
-import { getOnboardingState } from "@/lib/onboardingState";
 import {
   Dialog,
   DialogContent,
@@ -28,9 +27,9 @@ import {
 /* ─── Types ─── */
 interface AdAccount {
   id: string;
-  account_id_meta: string;
+  account_id: string;
   account_name: string;
-  currency: string | null;
+  currency: string;
   timezone: string | null;
 }
 
@@ -68,7 +67,7 @@ const OnboardingV2 = () => {
           const data = JSON.parse(stored);
           const mock: AdAccount[] = (data.accounts || []).map((a: any) => ({
             id: a.account_id,
-            account_id_meta: a.account_id,
+            account_id: a.account_id,
             account_name: a.name || a.account_name,
             currency: a.currency || "USD",
             timezone: null,
@@ -88,48 +87,26 @@ const OnboardingV2 = () => {
       }
 
       try {
-        const onboarding = await getOnboardingState(session.user.id);
+        // Returning-user shortcut: once a default ad account exists, onboarding
+        // has already been completed for this user. The /home page triggers a
+        // non-blocking 30-day resync on landing.
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("default_ad_account_id")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-        // Always load the account list so the select-account UI works for
-        // users who haven't picked one yet.
+        if (profile?.default_ad_account_id) {
+          navigate("/home", { replace: true });
+          return;
+        }
+
         const { data, error } = await supabase
           .from("ad_accounts")
           .select("*")
           .order("created_at", { ascending: false });
         if (error) throw error;
         setAccounts(data || []);
-
-        if (onboarding.complete) {
-          navigate("/home", { replace: true });
-          return;
-        }
-
-        // Resume from wherever the user dropped off. We never let them
-        // shortcut past an incomplete step.
-        if (onboarding.adAccountId) {
-          setSelected(onboarding.adAccountId);
-          updateState({
-            selectedAccount: onboarding.adAccountId,
-            selectedAccountName: onboarding.adAccountName,
-            selectedMetaAccountId: onboarding.metaAccountId,
-            dateRange: "90",
-          });
-        }
-
-        if (onboarding.resumePhase === "brand-kit") {
-          setPhase("brand-kit");
-          return;
-        }
-        if (onboarding.resumePhase === "add-icp") {
-          setPhase("add-icp");
-          return;
-        }
-        if (onboarding.resumePhase === "pulling") {
-          // Kick the data sync again — the only way out is a completed job.
-          setPhase("pulling");
-          setTimeout(() => startPull(onboarding.adAccountId), 0);
-          return;
-        }
       } catch (err) {
         console.error("Error fetching accounts:", err);
       }
@@ -163,37 +140,28 @@ const OnboardingV2 = () => {
     updateState({
       selectedAccount: account.id,
       selectedAccountName: account.account_name,
-      selectedMetaAccountId: account.account_id_meta,
+      selectedMetaAccountId: account.account_id,
       dateRange: "90",
     });
 
-    // Re-evaluate the full onboarding state for this account so we resume
-    // from the first incomplete step instead of jumping straight to /home.
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const onboarding = await getOnboardingState(user.id);
-      if (onboarding.complete) {
-        navigate("/home", { replace: true });
-        return;
-      }
-      if (onboarding.resumePhase === "add-icp") {
-        setPhase("add-icp");
-        return;
-      }
-      if (onboarding.resumePhase === "pulling") {
-        setPhase("pulling");
-        setTimeout(() => startPull(onboarding.adAccountId), 0);
-        return;
-      }
+    const { data: accountProfile } = await supabase
+      .from("ad_account_profiles")
+      .select("brand_kit_status, confirmed")
+      .eq("ad_account_id", account.id)
+      .maybeSingle();
+
+    if (accountProfile?.brand_kit_status === "ready" || accountProfile?.confirmed) {
+      navigate("/home", { replace: true });
+      return;
     }
 
     setPhase("brand-kit");
   };
 
   /* ── Step 2: brand kit confirmed → start data pull ── */
-  const startPull = async (accountId = selected) => {
-    if (!accountId) return;
-    const account = accounts.find((a) => a.id === accountId);
+  const startPull = async () => {
+    if (!selected) return;
+    const account = accounts.find((a) => a.id === selected);
     if (!account) return;
 
     setPhase("pulling");
@@ -226,20 +194,11 @@ const OnboardingV2 = () => {
         (payload) => {
           const job = payload.new as any;
           if (job.current_step) setCurrentStep(job.current_step);
-          if (job.status === "completed") {
+          if (job.status === "complete") {
             updateState({ syncComplete: true });
-            // Safety net: also flip the flag from the client in case the edge
-            // function update didn't land. /home gating relies on this.
-            if (accountId) {
-              supabase
-                .from("ad_accounts")
-                .update({ onboarding_completed: true })
-                .eq("id", accountId)
-                .then(() => {});
-            }
             setPhase("add-icp");
           }
-          if (job.status === "failed")
+          if (job.status === "error")
             setError(job.error_message || "Sync failed");
         }
       )
@@ -332,7 +291,7 @@ const OnboardingV2 = () => {
                           {acc.account_name}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {acc.account_id_meta} · {acc.currency}
+                          {acc.account_id} · {acc.currency}
                         </div>
                       </div>
                     </div>
@@ -530,7 +489,7 @@ const OnboardingV2 = () => {
             <Button
               size="lg"
               className="w-full gap-2"
-              onClick={() => navigate("/home")}
+              onClick={() => navigate("/")}
             >
               Go to Homepage <ArrowRight className="w-4 h-4" />
             </Button>

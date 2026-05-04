@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "failed",
+          status: "error",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -307,7 +307,7 @@ Deno.serve(async (req) => {
         if (dcoHashes.length > 0) {
           await updateStep(`Resolving ${dcoHashes.length} DCO image hashes`);
           hashUrlMap = await resolveImageHashesToUrls(
-            adAccount.account_id_meta,
+            adAccount.account_id,
             dcoHashes,
             accessToken,
           );
@@ -412,10 +412,9 @@ Deno.serve(async (req) => {
           const primaryFbUrl = urls[0] || null;
           const primaryStoredUrl = storedImageUrls[0] || null;
 
-          const { error: creativeUpsertError } = await admin.from("ad_creatives").upsert(
+          await admin.from("ad_creatives").upsert(
             {
               user_id: userId,
-              account_id: adAccount.account_id,
               ad_id: storedAd.id,
               meta_creative_id: creative.id || storedAd.meta_creative_id || storedAd.meta_ad_id,
               creative_type: creativeType,
@@ -440,18 +439,8 @@ Deno.serve(async (req) => {
               raw_object_story_spec: oss && Object.keys(oss).length ? oss : null,
               raw_data: creative,
             },
-            { onConflict: "account_id,meta_creative_id" },
+            { onConflict: "user_id,meta_creative_id" },
           );
-
-          if (creativeUpsertError) {
-            console.error(
-              `ad_creatives upsert failed for ad ${storedAd.meta_ad_id}:`,
-              creativeUpsertError,
-            );
-            throw new Error(
-              `ad_creatives upsert failed: ${creativeUpsertError.message}`,
-            );
-          }
 
           await admin
             .from("ads")
@@ -485,10 +474,9 @@ Deno.serve(async (req) => {
           images_downloaded: imagesDownloaded,
         });
 
-        // Chain to phase 3 — edge functions live on Lovable Cloud
-        const functionsHost = Deno.env.get("SUPABASE_URL")!;
+        // Chain to phase 3
         const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        await fetch(`${functionsHost}/functions/v1/meta-sync-insights`, {
+        await fetch(`${supabaseUrl}/functions/v1/meta-sync-insights`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -517,7 +505,7 @@ Deno.serve(async (req) => {
     console.error("meta-sync-creatives fatal:", err);
     if (syncId) {
       await admin.from("sync_jobs").update({
-        status: "failed",
+        status: "error",
         error_message: err?.message || "Creatives phase failed",
         updated_at: new Date().toISOString(),
       }).eq("id", syncId);

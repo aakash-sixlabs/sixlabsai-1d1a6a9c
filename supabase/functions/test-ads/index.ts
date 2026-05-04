@@ -56,10 +56,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const prodAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -72,24 +68,16 @@ Deno.serve(async (req) => {
     const since = cutoffDate.toISOString().split('T')[0]
     const until = new Date().toISOString().split('T')[0]
 
-    const { data: adAccount, error: adAccountErr } = await prodAdmin
+    const { data: adAccount } = await admin
       .from('ad_accounts')
-      .select('account_id, user_id, account_id_meta')
+      .select('account_id, user_id')
       .eq('id', adAccountId)
-      .maybeSingle()
+      .single()
 
-    if (adAccountErr || !adAccount) {
-      return new Response(
-        JSON.stringify({ success: false, error: `Ad account ${adAccountId} not found`, db_error: adAccountErr?.message ?? null }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    const metaAccountId = adAccount.account_id_meta.startsWith('act_')
-      ? adAccount.account_id_meta
-      : `act_${adAccount.account_id_meta}`
+    const metaAccountId = adAccount.account_id.startsWith('act_')
+      ? adAccount.account_id
+      : `act_${adAccount.account_id}`
     const userId = adAccount.user_id
-    const accountId = adAccount.account_id
 
     // STEP 1 — Get stored ad sets from DB
     const { data: adSetData } = await admin
@@ -180,7 +168,6 @@ Deno.serve(async (req) => {
     const rows = results
       .filter((a: any) => adSetMap[a.adset_id])
       .map((a: any) => ({
-        account_id: accountId,
         user_id: userId,
         ad_set_id: adSetMap[a.adset_id],
         meta_ad_id: a.id,
@@ -195,7 +182,7 @@ Deno.serve(async (req) => {
     const { error: upsertError } = await admin
       .from('ads')
       .upsert(rows, {
-        onConflict: 'meta_ad_id',
+        onConflict: 'user_id,meta_ad_id',
         ignoreDuplicates: false
       })
 

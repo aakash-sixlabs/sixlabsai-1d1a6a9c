@@ -1,1 +1,0 @@
-ALTER TABLE public.ad_accounts ADD COLUMN IF NOT EXISTS onboarding_completed boolean NOT NULL DEFAULT false;

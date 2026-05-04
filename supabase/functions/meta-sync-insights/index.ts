@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "failed",
+          status: "error",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -114,9 +114,9 @@ Deno.serve(async (req) => {
           .single();
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
-        const actId = adAccount.account_id_meta.startsWith("act_")
-          ? adAccount.account_id_meta
-          : `act_${adAccount.account_id_meta}`;
+        const actId = adAccount.account_id.startsWith("act_")
+          ? adAccount.account_id
+          : `act_${adAccount.account_id}`;
 
         // Map Meta ad_id → internal ads.id (new schema: meta_ad_id)
         const { data: allStoredAds } = await admin
@@ -141,9 +141,9 @@ Deno.serve(async (req) => {
               updated_at: new Date().toISOString(),
             }).eq("id", syncId!);
 
-            const functionsHost = Deno.env.get("SUPABASE_URL")!;
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
             const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-            await fetch(`${functionsHost}/functions/v1/meta-sync-insights`, {
+            await fetch(`${supabaseUrl}/functions/v1/meta-sync-insights`, {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -201,7 +201,6 @@ Deno.serve(async (req) => {
 
             perfRows.push({
               user_id: userId,
-              account_id: adAccount.account_id,
               ad_id: internalAdId,
               date: insight.date_start,
               impressions,
@@ -221,24 +220,9 @@ Deno.serve(async (req) => {
           }
 
           if (perfRows.length > 0) {
-            // Prod table has no unique constraint on (user_id, ad_id, date),
-            // so we delete + insert per day instead of upserting.
-            const adIds = [...new Set(perfRows.map((r) => r.ad_id))];
-            const { error: delErr } = await admin
-              .from("ad_performance_daily")
-              .delete()
-              .eq("user_id", userId)
-              .eq("date", day)
-              .in("ad_id", adIds);
-            if (delErr) {
-              throw new Error(`ad_performance_daily delete failed: ${delErr.message}`);
-            }
-            const { error: insErr } = await admin
-              .from("ad_performance_daily")
-              .insert(perfRows);
-            if (insErr) {
-              throw new Error(`ad_performance_daily insert failed: ${insErr.message}`);
-            }
+            await admin.from("ad_performance_daily").upsert(perfRows, {
+              onConflict: "user_id,ad_id,date",
+            });
           }
 
           daysThisRun++;
@@ -252,22 +236,20 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Materialized view removed in dictionary alignment — no refresh needed.
+        // Refresh the materialized view so dashboard sees fresh data
+        try {
+          await admin.rpc("refresh_campaign_ad_data");
+        } catch (refreshErr) {
+          console.warn("MV refresh failed (non-fatal):", refreshErr);
+        }
 
         await admin.from("sync_jobs").update({
-          status: "completed",
+          status: "complete",
           current_step: "Complete",
           phase: "done",
           cursor_date: null,
           updated_at: new Date().toISOString(),
         }).eq("id", syncId!);
-
-        // Mark the ad account as fully onboarded — this is the single flag
-        // the frontend uses to gate access to /home.
-        await admin
-          .from("ad_accounts")
-          .update({ onboarding_completed: true, updated_at: new Date().toISOString() })
-          .eq("id", adAccountId);
       } catch (err: any) {
         console.error("meta-sync-insights error:", err);
         await failJob(err?.message || "Insights phase failed");
@@ -289,7 +271,7 @@ Deno.serve(async (req) => {
     console.error("meta-sync-insights fatal:", err);
     if (syncId) {
       await admin.from("sync_jobs").update({
-        status: "failed",
+        status: "error",
         error_message: err?.message || "Insights phase failed",
         updated_at: new Date().toISOString(),
       }).eq("id", syncId);

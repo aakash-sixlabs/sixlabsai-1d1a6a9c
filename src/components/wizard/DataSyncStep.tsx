@@ -30,7 +30,6 @@ export const DataSyncStep = ({
   const [currentStep, setCurrentStep] = useState("Connecting to Meta");
   const [error, setError] = useState<string | null>(null);
   const [syncStarted, setSyncStarted] = useState(false);
-  const [retryKey, setRetryKey] = useState(0);
   const [simulatedIdx, setSimulatedIdx] = useState(0);
   const [isComplete, setIsComplete] = useState(false);
 
@@ -38,7 +37,7 @@ export const DataSyncStep = ({
   // "Pulling performance (2026-03-09)") to one of our 6 visible UI steps.
   const mapBackendStep = (raw: string): number => {
     const s = (raw || "").toLowerCase();
-    if (s.includes("complete") || s.includes("done") || s.includes("finished")) return SYNC_STEPS.length - 1;
+    if (s.includes("complete")) return SYNC_STEPS.length - 1;
     if (s.includes("performance") || s.includes("insights")) return 3; // Pulling ad performance
     if (s.includes("creative")) return 2; // Pulling ads and creatives
     if (s.includes("ad set") || s.includes("adset") || s.includes("pulling ads")) return 2;
@@ -94,42 +93,6 @@ export const DataSyncStep = ({
       return () => clearInterval(interval);
     }
 
-    let syncJobId: string | null = null;
-    let pollInterval: ReturnType<typeof setInterval> | null = null;
-
-    const handleJobUpdate = async (job: any) => {
-      if (!job) return;
-      if (job.current_step) setCurrentStep(job.current_step);
-      if (job.status === "completed") {
-        setIsComplete(true);
-        updateState({ syncComplete: true });
-        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-        if (state.selectedAccount) {
-          await supabase
-            .from("ad_accounts")
-            .update({ onboarding_completed: true })
-            .eq("id", state.selectedAccount);
-        }
-        setTimeout(() => handleComplete(), 1000);
-      }
-      if (job.status === "failed" || job.status === "error") {
-        setError(job.error_message || "Sync failed");
-        if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
-      }
-    };
-
-    const startPolling = (jobId: string) => {
-      if (pollInterval) return;
-      pollInterval = setInterval(async () => {
-        const { data } = await supabase
-          .from("sync_jobs")
-          .select("status, current_step, error_message")
-          .eq("id", jobId)
-          .maybeSingle();
-        if (data) void handleJobUpdate(data);
-      }, 3000);
-    };
-
     const startSync = async () => {
       try {
         const { data, error: fnError } = await supabase.functions.invoke("meta-sync-accounts", {
@@ -137,10 +100,8 @@ export const DataSyncStep = ({
         });
         if (fnError) throw fnError;
         if (data?.error) throw new Error(data.error);
-        if (data?.syncJobId) {
-          syncJobId = data.syncJobId;
-          startPolling(data.syncJobId);
-        }
+        // Sync runs in the background — realtime updates on sync_jobs will
+        // drive currentStep and the final complete/error state.
       } catch (err: any) {
         console.error("Sync error:", err);
         setError(err.message || "Sync failed");
@@ -150,16 +111,20 @@ export const DataSyncStep = ({
     const channel = supabase
       .channel("sync-progress")
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "sync_jobs" }, (payload) => {
-        void handleJobUpdate(payload.new);
+        const job = payload.new as any;
+        if (job.current_step) setCurrentStep(job.current_step);
+        if (job.status === "complete") {
+          setIsComplete(true);
+          updateState({ syncComplete: true });
+          setTimeout(() => handleComplete(), 1000);
+        }
+        if (job.status === "error") setError(job.error_message || "Sync failed");
       })
       .subscribe();
 
     startSync();
-    return () => {
-      supabase.removeChannel(channel);
-      if (pollInterval) clearInterval(pollInterval);
-    };
-  }, [retryKey]);
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const effectiveIdx = currentIdx >= 0 ? currentIdx : 0;
 
@@ -172,7 +137,7 @@ export const DataSyncStep = ({
             <span className="text-sm font-medium text-destructive">Sync Error</span>
           </div>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => { setCurrentStep("Connecting to Meta"); setSimulatedIdx(0); setIsComplete(false); setError(null); setSyncStarted(false); setRetryKey((key) => key + 1); }}>
+          <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => { setError(null); setSyncStarted(false); }}>
             <RefreshCw className="w-3 h-3" /> Retry
           </Button>
         </div>

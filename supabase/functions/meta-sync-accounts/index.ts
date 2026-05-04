@@ -3,7 +3,6 @@
 //   campaigns(meta_campaign_id, name, ...) → ad_sets(meta_adset_id, ...) → ads(meta_ad_id, meta_creative_id)
 // Chains to meta-sync-creatives.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getUserAccountId } from "../_shared/account.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,12 +27,12 @@ async function fetchAllPages(url: string) {
         err?.error_subcode === 2446079 ||
         /rate limit|too many calls|user request limit/i.test(err?.message || "");
       if (!isRateLimited) break;
-      // Keep retries inside Lovable Cloud function limits. If Meta keeps rate
-      // limiting, fail the sync visibly instead of leaving the UI spinning.
-      if (attempt >= 3) {
+      // Up to 8 attempts with exponential backoff capped at 2 minutes per wait.
+      // Total worst-case wait ≈ 8.5 min — long enough to clear most Meta hourly buckets.
+      if (attempt >= 8) {
         throw new Error(`Meta rate limit hit after ${attempt} retries: ${err?.message || res.status}`);
       }
-      const waitMs = 5_000 * Math.pow(2, attempt);
+      const waitMs = Math.min(120_000, 15_000 * Math.pow(2, attempt));
       console.warn(`Rate limited by Meta (attempt ${attempt + 1}), waiting ${waitMs}ms`);
       await new Promise((r) => setTimeout(r, waitMs));
       attempt++;
@@ -62,8 +61,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // JWT is issued by the prod Supabase project (frontend auth lives there),
-    // so validate against prod, not Lovable Cloud.
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
@@ -100,30 +97,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    const accountId = await getUserAccountId(admin, userId);
     const accessToken = adAccount.meta_connections.access_token;
-    const metaActId: string = adAccount.account_id_meta;
-    const actId = metaActId.startsWith("act_") ? metaActId : `act_${metaActId}`;
+    const actId = adAccount.account_id.startsWith("act_")
+      ? adAccount.account_id
+      : `act_${adAccount.account_id}`;
 
-    // Brand row (new schema: uuid id, no meta_account_id column)
+    // Upsert brand (still used for analytics view)
     const { data: existingBrand } = await admin
       .from("brands")
       .select("id")
-      .eq("ad_account_id", adAccountId)
+      .eq("user_id", userId)
+      .eq("meta_account_id", adAccount.account_id)
       .maybeSingle();
 
-    let brandId: string;
+    let brandId: number;
     if (existingBrand) {
       brandId = existingBrand.id;
       await admin.from("brands").update({
         name: adAccount.account_name,
+        account_currency: adAccount.currency || "USD",
+        account_timezone: adAccount.timezone || null,
       }).eq("id", brandId);
     } else {
       const { data: newBrand } = await admin.from("brands").insert({
-        account_id: accountId,
         user_id: userId,
-        ad_account_id: adAccountId,
         name: adAccount.account_name,
+        meta_account_id: adAccount.account_id,
+        account_currency: adAccount.currency || "USD",
+        account_timezone: adAccount.timezone || null,
       }).select("id").single();
       brandId = newBrand!.id;
     }
@@ -135,10 +136,9 @@ Deno.serve(async (req) => {
     const { data: syncJob } = await admin
       .from("sync_jobs")
       .insert({
-        account_id: accountId,
         user_id: userId,
         ad_account_id: adAccountId,
-        status: "running",
+        status: "syncing",
         phase: "accounts",
         current_step: "Pulling campaigns and ad sets",
         date_range_start: dateStart.toISOString().split("T")[0],
@@ -159,7 +159,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "failed",
+          status: "error",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -225,7 +225,6 @@ Deno.serve(async (req) => {
         );
 
         const campaignRecords = campaigns.map((c: any) => ({
-          account_id: accountId,
           ad_account_id: adAccountId,
           user_id: userId,
           meta_campaign_id: c.id,
@@ -239,12 +238,9 @@ Deno.serve(async (req) => {
           stop_time: c.stop_time || null,
         }));
         if (campaignRecords.length > 0) {
-          const { error: campaignUpsertError } = await admin.from("campaigns").upsert(campaignRecords, {
-            onConflict: "account_id,meta_campaign_id",
+          await admin.from("campaigns").upsert(campaignRecords, {
+            onConflict: "user_id,meta_campaign_id",
           });
-          if (campaignUpsertError) {
-            throw new Error(`campaigns upsert failed: ${campaignUpsertError.message}`);
-          }
         }
 
         const { data: storedCampaigns } = await admin
@@ -298,7 +294,6 @@ Deno.serve(async (req) => {
         );
 
         const adsetRecords = adsets.map((as: any) => ({
-          account_id: accountId,
           campaign_id: campaignMap.get(as.campaign_id),
           user_id: userId,
           meta_adset_id: as.id,
@@ -314,18 +309,15 @@ Deno.serve(async (req) => {
           end_time: as.end_time || null,
         }));
         if (adsetRecords.length > 0) {
-          const { error: adsetUpsertError } = await admin.from("ad_sets").upsert(adsetRecords, {
-            onConflict: "account_id,meta_adset_id",
+          await admin.from("ad_sets").upsert(adsetRecords, {
+            onConflict: "user_id,meta_adset_id",
           });
-          if (adsetUpsertError) {
-            throw new Error(`ad_sets upsert failed: ${adsetUpsertError.message}`);
-          }
         }
 
         const { data: storedAdsets } = await admin
           .from("ad_sets")
           .select("id, meta_adset_id")
-          .eq("account_id", accountId);
+          .eq("user_id", userId);
         const adsetMap = new Map(
           (storedAdsets || []).map((a: any) => [a.meta_adset_id, a.id]),
         );
@@ -370,7 +362,6 @@ Deno.serve(async (req) => {
         );
 
         const adRecords = rawAds.map((ad: any) => ({
-          account_id: accountId,
           ad_set_id: adsetMap.get(ad.adset_id),
           user_id: userId,
           meta_ad_id: ad.id,
@@ -380,12 +371,9 @@ Deno.serve(async (req) => {
           meta_creative_id: ad.creative?.id || null,
         }));
         if (adRecords.length > 0) {
-          const { error: adsUpsertError } = await admin.from("ads").upsert(adRecords, {
-            onConflict: "account_id,meta_ad_id",
+          await admin.from("ads").upsert(adRecords, {
+            onConflict: "user_id,meta_ad_id",
           });
-          if (adsUpsertError) {
-            throw new Error(`ads upsert failed: ${adsUpsertError.message}`);
-          }
         }
 
         await updateStep("Pulling creatives", {
@@ -393,11 +381,10 @@ Deno.serve(async (req) => {
           total_ads: adRecords.length,
         });
 
-        // Chain to phase 2 — edge functions live on the Lovable Cloud project,
-        // so call back via SUPABASE_URL (Cloud), not SUPABASE_URL.
-        const functionsHost = Deno.env.get("SUPABASE_URL")!;
+        // Chain to phase 2
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-        await fetch(`${functionsHost}/functions/v1/meta-sync-creatives`, {
+        await fetch(`${supabaseUrl}/functions/v1/meta-sync-creatives`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
