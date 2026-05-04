@@ -107,10 +107,15 @@ export const DisclaimerPicker = ({ selectedIds, onChange }: Props) => {
       return;
     }
 
+    const { getCurrentAccountId } = await import("@/lib/accountContext");
+    const accountId = await getCurrentAccountId();
+    if (!accountId) { toast.error("No account context"); return; }
+
     const { data, error } = await supabase
       .from("disclaimers")
       .insert({
         user_id: user.id,
+        account_id: accountId,
         ad_account_id: adAccountId,
         label: draft.label,
         text: draft.text,
