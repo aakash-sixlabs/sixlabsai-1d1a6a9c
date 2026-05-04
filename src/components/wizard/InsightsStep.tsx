@@ -483,6 +483,32 @@ export const InsightsStep = () => {
       )
       .subscribe();
 
+    // Polling fallback in case realtime events are missed
+    const pollInterval = setInterval(async () => {
+      const jobId = activeJobId;
+      if (!jobId) return;
+      const { data: job } = await supabase
+        .from("sync_jobs")
+        .select("id, status, current_step, error_message")
+        .eq("id", jobId)
+        .maybeSingle();
+      if (!job) return;
+      if (job.current_step) setSyncStep(job.current_step);
+      if (job.status === "completed") {
+        setSyncStatus("complete");
+        fetchData();
+        clearInterval(pollInterval);
+        supabase.removeChannel(channel);
+        setTimeout(() => setSyncStatus("idle"), 2500);
+      } else if (job.status === "failed") {
+        setSyncStatus("error");
+        setSyncStep(job.error_message || "Sync failed");
+        clearInterval(pollInterval);
+        supabase.removeChannel(channel);
+      }
+    }, 4000);
+    setTimeout(() => clearInterval(pollInterval), 15 * 60 * 1000);
+
     // If we latched onto an existing job, don't re-invoke.
     if (isFresh) return;
 
