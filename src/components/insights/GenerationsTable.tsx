@@ -64,14 +64,15 @@ export const GenerationsTable = () => {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      setLoading(true);
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    const load = async () => {
       if (isDevSession()) {
         if (!cancelled) {
           setRows([]);
           setLoading(false);
         }
-        return;
+        return null;
       }
 
       const {
@@ -82,7 +83,7 @@ export const GenerationsTable = () => {
           setRows([]);
           setLoading(false);
         }
-        return;
+        return null;
       }
 
       const [{ data: jobs }, { data: creatives }] = await Promise.all([
@@ -116,9 +117,30 @@ export const GenerationsTable = () => {
         setRows(built);
         setLoading(false);
       }
+      return user.id;
+    };
+
+    (async () => {
+      const userId = await load();
+      if (cancelled || !userId) return;
+      channel = supabase
+        .channel(`generations_table_${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "generation_jobs",
+            filter: `user_id=eq.${userId}`,
+          },
+          () => { load(); },
+        )
+        .subscribe();
     })();
+
     return () => {
       cancelled = true;
+      if (channel) supabase.removeChannel(channel);
     };
   }, []);
 
