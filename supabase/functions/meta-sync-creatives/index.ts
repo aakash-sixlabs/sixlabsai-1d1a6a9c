@@ -236,8 +236,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     syncId = body.syncId;
-    const { adAccountId, userId, brandId } = body;
-    if (!syncId || !adAccountId || !userId || !brandId) {
+    const { adAccountId, userId, brandId, accountId } = body;
+    if (!syncId || !adAccountId || !userId || !accountId) {
       return new Response(JSON.stringify({ error: "Missing params" }), {
         status: 400,
         headers: corsHeaders,
@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "error",
+          status: "failed",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -270,12 +270,14 @@ Deno.serve(async (req) => {
           .single();
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
+        const metaActIdRaw: string = adAccount.account_id_meta;
+        const metaActIdNoPrefix = metaActIdRaw.startsWith("act_") ? metaActIdRaw.slice(4) : metaActIdRaw;
 
-        // Load all stored ads for this user (new schema: meta_ad_id, meta_creative_id)
+        // Load all stored ads for this account (new schema: meta_ad_id, meta_creative_id)
         const { data: storedAds } = await admin
           .from("ads")
           .select("id, meta_ad_id, meta_creative_id")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
 
         const creativeIds = [
           ...new Set(
@@ -307,7 +309,7 @@ Deno.serve(async (req) => {
         if (dcoHashes.length > 0) {
           await updateStep(`Resolving ${dcoHashes.length} DCO image hashes`);
           hashUrlMap = await resolveImageHashesToUrls(
-            adAccount.account_id,
+            metaActIdNoPrefix,
             dcoHashes,
             accessToken,
           );
@@ -326,7 +328,7 @@ Deno.serve(async (req) => {
         const { data: existingCreatives } = await admin
           .from("ad_creatives")
           .select("meta_creative_id, image_hashes, stored_image_urls")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
         const existingMap = new Map<string, { image_hashes: any; stored_image_urls: any }>();
         for (const ec of existingCreatives || []) {
           if (ec.meta_creative_id) {
@@ -414,6 +416,7 @@ Deno.serve(async (req) => {
 
           await admin.from("ad_creatives").upsert(
             {
+              account_id: accountId,
               user_id: userId,
               ad_id: storedAd.id,
               meta_creative_id: creative.id || storedAd.meta_creative_id || storedAd.meta_ad_id,
@@ -439,7 +442,7 @@ Deno.serve(async (req) => {
               raw_object_story_spec: oss && Object.keys(oss).length ? oss : null,
               raw_data: creative,
             },
-            { onConflict: "user_id,meta_creative_id" },
+            { onConflict: "account_id,meta_creative_id" },
           );
 
           await admin
@@ -482,7 +485,7 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${serviceKey}`,
           },
-          body: JSON.stringify({ syncId, adAccountId, userId, brandId }),
+          body: JSON.stringify({ syncId, adAccountId, userId, brandId, accountId }),
         });
       } catch (err: any) {
         console.error("meta-sync-creatives error:", err);
@@ -505,7 +508,7 @@ Deno.serve(async (req) => {
     console.error("meta-sync-creatives fatal:", err);
     if (syncId) {
       await admin.from("sync_jobs").update({
-        status: "error",
+        status: "failed",
         error_message: err?.message || "Creatives phase failed",
         updated_at: new Date().toISOString(),
       }).eq("id", syncId);

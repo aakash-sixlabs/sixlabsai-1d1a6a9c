@@ -3,6 +3,7 @@
 //   campaigns(meta_campaign_id, name, ...) → ad_sets(meta_adset_id, ...) → ads(meta_ad_id, meta_creative_id)
 // Chains to meta-sync-creatives.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getUserAccountId } from "../_shared/account.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -83,11 +84,19 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    const accountId = await getUserAccountId(admin, userId);
+    if (!accountId) {
+      return new Response(JSON.stringify({ error: "No account membership" }), {
+        status: 403,
+        headers: corsHeaders,
+      });
+    }
+
     const { data: adAccount } = await admin
       .from("ad_accounts")
       .select("*, meta_connections(*)")
       .eq("id", adAccountId)
-      .eq("user_id", userId)
+      .eq("account_id", accountId)
       .single();
 
     if (!adAccount) {
@@ -98,35 +107,30 @@ Deno.serve(async (req) => {
     }
 
     const accessToken = adAccount.meta_connections.access_token;
-    const actId = adAccount.account_id.startsWith("act_")
-      ? adAccount.account_id
-      : `act_${adAccount.account_id}`;
+    const metaActId: string = adAccount.account_id_meta;
+    const actId = metaActId.startsWith("act_") ? metaActId : `act_${metaActId}`;
 
-    // Upsert brand (still used for analytics view)
+    // Brand row (per dictionary): one brand per ad account, keyed by ad_account_id.
     const { data: existingBrand } = await admin
       .from("brands")
       .select("id")
-      .eq("user_id", userId)
-      .eq("meta_account_id", adAccount.account_id)
+      .eq("ad_account_id", adAccountId)
       .maybeSingle();
 
-    let brandId: number;
+    let brandId: string;
     if (existingBrand) {
-      brandId = existingBrand.id;
+      brandId = existingBrand.id as string;
       await admin.from("brands").update({
         name: adAccount.account_name,
-        account_currency: adAccount.currency || "USD",
-        account_timezone: adAccount.timezone || null,
       }).eq("id", brandId);
     } else {
       const { data: newBrand } = await admin.from("brands").insert({
+        account_id: accountId,
         user_id: userId,
+        ad_account_id: adAccountId,
         name: adAccount.account_name,
-        meta_account_id: adAccount.account_id,
-        account_currency: adAccount.currency || "USD",
-        account_timezone: adAccount.timezone || null,
       }).select("id").single();
-      brandId = newBrand!.id;
+      brandId = newBrand!.id as string;
     }
 
     const dateEnd = new Date();
@@ -136,9 +140,10 @@ Deno.serve(async (req) => {
     const { data: syncJob } = await admin
       .from("sync_jobs")
       .insert({
+        account_id: accountId,
         user_id: userId,
         ad_account_id: adAccountId,
-        status: "syncing",
+        status: "running",
         phase: "accounts",
         current_step: "Pulling campaigns and ad sets",
         date_range_start: dateStart.toISOString().split("T")[0],
@@ -159,7 +164,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "error",
+          status: "failed",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -225,6 +230,7 @@ Deno.serve(async (req) => {
         );
 
         const campaignRecords = campaigns.map((c: any) => ({
+          account_id: accountId,
           ad_account_id: adAccountId,
           user_id: userId,
           meta_campaign_id: c.id,
@@ -239,13 +245,14 @@ Deno.serve(async (req) => {
         }));
         if (campaignRecords.length > 0) {
           await admin.from("campaigns").upsert(campaignRecords, {
-            onConflict: "user_id,meta_campaign_id",
+            onConflict: "account_id,meta_campaign_id",
           });
         }
 
         const { data: storedCampaigns } = await admin
           .from("campaigns")
           .select("id, meta_campaign_id")
+          .eq("account_id", accountId)
           .eq("ad_account_id", adAccountId);
         const campaignMap = new Map(
           (storedCampaigns || []).map((c: any) => [c.meta_campaign_id, c.id]),
@@ -294,6 +301,7 @@ Deno.serve(async (req) => {
         );
 
         const adsetRecords = adsets.map((as: any) => ({
+          account_id: accountId,
           campaign_id: campaignMap.get(as.campaign_id),
           user_id: userId,
           meta_adset_id: as.id,
@@ -310,14 +318,14 @@ Deno.serve(async (req) => {
         }));
         if (adsetRecords.length > 0) {
           await admin.from("ad_sets").upsert(adsetRecords, {
-            onConflict: "user_id,meta_adset_id",
+            onConflict: "account_id,meta_adset_id",
           });
         }
 
         const { data: storedAdsets } = await admin
           .from("ad_sets")
           .select("id, meta_adset_id")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
         const adsetMap = new Map(
           (storedAdsets || []).map((a: any) => [a.meta_adset_id, a.id]),
         );
@@ -362,6 +370,7 @@ Deno.serve(async (req) => {
         );
 
         const adRecords = rawAds.map((ad: any) => ({
+          account_id: accountId,
           ad_set_id: adsetMap.get(ad.adset_id),
           user_id: userId,
           meta_ad_id: ad.id,
@@ -372,7 +381,7 @@ Deno.serve(async (req) => {
         }));
         if (adRecords.length > 0) {
           await admin.from("ads").upsert(adRecords, {
-            onConflict: "user_id,meta_ad_id",
+            onConflict: "account_id,meta_ad_id",
           });
         }
 
@@ -390,7 +399,7 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${serviceKey}`,
           },
-          body: JSON.stringify({ syncId, adAccountId, userId, brandId }),
+          body: JSON.stringify({ syncId, adAccountId, userId, brandId, accountId }),
         });
       } catch (err: any) {
         console.error("meta-sync-accounts error:", err);

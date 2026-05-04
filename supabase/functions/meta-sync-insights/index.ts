@@ -66,8 +66,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     syncId = body.syncId;
-    const { adAccountId, userId, brandId } = body;
-    if (!syncId || !adAccountId || !userId) {
+    const { adAccountId, userId, brandId, accountId } = body;
+    if (!syncId || !adAccountId || !userId || !accountId) {
       return new Response(JSON.stringify({ error: "Missing params" }), {
         status: 400,
         headers: corsHeaders,
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "error",
+          status: "failed",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -114,15 +114,14 @@ Deno.serve(async (req) => {
           .single();
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
-        const actId = adAccount.account_id.startsWith("act_")
-          ? adAccount.account_id
-          : `act_${adAccount.account_id}`;
+        const metaActIdRaw: string = adAccount.account_id_meta;
+        const actId = metaActIdRaw.startsWith("act_") ? metaActIdRaw : `act_${metaActIdRaw}`;
 
         // Map Meta ad_id → internal ads.id (new schema: meta_ad_id)
         const { data: allStoredAds } = await admin
           .from("ads")
           .select("id, meta_ad_id")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
         const adMap = new Map<string, string>(
           (allStoredAds || []).map((a: any) => [a.meta_ad_id as string, a.id as string]),
         );
@@ -149,7 +148,7 @@ Deno.serve(async (req) => {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${serviceKey}`,
               },
-              body: JSON.stringify({ syncId, adAccountId, userId, brandId }),
+              body: JSON.stringify({ syncId, adAccountId, userId, brandId, accountId }),
             });
             return;
           }
@@ -200,6 +199,7 @@ Deno.serve(async (req) => {
             const costPerPurchase = purchases > 0 ? spend / purchases : 0;
 
             perfRows.push({
+              account_id: accountId,
               user_id: userId,
               ad_id: internalAdId,
               date: insight.date_start,
@@ -221,7 +221,7 @@ Deno.serve(async (req) => {
 
           if (perfRows.length > 0) {
             await admin.from("ad_performance_daily").upsert(perfRows, {
-              onConflict: "user_id,ad_id,date",
+              onConflict: "ad_id,date",
             });
           }
 
@@ -236,15 +236,8 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Refresh the materialized view so dashboard sees fresh data
-        try {
-          await admin.rpc("refresh_campaign_ad_data");
-        } catch (refreshErr) {
-          console.warn("MV refresh failed (non-fatal):", refreshErr);
-        }
-
         await admin.from("sync_jobs").update({
-          status: "complete",
+          status: "completed",
           current_step: "Complete",
           phase: "done",
           cursor_date: null,
@@ -271,7 +264,7 @@ Deno.serve(async (req) => {
     console.error("meta-sync-insights fatal:", err);
     if (syncId) {
       await admin.from("sync_jobs").update({
-        status: "error",
+        status: "failed",
         error_message: err?.message || "Insights phase failed",
         updated_at: new Date().toISOString(),
       }).eq("id", syncId);
