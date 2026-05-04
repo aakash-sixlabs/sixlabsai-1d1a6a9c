@@ -61,8 +61,8 @@ const Onboarding = () => {
         }
       }
 
-      if (replayMode) {
-        // Replay from the very first step.
+      if (replayMode || isDemoMode) {
+        // Replay/demo from the very first step.
         setShowProfileDialog(true);
         setPhase("profile");
       } else if (searchParams.get("meta") === "connected") {
