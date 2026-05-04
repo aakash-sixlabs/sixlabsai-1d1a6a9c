@@ -96,9 +96,48 @@ export const GeneratingStep = ({ state }: GeneratingStepProps) => {
       });
       navigate("/home");
 
-      // Mock background processing — flip to completed after 3 minutes.
-      // (Survives even if user navigates within the SPA; lost on full reload.)
+      // Mock background processing — pick matching creatives from the
+      // shared mock_creative_library, insert them, then flip job to completed.
       setTimeout(async () => {
+        try {
+          const goal = state.goal;
+          const offerName =
+            (state.promoDetails as any)?.offerName ??
+            state.promoDetails?.customOfferHeadline ??
+            null;
+          const icpName = (state.icpName ?? "").toLowerCase();
+
+          let query = supabase.from("mock_creative_library").select("*");
+          if (goal) query = query.eq("goal", goal);
+          if (offerName) query = query.eq("offer_name", offerName);
+          const { data: libRows } = await query;
+
+          // Filter by ICP keyword (substring, case-insensitive) if any.
+          const matched = (libRows ?? []).filter((r: any) => {
+            if (!r.icp_keyword) return true;
+            return icpName.includes(String(r.icp_keyword).toLowerCase());
+          });
+
+          if (matched.length > 0) {
+            const rows = matched.map((r: any, idx: number) => ({
+              account_id: accountId,
+              user_id: user.id,
+              job_id: job.id,
+              variant_index: idx,
+              image_url: r.image_url,
+              thumbnail_url: r.thumbnail_url ?? r.image_url,
+              aspect_ratio: r.aspect_ratio,
+              headline: r.headline,
+              primary_text: r.primary_text,
+              status: "draft" as const,
+              metadata: { source: "mock_library", library_id: r.id },
+            }));
+            await supabase.from("generated_creatives").insert(rows);
+          }
+        } catch (e) {
+          console.error("Mock creative seeding failed", e);
+        }
+
         await supabase
           .from("generation_jobs")
           .update({ status: "completed" })

@@ -114,6 +114,7 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
     setSelectedSavedId(o.id);
     onUpdate({
       ...details,
+      offerName: o.name,
       offerType: o.offer_type,
       discountValue: o.discount_value ?? "",
       buyQty: o.buy_qty ?? "1",

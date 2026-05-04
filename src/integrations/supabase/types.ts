@@ -1517,6 +1517,51 @@ export type Database = {
           },
         ]
       }
+      mock_creative_library: {
+        Row: {
+          aspect_ratio: string | null
+          created_at: string
+          goal: string | null
+          headline: string | null
+          icp_keyword: string | null
+          id: string
+          image_url: string
+          metadata: Json
+          offer_name: string | null
+          primary_text: string | null
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          aspect_ratio?: string | null
+          created_at?: string
+          goal?: string | null
+          headline?: string | null
+          icp_keyword?: string | null
+          id?: string
+          image_url: string
+          metadata?: Json
+          offer_name?: string | null
+          primary_text?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aspect_ratio?: string | null
+          created_at?: string
+          goal?: string | null
+          headline?: string | null
+          icp_keyword?: string | null
+          id?: string
+          image_url?: string
+          metadata?: Json
+          offer_name?: string | null
+          primary_text?: string | null
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       offers: {
         Row: {
           account_id: string
