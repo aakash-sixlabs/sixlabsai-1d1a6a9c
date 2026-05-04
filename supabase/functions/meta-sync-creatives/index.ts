@@ -236,8 +236,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     syncId = body.syncId;
-    const { adAccountId, userId, brandId } = body;
-    if (!syncId || !adAccountId || !userId || !brandId) {
+    const { adAccountId, userId, brandId, accountId } = body;
+    if (!syncId || !adAccountId || !userId || !accountId) {
       return new Response(JSON.stringify({ error: "Missing params" }), {
         status: 400,
         headers: corsHeaders,
@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "error",
+          status: "failed",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
@@ -270,6 +270,8 @@ Deno.serve(async (req) => {
           .single();
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
+        const metaActIdRaw: string = adAccount.account_id_meta;
+        const metaActIdNoPrefix = metaActIdRaw.startsWith("act_") ? metaActIdRaw.slice(4) : metaActIdRaw;
 
         // Load all stored ads for this user (new schema: meta_ad_id, meta_creative_id)
         const { data: storedAds } = await admin
