@@ -306,9 +306,9 @@ export const InsightsStep = () => {
     const adsetIds = new Set(adsetsScoped.map((a: any) => a.id));
     const adsRes = await supabase
       .from("ads")
-      .select("id, meta_ad_id, name, ad_set_id, effective_status, status")
-      .in("ad_set_id", Array.from(adsetIds) as string[])
-      .limit(2000);
+        .select("id, meta_ad_id, meta_creative_id, name, ad_set_id, effective_status, status")
+        .in("ad_set_id", Array.from(adsetIds) as string[])
+        .limit(5000);
 
     const ads = adsRes.data || [];
     const creatives = creativesRes.data || [];
