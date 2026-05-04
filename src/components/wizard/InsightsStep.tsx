@@ -20,6 +20,7 @@ import { CreativePreviewDialog } from "@/components/insights/CreativePreviewDial
 import { DateRangeFilter, DateRangeKey } from "@/components/insights/DateRangeFilter";
 import { GeneratedCreativesByJob } from "@/components/insights/GeneratedCreativesByJob";
 import { GenerationsTable } from "@/components/insights/GenerationsTable";
+import { HomeDashboard } from "@/components/insights/HomeDashboard";
 
 import { useWizard } from "@/context/WizardContext";
 
