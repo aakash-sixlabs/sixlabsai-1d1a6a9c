@@ -166,6 +166,15 @@ const Onboarding = () => {
           onComplete={handleIcpComplete}
         />
       )}
+      {phase === "competitors" && state.selectedAccount && (
+        <CompetitorOnboardingStep
+          open
+          adAccountId={state.selectedAccount}
+          brandHint={state.selectedAccountName ?? undefined}
+          isDevMode={isDevMode}
+          onComplete={handleCompetitorsComplete}
+        />
+      )}
       <ToolExplanationOverlay
         open={phase === "tool-explanation"}
         onContinue={handleToolExplanationContinue}
