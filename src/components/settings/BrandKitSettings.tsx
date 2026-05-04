@@ -195,6 +195,8 @@ export const BrandKitSettings = ({ adAccountId }: Props) => {
         </div>
       </Card>
 
+      <BrandGuidelinesSection adAccountId={adAccountId} />
+
       {rebuildOpen && (
         <BrandKitStep
           open={rebuildOpen}
