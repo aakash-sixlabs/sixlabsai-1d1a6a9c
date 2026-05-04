@@ -398,7 +398,7 @@ export const InsightsStep = () => {
       .from("sync_jobs")
       .select("id, status, current_step, updated_at")
       .eq("ad_account_id", accountId)
-      .in("status", ["syncing", "pending"])
+      .in("status", ["running", "pending"])
       .order("created_at", { ascending: false })
       .limit(1);
     const existing = existingJobs?.[0];
