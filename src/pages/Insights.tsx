@@ -81,6 +81,19 @@ const Insights = () => {
   return (
     <>
       <BrandKitBanner />
+      {showReplay && (
+        <div className="fixed bottom-4 right-4 z-50">
+          <Button
+            size="sm"
+            variant="secondary"
+            className="gap-2 shadow-lg border border-border"
+            onClick={() => navigate("/onboarding?replay=true&skipSync=true")}
+          >
+            <FlaskConical className="w-4 h-4" />
+            Replay onboarding v1 (skip sync)
+          </Button>
+        </div>
+      )}
       <InsightsStep />
     </>
   );
