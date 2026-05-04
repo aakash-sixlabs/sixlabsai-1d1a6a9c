@@ -311,37 +311,29 @@ export const LandingV1Step = () => {
             <input type="email" placeholder="Email" disabled className="w-full h-12 pl-11 pr-4 rounded-full border bg-secondary/40 text-sm text-muted-foreground placeholder:text-muted-foreground/60 cursor-not-allowed" />
           </div>
           <Button variant="secondary" disabled className="w-full mt-3 h-12 rounded-full text-sm font-medium text-muted-foreground">Continue with email</Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTokenDialogOpen(true)}
-            className="w-full mt-2 gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            Have an access token? Connect with token
-          </Button>
+          {easterEgg && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTokenDialogOpen(true)}
+                className="w-full mt-2 gap-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                Have an access token? Connect with token
+              </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDevBypass}
-            className="w-full mt-4 gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Bug className="w-3.5 h-3.5" />
-            Dev Mode — Test New User Flow (v1)
-          </Button>
-
-          <button
-            onClick={() => {
-              const url = new URL(window.location.href);
-              if (isDemoMode) url.searchParams.delete("demo");
-              else url.searchParams.set("demo", "true");
-              window.location.href = url.toString();
-            }}
-            className={`w-full mt-2 text-[11px] transition-colors ${isDemoMode ? "text-primary font-medium" : "text-muted-foreground/60 hover:text-foreground"}`}
-          >
-            {isDemoMode ? "🎬 Demo mode ON — sync will be mocked" : "🎬 Enable demo mode (mocks data sync)"}
-          </button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDevBypass}
+                className="w-full mt-4 gap-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Bug className="w-3.5 h-3.5" />
+                Dev Mode — Test New User Flow (v1)
+              </Button>
+            </>
+          )}
 
           <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="/privacy" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
           {easterEgg && (
