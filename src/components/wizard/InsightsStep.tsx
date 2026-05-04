@@ -293,14 +293,28 @@ export const InsightsStep = () => {
     }
 
     // Build rows from live tables (campaign_ad_data MV was removed in May 2026 schema rebuild).
+    // RLS already scopes everything to the user's account; filter campaigns/adsets to this ad_account.
     const accountIdFilter = state.selectedAccount;
-    const [adsRes, creativesRes, perfRes, adsetsRes, campaignsRes] = await Promise.all([
-      supabase.from("ads").select("id, meta_ad_id, name, ad_set_id, effective_status, status").eq("ad_account_id", accountIdFilter as any).limit(1000),
+    const [creativesRes, perfRes, adsetsRes, campaignsRes] = await Promise.all([
       supabase.from("ad_creatives").select("id, ad_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls").limit(1000),
       supabase.from("ad_performance_daily").select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases").limit(1000),
       supabase.from("ad_sets").select("id, campaign_id, name").limit(1000),
       supabase.from("campaigns").select("id, name").eq("ad_account_id", accountIdFilter as any).limit(1000),
     ]);
+    const campIds = new Set((campaignsRes.data || []).map((c: any) => c.id));
+    const adsetsScoped = (adsetsRes.data || []).filter((a: any) => campIds.has(a.campaign_id));
+    const adsetIds = new Set(adsetsScoped.map((a: any) => a.id));
+    const adsRes = await supabase
+      .from("ads")
+      .select("id, meta_ad_id, name, ad_set_id, effective_status, status")
+      .in("ad_set_id", Array.from(adsetIds) as string[])
+      .limit(2000);
+
+    const ads = adsRes.data || [];
+    const creatives = creativesRes.data || [];
+    const perf = perfRes.data || [];
+    const adsets = adsetsScoped;
+    const campaigns = campaignsRes.data || [];
 
     const ads = adsRes.data || [];
     const creatives = creativesRes.data || [];
