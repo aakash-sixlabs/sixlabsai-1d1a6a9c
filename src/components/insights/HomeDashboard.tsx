@@ -364,7 +364,7 @@ export const HomeDashboard = ({
       <h3 className="font-display font-semibold text-sm text-foreground mb-3 flex items-center gap-2">
         <ImageIcon className="w-4 h-4 text-primary" /> Competitor creatives in the wild
       </h3>
-      <div className="grid grid-cols-3 md:grid-cols-6 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
         {MOCK_COMPETITOR_CREATIVES.map((c, i) => (
           <div key={i} className="rounded-xl overflow-hidden border border-border/60 bg-card hover:shadow-md hover:-translate-y-0.5 transition-all">
             <div className="aspect-[4/5] relative bg-secondary/30">
