@@ -135,7 +135,11 @@ export const IcpSettings = ({ adAccountId }: Props) => {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const { getCurrentAccountId } = await import("@/lib/accountContext");
+      const accountId = await getCurrentAccountId();
+      if (!accountId) { toast.error("No account found"); return; }
       const rows = extracted.map((i) => ({
+        account_id: accountId,
         user_id: user.id,
         ad_account_id: adAccountId,
         name: i.name,
