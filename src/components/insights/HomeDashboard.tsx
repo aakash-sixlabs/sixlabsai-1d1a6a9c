@@ -240,9 +240,23 @@ export const HomeDashboard = ({
         </div>
       </motion.section>
 
-      {/* ─────────── Section 1: What's working for your brand ─────────── */}
+      {/* ─────────── Section 1: Opportunities (action-first) ─────────── */}
       <SectionHeader
-        eyebrow="Section 1"
+        eyebrow="Start here"
+        title="Your biggest opportunities"
+        subtitle="Prioritized next moves, grounded in your brand data and category signals."
+        icon={Lightbulb}
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
+        {opportunities.map((op) => (
+          <OpportunityCard key={op.title} {...op} onGenerate={() => navigate("/create-ad")} />
+        ))}
+      </div>
+
+      {/* ─────────── Section 2: What's working for your brand ─────────── */}
+      <SectionHeader
+        eyebrow="Section 2"
         title="What's working for your brand"
         subtitle="Patterns we found across your account's top-performing creatives."
         icon={Trophy}
@@ -307,9 +321,9 @@ export const HomeDashboard = ({
         </div>
       </div>
 
-      {/* ─────────── Section 2: What's working in your category ─────────── */}
+      {/* ─────────── Section 3: What's working in your category ─────────── */}
       <SectionHeader
-        eyebrow="Section 2"
+        eyebrow="Section 3"
         title="What's working in your category"
         subtitle="We're tracking your competitors so you don't have to."
         icon={Radar}
@@ -374,19 +388,6 @@ export const HomeDashboard = ({
         ))}
       </div>
 
-      {/* ─────────── Section 3: Opportunities for your brand ─────────── */}
-      <SectionHeader
-        eyebrow="Section 3"
-        title="Your biggest opportunities"
-        subtitle="Prioritized next tests, grounded in your brand data and category signals."
-        icon={Lightbulb}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-        {opportunities.map((op) => (
-          <OpportunityCard key={op.title} {...op} onGenerate={() => navigate("/create-ad")} />
-        ))}
-      </div>
 
       {/* Footer reinforcement */}
       <p className="text-center text-xs text-muted-foreground/50 mt-4 mb-2 font-medium">
