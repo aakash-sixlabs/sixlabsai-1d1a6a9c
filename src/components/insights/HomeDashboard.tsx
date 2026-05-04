@@ -1,9 +1,9 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Sparkles, Wand2, ArrowRight, TrendingUp, TrendingDown, Target,
   Zap, Trophy, Lightbulb, Radar, Eye, Layers, Type, Image as ImageIcon,
-  ArrowUpRight, Activity, BarChart3, Flame,
+  Activity, BarChart3, Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
