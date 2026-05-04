@@ -131,6 +131,31 @@ export const InsightsSidebar = ({
           );
         })}
       </nav>
+
+      {/* Performance KPI tiles */}
+      {kpis && kpis.length > 0 && (
+        <div className="px-3 pb-4 pt-2 border-t border-border/60 space-y-2">
+          <p className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold mb-1">
+            Performance
+          </p>
+          {kpis.map((k) => (
+            <div
+              key={k.label}
+              className="rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors px-3 py-2.5"
+            >
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                {k.label}
+              </p>
+              <p className="text-base font-bold text-foreground tracking-tight tabular-nums leading-tight mt-0.5">
+                {k.value}
+              </p>
+              {k.hint && (
+                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{k.hint}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </aside>
   );
 };
