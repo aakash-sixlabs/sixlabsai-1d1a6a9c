@@ -141,16 +141,16 @@ export const InsightsSidebar = ({
           {kpis.map((k) => (
             <div
               key={k.label}
-              className="rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors px-3 py-2.5"
+              className="rounded-xl bg-card border border-border/60 hover:shadow-sm transition-shadow px-3.5 py-3"
             >
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">
                 {k.label}
               </p>
-              <p className="text-base font-bold text-foreground tracking-tight tabular-nums leading-tight mt-0.5">
+              <p className="text-xl font-bold text-foreground tracking-tight tabular-nums leading-tight mt-1">
                 {k.value}
               </p>
               {k.hint && (
-                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{k.hint}</p>
+                <p className="text-[10px] text-muted-foreground mt-1 truncate">{k.hint}</p>
               )}
             </div>
           ))}
