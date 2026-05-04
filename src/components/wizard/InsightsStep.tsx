@@ -812,6 +812,7 @@ export const InsightsStep = () => {
               onDateRangeChange={setDateRange}
               onAdClick={(id) => setPreviewAdId(id)}
               onViewAllGenerations={() => setActiveView("generations")}
+              onKpisChange={setSidebarKpis}
             />
           ) : (
           <div className="px-8 py-10 max-w-[1200px] mx-auto">
