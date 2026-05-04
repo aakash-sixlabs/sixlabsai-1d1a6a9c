@@ -77,6 +77,7 @@ const initialState: CreateAdState = {
   icpId: null,
   icpName: null,
   icpDescription: null,
+  useBrandGuidelines: true,
 };
 
 // Which goals need a product input step
