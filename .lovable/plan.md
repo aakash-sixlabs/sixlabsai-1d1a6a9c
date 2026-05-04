@@ -1,46 +1,33 @@
-## Problem
+# Fix duplicated creatives in /home grid
 
-When the Meta OAuth callback runs, the edge function fails with:
+## Why it happens
+`InsightsStep.tsx` builds the grid with `rawAds.map(...)` — one card per ad. In Meta, a creative is often reused across multiple ads (A/B tests, ad-set duplication, scaling). Today's data: 417 ads but only 293 distinct `meta_creative_id`s, so ~124 cards are visual duplicates.
 
-```
-null value in column "account_id" of relation "meta_connections" violates not-null constraint
-```
+## What to change
 
-The `meta_connections` table requires a non-null `account_id` (the Lovable tenant uuid), but `supabase/functions/meta-oauth/index.ts` upserts the row with only `user_id`, `access_token`, `meta_user_id`, etc. — no `account_id`. As a result the OAuth callback returns a non-2xx, which the UI surfaces as “Edge Function returned a non-2xx status code at auth”.
+**File:** `src/components/wizard/InsightsStep.tsx` (the `enriched` builder around lines 382–423)
 
-Existing users always have at least one row in `account_users` (created by the `handle_new_user` trigger), so we just need to resolve it before the insert.
+Replace the per-ad map with a per-creative grouping:
 
-## Fix
+1. Build a key per ad:
+   - Prefer `ad.meta_creative_id`
+   - Fallback to the resolved creative's `stored_image_url || image_url` (covers the rare case where two ads share an image but have different creative IDs)
+   - Final fallback: `ad.id` (so creativeless ads still render once)
+2. Group `rawAds` by that key. For each group:
+   - Pick a representative ad (prefer one with `effective_status === 'ACTIVE'`, else most recent)
+   - Sum `spend`, `impressions`, `clicks`, `purchases` across **all** ads in the group's perf rows in the date window
+   - Recompute aggregates: `roas = totalRevenue / totalSpend` (use `revenue` sum, not the average of per-row `roas` — that's also a small bug today), `ctr = clicks / impressions * 100`, `cpp = spend / purchases`
+   - `hasActiveAd = true` if any ad in the group is ACTIVE
+   - `adName`: representative ad's name, optionally suffixed with `(+N)` when grouped
+3. Card `id` becomes the creative key (so click handlers/preview keep working — update `previewAdId` lookup to also accept a creative key, or pass the representative ad's id as a secondary field)
+4. Keep current sort by `score`, current "no video ads" filter, and current date-range filtering — they all still apply, just to grouped rows.
 
-Edit `supabase/functions/meta-oauth/index.ts`, in the `exchange-token` action, right before the `meta_connections` upsert:
+## Technical notes
 
-1. Resolve the user's account id:
-   ```ts
-   const { data: au, error: auErr } = await adminClient
-     .from("account_users")
-     .select("account_id")
-     .eq("user_id", userId)
-     .order("created_at", { ascending: true })
-     .limit(1)
-     .maybeSingle();
+- `rawPerf` already has `revenue` per row (see `ad_performance_daily` schema), so switching ROAS from "avg of per-row roas" to `sumRevenue / sumSpend` is both more correct and necessary once we aggregate across multiple ads.
+- No DB or edge-function changes needed. This is purely a client-side aggregation fix.
+- Preview dialog (`CreativePreviewDialog` via `previewAdId`) currently expects an ad id — keep the representative ad id on the enriched row (e.g. `representativeAdId`) and pass that into the dialog when a card is clicked.
 
-   if (auErr || !au?.account_id) {
-     console.error("[meta-oauth] no account for user", userId, auErr);
-     return new Response(
-       JSON.stringify({ error: "No account found for user." }),
-       { status: 500, headers: corsHeaders },
-     );
-   }
-   const accountId = au.account_id;
-   ```
-
-2. Include `account_id: accountId` in the `meta_connections` upsert payload.
-
-3. Keep `onConflict: "user_id"` (one connection per user). If the unique constraint is actually `(account_id, user_id)`, switch to `onConflict: "account_id,user_id"` — verify via `\d meta_connections` if the first variant errors after the fix.
-
-No DB migration is required; the column already exists and is NOT NULL. No client changes needed.
-
-## Verification
-
-- Re-run the Meta OAuth flow from `/login` → callback should complete and `meta_connections` should contain the new row with `account_id` populated.
-- Edge function logs should no longer show the `23502` error.
+## Out of scope
+- No schema changes.
+- No sync changes — duplicates in `ads` are correct (Meta really does have those rows); we just shouldn't render them as separate creatives.
