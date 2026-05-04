@@ -106,10 +106,66 @@ export const ProductInputStep = ({ state, onUpdate, onNext, onBack }: ProductInp
       )}
 
       {method === "image" && (
-        <div className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-primary/40 transition-colors cursor-pointer">
-          <ImagePlus className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-sm font-medium text-foreground">Click to upload or drag & drop</p>
-          <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+        <div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleFile(f);
+              e.target.value = "";
+            }}
+          />
+          {imagePreview ? (
+            <div className="relative rounded-lg border border-border bg-card p-4">
+              <img
+                src={imagePreview}
+                alt="Product preview"
+                className="mx-auto max-h-64 rounded-md object-contain"
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2"
+                onClick={() => {
+                  setImagePreview(null);
+                  onUpdate({ productImage: null });
+                }}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div
+              role="button"
+              tabIndex={0}
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragEnter={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const f = e.dataTransfer.files?.[0];
+                if (f) handleFile(f);
+              }}
+              className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${
+                isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+              }`}
+            >
+              <ImagePlus className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground">Click to upload or drag & drop</p>
+              <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+            </div>
+          )}
         </div>
       )}
 
