@@ -201,7 +201,7 @@ export const LandingV1Step = () => {
       toast.error(event.data.error || "Meta connection failed");
       setConnecting(false);
     }
-  }, [navigate]);
+  }, [navigate, demoSuffix]);
 
   useEffect(() => {
     window.addEventListener("message", handleAuthMessage);
