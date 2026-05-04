@@ -7,10 +7,11 @@ import { ToolExplanationOverlay } from "@/components/wizard/ToolExplanationOverl
 import { DataSyncStep } from "@/components/wizard/DataSyncStep";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
 import { IcpOnboardingStep } from "@/components/wizard/IcpOnboardingStep";
+import { CompetitorOnboardingStep } from "@/components/wizard/CompetitorOnboardingStep";
 import { supabase } from "@/integrations/supabase/client";
 import { isSuperAdmin } from "@/lib/superAdmin";
 
-type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "add-icp" | "data-sync";
+type OnboardingPhase = "loading" | "profile" | "tool-explanation" | "account-select" | "brand-kit" | "add-icp" | "competitors" | "data-sync";
 
 const Onboarding = () => {
   const { state, updateState } = useWizard();
@@ -123,7 +124,11 @@ const Onboarding = () => {
   };
 
   const handleIcpComplete = () => {
-    // Finally pull the ad data.
+    // Confirm inferred competitors before pulling ad data.
+    setPhase("competitors");
+  };
+
+  const handleCompetitorsComplete = () => {
     setPhase("data-sync");
   };
 
@@ -159,6 +164,15 @@ const Onboarding = () => {
           adAccountId={state.selectedAccount}
           isDevMode={isDevMode}
           onComplete={handleIcpComplete}
+        />
+      )}
+      {phase === "competitors" && state.selectedAccount && (
+        <CompetitorOnboardingStep
+          open
+          adAccountId={state.selectedAccount}
+          brandHint={state.selectedAccountName ?? undefined}
+          isDevMode={isDevMode}
+          onComplete={handleCompetitorsComplete}
         />
       )}
       <ToolExplanationOverlay

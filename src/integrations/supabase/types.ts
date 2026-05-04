@@ -606,42 +606,54 @@ export type Database = {
       brand_competitors: {
         Row: {
           account_id: string
-          brand_id: string
+          ad_account_id: string | null
+          brand_id: string | null
           competitor_meta_page_id: string | null
           competitor_meta_page_name: string | null
           competitor_name: string | null
           created_at: string
           foreplay_brand_id: string | null
           id: string
+          industry: string | null
           is_active: boolean
+          logo_url: string | null
           updated_at: string
           user_id: string
+          website_url: string | null
         }
         Insert: {
           account_id: string
-          brand_id: string
+          ad_account_id?: string | null
+          brand_id?: string | null
           competitor_meta_page_id?: string | null
           competitor_meta_page_name?: string | null
           competitor_name?: string | null
           created_at?: string
           foreplay_brand_id?: string | null
           id?: string
+          industry?: string | null
           is_active?: boolean
+          logo_url?: string | null
           updated_at?: string
           user_id: string
+          website_url?: string | null
         }
         Update: {
           account_id?: string
-          brand_id?: string
+          ad_account_id?: string | null
+          brand_id?: string | null
           competitor_meta_page_id?: string | null
           competitor_meta_page_name?: string | null
           competitor_name?: string | null
           created_at?: string
           foreplay_brand_id?: string | null
           id?: string
+          industry?: string | null
           is_active?: boolean
+          logo_url?: string | null
           updated_at?: string
           user_id?: string
+          website_url?: string | null
         }
         Relationships: [
           {
