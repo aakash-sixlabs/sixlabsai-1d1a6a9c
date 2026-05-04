@@ -47,8 +47,8 @@ const Onboarding = () => {
         return;
       }
 
-      // Returning-user shortcut: skip when replay mode is active.
-      if (!replayMode) {
+      // Returning-user shortcut: skip when replay or demo mode is active.
+      if (!replayMode && !isDemoMode) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("default_ad_account_id")
