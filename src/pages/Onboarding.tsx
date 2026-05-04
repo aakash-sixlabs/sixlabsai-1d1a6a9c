@@ -153,10 +153,10 @@ const Onboarding = () => {
       <AccountSelectOverlay
         open={phase === "account-select" && !showProfileDialog}
         onStartSync={handleAccountSelected}
-        onReturningAccountSelected={() => navigate("/home", { replace: true })}
+        onReturningAccountSelected={replayMode ? handleAccountSelected : () => navigate("/home", { replace: true })}
         isDevMode={isDevMode}
         saveAsDefault
-        skipCompletedAccountSetup
+        skipCompletedAccountSetup={!replayMode}
       />
       {phase === "brand-kit" && state.selectedAccount && (
         <BrandKitStep
