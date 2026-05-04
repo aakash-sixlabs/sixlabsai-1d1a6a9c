@@ -82,7 +82,7 @@ const CATEGORY_TRENDS = [
 // ── Component ───────────────────────────────────────────────────────
 export const HomeDashboard = ({
   brandName, accountName, ads, dateRange, onDateRangeChange,
-  onAdClick, onViewAllGenerations,
+  onAdClick, onViewAllGenerations, onKpisChange,
 }: Props) => {
   const navigate = useNavigate();
 
