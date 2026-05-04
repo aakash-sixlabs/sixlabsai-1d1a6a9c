@@ -20,6 +20,7 @@ const Onboarding = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [phase, setPhase] = useState<OnboardingPhase>("loading");
   const isDevMode = searchParams.get("dev") === "true";
+  const isDemoMode = searchParams.get("demo") === "true";
   const replayMode = searchParams.get("replay") === "true";
   const skipSync = searchParams.get("skipSync") === "true";
 
@@ -190,7 +191,7 @@ const Onboarding = () => {
         onContinue={handleToolExplanationContinue}
       />
       {phase === "data-sync" && (
-        <DataSyncStep asOverlay onComplete={handleSyncComplete} isDevMode={isDevMode} />
+        <DataSyncStep asOverlay onComplete={handleSyncComplete} isDevMode={isDevMode} isDemoMode={isDemoMode} />
       )}
     </>
   );

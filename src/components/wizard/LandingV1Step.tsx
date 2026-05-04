@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Loader2, Zap, Bug, KeyRound } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -93,6 +93,9 @@ export const LandingV1Step = () => {
   const [adAccountInput, setAdAccountInput] = useState("");
   const [submittingToken, setSubmittingToken] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isDemoMode = searchParams.get("demo") === "true";
+  const demoSuffix = isDemoMode ? "&demo=true" : "";
   const { updateState } = useWizard();
 
   const handleTokenSubmit = async () => {
@@ -161,7 +164,7 @@ export const LandingV1Step = () => {
       setAdAccountInput("");
       setTokenDialogOpen(false);
       toast.success(`Connected as ${data.userName}`);
-      navigate(`${ONBOARDING_V1_PATH}?meta=connected`);
+      navigate(`${ONBOARDING_V1_PATH}?meta=connected${demoSuffix}`);
     } catch (err: any) {
       console.error("Token connect error:", err);
       toast.error(err.message || "Failed to connect with token");
@@ -191,14 +194,14 @@ export const LandingV1Step = () => {
     if (event.data?.type === "META_AUTH_COMPLETE") {
       const connectionData = event.data.connectionData;
       sessionStorage.setItem("meta_connection", JSON.stringify(connectionData));
-      navigate(`${ONBOARDING_V1_PATH}?meta=connected`);
+      navigate(`${ONBOARDING_V1_PATH}?meta=connected${demoSuffix}`);
       setConnecting(false);
     }
     if (event.data?.type === "META_AUTH_ERROR") {
       toast.error(event.data.error || "Meta connection failed");
       setConnecting(false);
     }
-  }, [navigate]);
+  }, [navigate, demoSuffix]);
 
   useEffect(() => {
     window.addEventListener("message", handleAuthMessage);
@@ -323,6 +326,18 @@ export const LandingV1Step = () => {
             <Bug className="w-3.5 h-3.5" />
             Dev Mode — Test New User Flow (v1)
           </Button>
+
+          <button
+            onClick={() => {
+              const url = new URL(window.location.href);
+              if (isDemoMode) url.searchParams.delete("demo");
+              else url.searchParams.set("demo", "true");
+              window.location.href = url.toString();
+            }}
+            className={`w-full mt-2 text-[11px] transition-colors ${isDemoMode ? "text-primary font-medium" : "text-muted-foreground/60 hover:text-foreground"}`}
+          >
+            {isDemoMode ? "🎬 Demo mode ON — sync will be mocked" : "🎬 Enable demo mode (mocks data sync)"}
+          </button>
 
           <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="/privacy" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
           {easterEgg && (

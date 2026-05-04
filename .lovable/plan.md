@@ -1,33 +1,50 @@
-# Fix duplicated creatives in /home grid
+# Demo Mode for v1 Onboarding Walkthrough
 
-## Why it happens
-`InsightsStep.tsx` builds the grid with `rawAds.map(...)` — one card per ad. In Meta, a creative is often reused across multiple ads (A/B tests, ad-set duplication, scaling). Today's data: 417 ads but only 293 distinct `meta_creative_id`s, so ~124 cards are visual duplicates.
+Goal: record a clean demo of the full `/loginv1` → `/onboarding` flow without waiting on the real Meta sync (which is slow), while keeping the real Meta auth + the real data already in the database intact.
 
-## What to change
+## Approach
 
-**File:** `src/components/wizard/InsightsStep.tsx` (the `enriched` builder around lines 382–423)
+Add a lightweight **demo flag** that travels through the onboarding URL. When set, it makes one and only one change: the `DataSyncStep` plays a scripted animated progress sequence instead of invoking `meta-sync-accounts`. Everything else — Meta OAuth, account selection, brand kit, ICP, competitors, and the eventual landing on `/home` — runs against the real database, so the dashboard shows the real data we already synced.
 
-Replace the per-ad map with a per-creative grouping:
+We do NOT touch:
+- `meta-oauth` / `meta-token-connect` edge functions
+- `meta-sync-accounts` edge function
+- The non-demo path of `DataSyncStep`
+- `OnboardingV2` (only v1 is in scope)
 
-1. Build a key per ad:
-   - Prefer `ad.meta_creative_id`
-   - Fallback to the resolved creative's `stored_image_url || image_url` (covers the rare case where two ads share an image but have different creative IDs)
-   - Final fallback: `ad.id` (so creativeless ads still render once)
-2. Group `rawAds` by that key. For each group:
-   - Pick a representative ad (prefer one with `effective_status === 'ACTIVE'`, else most recent)
-   - Sum `spend`, `impressions`, `clicks`, `purchases` across **all** ads in the group's perf rows in the date window
-   - Recompute aggregates: `roas = totalRevenue / totalSpend` (use `revenue` sum, not the average of per-row `roas` — that's also a small bug today), `ctr = clicks / impressions * 100`, `cpp = spend / purchases`
-   - `hasActiveAd = true` if any ad in the group is ACTIVE
-   - `adName`: representative ad's name, optionally suffixed with `(+N)` when grouped
-3. Card `id` becomes the creative key (so click handlers/preview keep working — update `previewAdId` lookup to also accept a creative key, or pass the representative ad's id as a secondary field)
-4. Keep current sort by `score`, current "no video ads" filter, and current date-range filtering — they all still apply, just to grouped rows.
+## Changes
+
+### 1. `src/components/wizard/LandingV1Step.tsx`
+- Read `?demo=true` from current URL on mount; if present, append `&demo=true` to the post-auth navigation so it persists into `/onboarding`.
+- Add a small "Demo Mode" toggle button next to the existing Dev Mode button (only visible when the page is loaded with `?demo=true`, OR show it always — your call). Recommend: always show a subtle "🎬 Demo Mode" link that re-loads the page with `?demo=true` so it's discoverable when recording.
+- In `handleAuthMessage` (Meta OAuth popup callback) and `handleTokenSubmit`, preserve the demo flag in the redirect: `navigate(\`/onboarding?meta=connected${demo ? "&demo=true" : ""}\`)`.
+
+### 2. `src/pages/Onboarding.tsx`
+- Read `const isDemoMode = searchParams.get("demo") === "true"` alongside the existing `isDevMode`.
+- Pass `isDemoMode` down to `<DataSyncStep />` as a new prop (separate from `isDevMode`, because `isDevMode` also bypasses auth — we don't want that here since real auth happened).
+
+### 3. `src/components/wizard/DataSyncStep.tsx`
+- Add a new prop `isDemoMode?: boolean`.
+- In the `useEffect` that starts the sync, branch:
+  - If `isDemoMode` is true → run the same scripted progression that `isDevMode` already runs (step every ~1.2s through the 6 SYNC_STEPS, then mark complete) but **do not** call `supabase.functions.invoke("meta-sync-accounts", …)` and do **not** subscribe to realtime updates.
+  - Else → existing behavior unchanged.
+- This reuses the existing animation infrastructure; no UI changes needed.
+
+### 4. (Optional polish) `AccountSelectStep`
+- No code change required. Real `ad_accounts` rows are already in the DB from prior syncs, so the account list will populate normally.
+- If we want the demo to *always* select a known good account, we can add a tiny note — but I'd skip this and just click it manually during recording.
+
+## Demo flow
+
+1. Open `/loginv1?demo=true`.
+2. Click "Login with Meta" → real OAuth popup → real session.
+3. Land on `/onboarding?meta=connected&demo=true`.
+4. Profile → Tool Explanation → Account Select → Brand Kit → ICP → Competitors all run normally against real data.
+5. Data Sync step plays the scripted 6-step animation in ~8 seconds, then routes to `/home`.
+6. `/home` shows the real creatives/insights already in the database.
 
 ## Technical notes
 
-- `rawPerf` already has `revenue` per row (see `ad_performance_daily` schema), so switching ROAS from "avg of per-row roas" to `sumRevenue / sumSpend` is both more correct and necessary once we aggregate across multiple ads.
-- No DB or edge-function changes needed. This is purely a client-side aggregation fix.
-- Preview dialog (`CreativePreviewDialog` via `previewAdId`) currently expects an ad id — keep the representative ad id on the enriched row (e.g. `representativeAdId`) and pass that into the dialog when a card is clicked.
-
-## Out of scope
-- No schema changes.
-- No sync changes — duplicates in `ads` are correct (Meta really does have those rows); we just shouldn't render them as separate creatives.
+- Demo mode is purely a frontend display tweak; no DB writes are skipped that matter, because in demo mode we deliberately don't *want* a fresh sync — we want to showcase pre-existing data.
+- The flag is URL-based (no env var, no build flag), so we can demo from the production preview without redeploying.
+- Easy to remove later: drop the `isDemoMode` branch in `DataSyncStep` and the prop plumbing.
