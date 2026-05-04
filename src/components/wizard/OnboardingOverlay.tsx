@@ -13,10 +13,8 @@ import { useWizard } from "@/context/WizardContext";
 /* ─── Profile completion overlay ─── */
 
 export const ProfileOverlay = ({ open, onComplete, isDevMode = false }: { open: boolean; onComplete: () => void; isDevMode?: boolean }) => {
-  const { updateState } = useWizard();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
-  const [brandWebsite, setBrandWebsite] = useState("");
   const [accounts, setAccounts] = useState<any[]>([]);
   const [saving, setSaving] = useState(false);
 
