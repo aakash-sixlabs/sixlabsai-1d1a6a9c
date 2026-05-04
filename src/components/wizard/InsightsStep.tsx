@@ -474,13 +474,13 @@ export const InsightsStep = () => {
           if (!activeJobId) activeJobId = job.id;
 
           if (job.current_step) setSyncStep(job.current_step);
-          if (job.status === "complete") {
+          if (job.status === "completed" || job.status === "complete") {
             setSyncStatus("complete");
             fetchData();
             supabase.removeChannel(channel);
             setTimeout(() => setSyncStatus("idle"), 2500);
           }
-          if (job.status === "error") {
+          if (job.status === "failed" || job.status === "error") {
             setSyncStatus("error");
             setSyncStep(job.error_message || "Sync failed");
             supabase.removeChannel(channel);
