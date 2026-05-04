@@ -231,7 +231,7 @@ export const CreateAdFlow = () => {
               />
             )}
             {stepKey === "review" && (
-              <ReviewStep state={state} onBack={back} onGenerate={() => setIsGenerating(true)} />
+              <ReviewStep state={state} onUpdate={update} onBack={back} onGenerate={() => setIsGenerating(true)} />
             )}
           </motion.div>
         </AnimatePresence>
