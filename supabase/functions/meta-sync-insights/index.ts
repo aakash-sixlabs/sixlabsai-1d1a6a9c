@@ -66,8 +66,8 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     syncId = body.syncId;
-    const { adAccountId, userId, brandId } = body;
-    if (!syncId || !adAccountId || !userId) {
+    const { adAccountId, userId, brandId, accountId } = body;
+    if (!syncId || !adAccountId || !userId || !accountId) {
       return new Response(JSON.stringify({ error: "Missing params" }), {
         status: 400,
         headers: corsHeaders,
@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
       await admin
         .from("sync_jobs")
         .update({
-          status: "error",
+          status: "failed",
           error_message: message,
           updated_at: new Date().toISOString(),
         })
