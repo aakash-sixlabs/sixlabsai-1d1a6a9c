@@ -370,6 +370,7 @@ Deno.serve(async (req) => {
         );
 
         const adRecords = rawAds.map((ad: any) => ({
+          account_id: accountId,
           ad_set_id: adsetMap.get(ad.adset_id),
           user_id: userId,
           meta_ad_id: ad.id,
@@ -380,7 +381,7 @@ Deno.serve(async (req) => {
         }));
         if (adRecords.length > 0) {
           await admin.from("ads").upsert(adRecords, {
-            onConflict: "user_id,meta_ad_id",
+            onConflict: "account_id,meta_ad_id",
           });
         }
 
