@@ -60,7 +60,11 @@ const Onboarding = () => {
         }
       }
 
-      if (searchParams.get("meta") === "connected") {
+      if (replayMode) {
+        // Replay from the very first step.
+        setShowProfileDialog(true);
+        setPhase("profile");
+      } else if (searchParams.get("meta") === "connected") {
         updateState({ metaConnected: true });
         await checkProfileComplete();
       } else if (state.selectedAccount && !state.syncComplete) {
