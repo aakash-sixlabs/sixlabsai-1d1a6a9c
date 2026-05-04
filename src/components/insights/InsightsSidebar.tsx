@@ -41,6 +41,12 @@ interface AdAccount {
   account_name: string;
 }
 
+export interface SidebarKpi {
+  label: string;
+  value: string;
+  hint?: string;
+}
+
 interface InsightsSidebarProps {
   activeView: string;
   onViewChange: (view: string) => void;
@@ -48,6 +54,7 @@ interface InsightsSidebarProps {
   adAccounts?: AdAccount[];
   selectedAccountId?: string;
   onAccountChange?: (accountId: string) => void;
+  kpis?: SidebarKpi[];
 }
 
 export const InsightsSidebar = ({
@@ -56,6 +63,7 @@ export const InsightsSidebar = ({
   adAccounts = [],
   selectedAccountId,
   onAccountChange,
+  kpis,
 }: InsightsSidebarProps) => {
   return (
     <aside className="w-56 border-r border-border/60 bg-background flex flex-col h-full shrink-0">
@@ -123,6 +131,31 @@ export const InsightsSidebar = ({
           );
         })}
       </nav>
+
+      {/* Performance KPI tiles */}
+      {kpis && kpis.length > 0 && (
+        <div className="px-3 pb-4 pt-2 border-t border-border/60 space-y-2">
+          <p className="px-1 text-[10px] uppercase tracking-wider text-muted-foreground/70 font-semibold mb-1">
+            Performance
+          </p>
+          {kpis.map((k) => (
+            <div
+              key={k.label}
+              className="rounded-xl bg-secondary/40 hover:bg-secondary/70 transition-colors px-3 py-2.5"
+            >
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                {k.label}
+              </p>
+              <p className="text-base font-bold text-foreground tracking-tight tabular-nums leading-tight mt-0.5">
+                {k.value}
+              </p>
+              {k.hint && (
+                <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{k.hint}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </aside>
   );
 };

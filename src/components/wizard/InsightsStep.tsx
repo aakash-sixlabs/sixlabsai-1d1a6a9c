@@ -219,6 +219,7 @@ export const InsightsStep = () => {
   const [sortKey, setSortKey] = useState<SortKey>("score");
   const [dateRange, setDateRange] = useState<DateRangeKey>("30");
   const [previewAdId, setPreviewAdId] = useState<string | null>(null);
+  const [sidebarKpis, setSidebarKpis] = useState<{ label: string; value: string; hint?: string }[]>([]);
 
   const enrichAndSet = useCallback((dbAds: Ad[], creatives: Creative[], insights: Insight[], adSets: AdSet[], campaigns: Campaign[]) => {
     const insightByAd = new Map<string, Insight>();
@@ -791,6 +792,7 @@ export const InsightsStep = () => {
           adAccounts={adAccounts}
           selectedAccountId={selectedAccountId}
           onAccountChange={setSelectedAccountId}
+          kpis={activeView === "discover" ? sidebarKpis : undefined}
         />
         <main className="flex-1 overflow-auto border-l border-border/60">
           {activeView === "generations" ? (
@@ -810,6 +812,7 @@ export const InsightsStep = () => {
               onDateRangeChange={setDateRange}
               onAdClick={(id) => setPreviewAdId(id)}
               onViewAllGenerations={() => setActiveView("generations")}
+              onKpisChange={setSidebarKpis}
             />
           ) : (
           <div className="px-8 py-10 max-w-[1200px] mx-auto">

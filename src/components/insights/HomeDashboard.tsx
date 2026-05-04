@@ -1,9 +1,9 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   Sparkles, Wand2, ArrowRight, TrendingUp, TrendingDown, Target,
   Zap, Trophy, Lightbulb, Radar, Eye, Layers, Type, Image as ImageIcon,
-  ArrowUpRight, Activity, BarChart3, Flame,
+  Activity, BarChart3, Flame,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ interface Props {
   onDateRangeChange: (v: DateRangeKey) => void;
   onAdClick?: (id: string) => void;
   onViewAllGenerations?: () => void;
+  onKpisChange?: (kpis: { label: string; value: string; hint?: string }[]) => void;
 }
 
 // ── Utilities ───────────────────────────────────────────────────────
@@ -81,7 +82,7 @@ const CATEGORY_TRENDS = [
 // ── Component ───────────────────────────────────────────────────────
 export const HomeDashboard = ({
   brandName, accountName, ads, dateRange, onDateRangeChange,
-  onAdClick, onViewAllGenerations,
+  onAdClick, onViewAllGenerations, onKpisChange,
 }: Props) => {
   const navigate = useNavigate();
 
@@ -101,6 +102,17 @@ export const HomeDashboard = ({
     const activeCreatives = ads.filter((a) => (a.spend ?? 0) > 0 || (a.impressions ?? 0) > 0).length;
     return { ctrAvg, roasAvg, cac, totalImpr, totalSpend, totalPurchases, activeCreatives };
   }, [ads]);
+
+  // Push KPIs upward so the sidebar can render them
+  useEffect(() => {
+    if (!onKpisChange) return;
+    onKpisChange([
+      { label: "Avg ROAS", value: kpis.roasAvg ? `${kpis.roasAvg.toFixed(2)}x` : "—", hint: `${kpis.activeCreatives} creatives` },
+      { label: "CTR", value: kpis.ctrAvg ? `${kpis.ctrAvg.toFixed(2)}%` : "—", hint: `${compact(kpis.totalImpr)} impr.` },
+      { label: "Avg CAC", value: kpis.cac != null ? `$${kpis.cac.toFixed(2)}` : "—", hint: `${kpis.totalPurchases.toLocaleString()} purchases` },
+      { label: "Total Spend", value: compact(kpis.totalSpend, "$"), hint: `${MOCK_COMPETITORS.length} competitors tracked` },
+    ]);
+  }, [kpis, onKpisChange]);
 
   // ── Top creatives (by score) ──────────────────────────────────
   const topCreatives = useMemo(
@@ -249,21 +261,45 @@ export const HomeDashboard = ({
         </div>
       </motion.section>
 
-      {/* ─────────── Section 1: Opportunities (action-first) ─────────── */}
-      <SectionHeader
-        eyebrow="Start here"
-        title="Your biggest opportunities"
-        subtitle="Prioritized next moves, grounded in your brand data and category signals."
-        icon={Lightbulb}
-      />
+      {/* ─────────── Action summary: Opportunities + What's working snapshot ─────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 mb-14">
+        {/* Left: Opportunities — visual, hookable */}
+        <div className="lg:col-span-3">
+          <SectionHeader
+            eyebrow="Start here"
+            title="Your biggest opportunities"
+            subtitle="Prioritized next moves, grounded in your brand data and category signals."
+            icon={Lightbulb}
+            compact
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {opportunities.slice(0, 4).map((op, i) => (
+              <OpportunityCard key={op.title} {...op} index={i} />
+            ))}
+          </div>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-        {opportunities.map((op) => (
-          <OpportunityCard key={op.title} {...op} onGenerate={() => navigate("/create-ad")} />
-        ))}
+        {/* Right: Summary of what's working + category */}
+        <div className="lg:col-span-2 flex flex-col gap-4">
+          <SummaryPanel
+            icon={Trophy}
+            title="Working for you"
+            tone="accent"
+            items={winningBreakdown.map((w) => ({ label: w.label, value: w.value }))}
+          />
+          <SummaryPanel
+            icon={Radar}
+            title="Working in your category"
+            tone="primary"
+            items={CATEGORY_TRENDS.slice(0, 4).map((t) => ({
+              label: t.up ? "Rising" : "Falling",
+              value: t.title,
+            }))}
+          />
+        </div>
       </div>
 
-      {/* ─────────── Section 2: What's working for your brand ─────────── */}
+      {/* ─────────── Section 2: What's working for your brand (deep-dive) ─────────── */}
       <SectionHeader
         eyebrow="Section 2"
         title="What's working for your brand"
@@ -419,15 +455,15 @@ const KpiCard = ({ label, value, delta, up, subtle }: { label: string; value: st
   </div>
 );
 
-const SectionHeader = ({ eyebrow, title, subtitle, icon: Icon }: { eyebrow: string; title: string; subtitle: string; icon: any }) => (
-  <div className="mb-5">
+const SectionHeader = ({ eyebrow, title, subtitle, icon: Icon, compact: isCompact }: { eyebrow: string; title: string; subtitle: string; icon: any; compact?: boolean }) => (
+  <div className={isCompact ? "mb-4" : "mb-5"}>
     <div className="flex items-center gap-2 mb-2">
       <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
         <Icon className="w-3.5 h-3.5 text-primary" />
       </div>
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{eyebrow}</span>
     </div>
-    <h2 className="font-display font-bold text-2xl text-foreground tracking-tight">{title}</h2>
+    <h2 className={`font-display font-bold ${isCompact ? "text-xl" : "text-2xl"} text-foreground tracking-tight`}>{title}</h2>
     <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
   </div>
 );
@@ -456,36 +492,79 @@ const Chip = ({ children }: { children: React.ReactNode }) => (
   </span>
 );
 
+const OPPORTUNITY_GRADIENTS = [
+  "from-primary/15 via-primary/5 to-transparent",
+  "from-accent/15 via-accent/5 to-transparent",
+  "from-fuchsia-500/15 via-fuchsia-500/5 to-transparent",
+  "from-amber-500/15 via-amber-500/5 to-transparent",
+];
+
 const OpportunityCard = ({
-  title, why, impact, confidence, source, onGenerate,
-}: { title: string; why: string; impact: string; confidence: number; source: string; onGenerate: () => void }) => {
+  title, why, impact, confidence, source, index = 0,
+}: { title: string; why: string; impact: string; confidence: number; source: string; index?: number }) => {
   const impactTone =
-    impact === "High" ? "bg-accent/15 text-accent" : impact === "Medium" ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground";
+    impact === "High"
+      ? "bg-accent text-accent-foreground"
+      : impact === "Medium"
+      ? "bg-primary/15 text-primary"
+      : "bg-secondary text-muted-foreground";
+  const gradient = OPPORTUNITY_GRADIENTS[index % OPPORTUNITY_GRADIENTS.length];
   return (
-    <div className="rounded-2xl border border-border/60 bg-card p-5 flex flex-col gap-4 hover:shadow-md hover:-translate-y-0.5 transition-all">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground leading-snug">{title}</p>
+    <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all">
+      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${gradient}`} />
+      <div className="relative flex flex-col gap-3 h-full">
+        <div className="flex items-center justify-between">
+          <div className="w-9 h-9 rounded-xl bg-card/80 backdrop-blur border border-border/60 flex items-center justify-center shadow-sm">
+            <Lightbulb className="w-4 h-4 text-primary" />
+          </div>
+          <span className={`text-[10px] font-semibold uppercase tracking-wider rounded-full px-2 py-0.5 ${impactTone}`}>
+            {impact} impact
+          </span>
+        </div>
+        <div>
+          <p className="text-[14px] font-semibold text-foreground leading-snug">{title}</p>
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{why}</p>
         </div>
-        <div className={`shrink-0 text-[10px] font-semibold rounded-md px-2 py-1 ${impactTone}`}>
-          {impact} impact
-        </div>
-      </div>
-      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-        <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1"><Activity className="w-3 h-3" /> {confidence}% confidence</span>
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 mt-auto">
           <span className="flex items-center gap-1"><Target className="w-3 h-3" /> {source}</span>
+          <span className="flex items-center gap-1 font-medium tabular-nums"><Activity className="w-3 h-3" /> {confidence}%</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button size="sm" onClick={onGenerate} className="gap-1.5 rounded-lg h-8 text-xs font-semibold">
-          <Wand2 className="w-3.5 h-3.5" /> Generate Creative <ArrowUpRight className="w-3 h-3" />
-        </Button>
-        <Button size="sm" variant="ghost" className="rounded-lg h-8 text-xs text-muted-foreground hover:text-foreground">
-          Save idea
-        </Button>
+    </div>
+  );
+};
+
+const SummaryPanel = ({
+  icon: Icon, title, items, tone,
+}: {
+  icon: any;
+  title: string;
+  items: { label: string; value: string }[];
+  tone: "primary" | "accent";
+}) => {
+  const toneClass = tone === "accent" ? "text-accent bg-accent/10" : "text-primary bg-primary/10";
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-5 hover:shadow-sm transition-shadow flex-1">
+      <div className="flex items-center gap-2 mb-4">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${toneClass}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+        <div>
+          <p className="font-display font-semibold text-sm text-foreground leading-tight">{title}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Snapshot</p>
+        </div>
       </div>
+      <ul className="space-y-2.5">
+        {items.map((it, i) => (
+          <li key={i} className="flex items-start gap-2.5">
+            <span className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${tone === "accent" ? "bg-accent" : "bg-primary"}`} />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{it.label}</p>
+              <p className="text-[13px] text-foreground font-medium leading-snug">{it.value}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
