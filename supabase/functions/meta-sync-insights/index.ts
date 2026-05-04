@@ -199,6 +199,7 @@ Deno.serve(async (req) => {
             const costPerPurchase = purchases > 0 ? spend / purchases : 0;
 
             perfRows.push({
+              account_id: accountId,
               user_id: userId,
               ad_id: internalAdId,
               date: insight.date_start,
@@ -220,7 +221,7 @@ Deno.serve(async (req) => {
 
           if (perfRows.length > 0) {
             await admin.from("ad_performance_daily").upsert(perfRows, {
-              onConflict: "user_id,ad_id,date",
+              onConflict: "ad_id,date",
             });
           }
 
