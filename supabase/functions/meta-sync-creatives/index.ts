@@ -485,7 +485,7 @@ Deno.serve(async (req) => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${serviceKey}`,
           },
-          body: JSON.stringify({ syncId, adAccountId, userId, brandId }),
+          body: JSON.stringify({ syncId, adAccountId, userId, brandId, accountId }),
         });
       } catch (err: any) {
         console.error("meta-sync-creatives error:", err);
