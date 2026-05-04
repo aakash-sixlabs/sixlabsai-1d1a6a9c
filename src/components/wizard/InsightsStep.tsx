@@ -293,7 +293,7 @@ export const InsightsStep = () => {
     }
 
     // Primary source: campaign_ad_data materialized view (flattened, denormalized)
-    const { data: cadData } = await supabase.from("campaign_ad_data").select("*");
+    const { data: cadData } = await (supabase as any).from("campaign_ad_data").select("*");
     const rows = cadData || [];
 
     if (rows.length > 0) {
