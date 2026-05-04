@@ -252,6 +252,7 @@ Deno.serve(async (req) => {
         const { data: storedCampaigns } = await admin
           .from("campaigns")
           .select("id, meta_campaign_id")
+          .eq("account_id", accountId)
           .eq("ad_account_id", adAccountId);
         const campaignMap = new Map(
           (storedCampaigns || []).map((c: any) => [c.meta_campaign_id, c.id]),
