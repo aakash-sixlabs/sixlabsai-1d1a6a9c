@@ -46,6 +46,7 @@ export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepPr
 
   const [guidelines, setGuidelines] = useState<{ filename: string | null; path: string | null } | null>(null);
   const [loadingGuidelines, setLoadingGuidelines] = useState(true);
+  const [competitors, setCompetitors] = useState<{ id: string; competitor_name: string | null; website_url: string | null }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -57,15 +58,24 @@ export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepPr
         .eq("id", user.id)
         .maybeSingle();
       if (!profile?.default_ad_account_id) { setLoadingGuidelines(false); return; }
-      const { data } = await supabase
-        .from("ad_account_profiles")
-        .select("brand_guidelines_path, brand_guidelines_filename")
-        .eq("ad_account_id", profile.default_ad_account_id)
-        .maybeSingle();
+      const [{ data: acctProfile }, { data: comps }] = await Promise.all([
+        supabase
+          .from("ad_account_profiles")
+          .select("brand_guidelines_path, brand_guidelines_filename")
+          .eq("ad_account_id", profile.default_ad_account_id)
+          .maybeSingle(),
+        supabase
+          .from("brand_competitors")
+          .select("id, competitor_name, website_url")
+          .eq("ad_account_id", profile.default_ad_account_id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true }),
+      ]);
       setGuidelines({
-        filename: data?.brand_guidelines_filename ?? null,
-        path: data?.brand_guidelines_path ?? null,
+        filename: acctProfile?.brand_guidelines_filename ?? null,
+        path: acctProfile?.brand_guidelines_path ?? null,
       });
+      setCompetitors(comps ?? []);
       setLoadingGuidelines(false);
     })();
   }, []);
