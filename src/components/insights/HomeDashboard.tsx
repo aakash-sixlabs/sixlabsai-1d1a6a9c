@@ -388,19 +388,6 @@ export const HomeDashboard = ({
         ))}
       </div>
 
-      {/* ─────────── Section 3: Opportunities for your brand ─────────── */}
-      <SectionHeader
-        eyebrow="Section 3"
-        title="Your biggest opportunities"
-        subtitle="Prioritized next tests, grounded in your brand data and category signals."
-        icon={Lightbulb}
-      />
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-12">
-        {opportunities.map((op) => (
-          <OpportunityCard key={op.title} {...op} onGenerate={() => navigate("/create-ad")} />
-        ))}
-      </div>
 
       {/* Footer reinforcement */}
       <p className="text-center text-xs text-muted-foreground/50 mt-4 mb-2 font-medium">
