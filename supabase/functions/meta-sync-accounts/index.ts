@@ -3,6 +3,7 @@
 //   campaigns(meta_campaign_id, name, ...) → ad_sets(meta_adset_id, ...) → ads(meta_ad_id, meta_creative_id)
 // Chains to meta-sync-creatives.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getUserAccountId } from "../_shared/account.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
