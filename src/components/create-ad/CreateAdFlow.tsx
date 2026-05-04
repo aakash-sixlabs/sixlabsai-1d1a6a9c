@@ -22,6 +22,7 @@ export type OfferType = "percentage" | "fixed" | "bogo" | "trial" | "freebie" | 
 
 export interface PromoDetails {
   offerType: OfferType | null;
+  offerName?: string | null;
   discountValue: string;
   buyQty: string;
   getQty: string;
