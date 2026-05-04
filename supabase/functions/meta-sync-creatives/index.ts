@@ -416,6 +416,7 @@ Deno.serve(async (req) => {
 
           await admin.from("ad_creatives").upsert(
             {
+              account_id: accountId,
               user_id: userId,
               ad_id: storedAd.id,
               meta_creative_id: creative.id || storedAd.meta_creative_id || storedAd.meta_ad_id,
@@ -441,7 +442,7 @@ Deno.serve(async (req) => {
               raw_object_story_spec: oss && Object.keys(oss).length ? oss : null,
               raw_data: creative,
             },
-            { onConflict: "user_id,meta_creative_id" },
+            { onConflict: "account_id,meta_creative_id" },
           );
 
           await admin
