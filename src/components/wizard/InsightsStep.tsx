@@ -430,6 +430,10 @@ export const InsightsStep = () => {
     // Prevent overlapping syncs in this tab
     if (syncStatus === "syncing") return;
 
+    // Mark this account as just-synced so the hourly auto-refresh doesn't
+    // immediately re-fire after a manual resync.
+    try { localStorage.setItem(`last_auto_sync_${accountId}`, String(Date.now())); } catch {}
+
     setSyncStatus("syncing");
     setSyncStep("Connecting to Meta");
 
