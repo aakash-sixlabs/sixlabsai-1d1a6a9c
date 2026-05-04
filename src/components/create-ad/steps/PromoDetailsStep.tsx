@@ -4,11 +4,39 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { ArrowLeft, ArrowRight, Percent, DollarSign, CalendarIcon, Gift, Repeat, Zap, PenLine, Tag, Sparkles, Check } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { DisclaimerPicker } from "./DisclaimerPicker";
+
+interface SavedOffer {
+  id: string;
+  name: string;
+  offer_type: OfferType;
+  discount_value: string | null;
+  buy_qty: string | null;
+  get_qty: string | null;
+  trial_price: string | null;
+  freebie_description: string | null;
+  custom_offer_headline: string | null;
+  promo_code: string | null;
+  additional_notes: string | null;
+}
+
+const offerSummary = (o: SavedOffer): string => {
+  switch (o.offer_type) {
+    case "percentage": return `${o.discount_value}% off`;
+    case "fixed": return `$${o.discount_value} off`;
+    case "bogo": return `Buy ${o.buy_qty} Get ${o.get_qty} Free`;
+    case "trial": return `Try for $${o.trial_price}`;
+    case "freebie": return o.freebie_description ?? "";
+    case "custom": return o.custom_offer_headline ?? "";
+    default: return "";
+  }
+};
 
 interface PromoDetailsStepProps {
   details: PromoDetails;
