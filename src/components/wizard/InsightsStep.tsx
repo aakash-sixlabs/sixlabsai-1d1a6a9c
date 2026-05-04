@@ -502,13 +502,15 @@ export const InsightsStep = () => {
     }
   }, [state.selectedAccount, state.dateRange, fetchData, syncStatus]);
 
-  // Initial load: fetch existing data immediately, then sync in background
+  // Initial load: fetch existing data immediately, then sync in background.
+  // Also schedules an hourly auto-refresh for as long as the tab stays open.
   useEffect(() => {
+    let hourly: ReturnType<typeof setInterval> | null = null;
+    let devInterval: ReturnType<typeof setInterval> | null = null;
+
     fetchData().then(() => {
-      // New user just completed onboarding sync — skip redundant background sync
       if (state.syncComplete) return;
 
-      // For dev mode, simulate a background sync — never call real sync edge fn
       const isDevMode =
         isDevSession() ||
         sessionStorage.getItem("meta_connection")?.includes("mock");
@@ -523,19 +525,18 @@ export const InsightsStep = () => {
           "Preparing insights",
         ];
         let i = 0;
-        const interval = setInterval(() => {
+        devInterval = setInterval(() => {
           if (i < steps.length) {
             setSyncStep(steps[i]);
             i++;
           } else {
-            clearInterval(interval);
+            if (devInterval) clearInterval(devInterval);
             setSyncStatus("complete");
           }
         }, 1200);
         return;
       }
-      // Returning user — sync in background, but throttle auto-resync to once
-      // per hour per account. Manual resync button bypasses this.
+
       if (state.selectedAccount) {
         const AUTO_SYNC_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
         const key = `last_auto_sync_${state.selectedAccount}`;
@@ -548,11 +549,14 @@ export const InsightsStep = () => {
           triggerBackgroundSync();
         };
         maybeAutoSync();
-        // Hourly auto-refresh while the tab is open
-        const hourly = setInterval(maybeAutoSync, AUTO_SYNC_COOLDOWN_MS);
-        return () => clearInterval(hourly);
+        hourly = setInterval(maybeAutoSync, AUTO_SYNC_COOLDOWN_MS);
       }
     });
+
+    return () => {
+      if (hourly) clearInterval(hourly);
+      if (devInterval) clearInterval(devInterval);
+    };
   }, []);
 
   // Derived data
