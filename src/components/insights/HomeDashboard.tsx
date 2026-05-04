@@ -90,14 +90,16 @@ export const HomeDashboard = ({
     const totalSpend = ads.reduce((s, a) => s + (a.spend ?? 0), 0);
     const totalPurchases = ads.reduce((s, a) => s + (a.purchases ?? 0), 0);
     const totalImpr = ads.reduce((s, a) => s + (a.impressions ?? 0), 0);
-    const ctrAvg = ads.length
-      ? ads.reduce((s, a) => s + (a.ctr ?? 0), 0) / Math.max(1, ads.filter((a) => a.ctr != null).length)
+    // Impression-weighted CTR (more accurate than a flat average)
+    const ctrAvg = totalImpr > 0
+      ? ads.reduce((s, a) => s + ((a.ctr ?? 0) * (a.impressions ?? 0)), 0) / totalImpr
       : 0;
     const roasAvg = totalSpend > 0
       ? ads.reduce((s, a) => s + ((a.roas ?? 0) * (a.spend ?? 0)), 0) / totalSpend
       : 0;
     const cac = totalPurchases > 0 ? totalSpend / totalPurchases : null;
-    return { ctrAvg, roasAvg, cac, totalImpr };
+    const activeCreatives = ads.filter((a) => (a.spend ?? 0) > 0 || (a.impressions ?? 0) > 0).length;
+    return { ctrAvg, roasAvg, cac, totalImpr, totalSpend, totalPurchases, activeCreatives };
   }, [ads]);
 
   // ── Top creatives (by score) ──────────────────────────────────
