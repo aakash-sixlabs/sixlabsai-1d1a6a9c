@@ -114,15 +114,14 @@ Deno.serve(async (req) => {
           .single();
         if (!adAccount) throw new Error("Ad account not found");
         const accessToken = adAccount.meta_connections.access_token;
-        const actId = adAccount.account_id.startsWith("act_")
-          ? adAccount.account_id
-          : `act_${adAccount.account_id}`;
+        const metaActIdRaw: string = adAccount.account_id_meta;
+        const actId = metaActIdRaw.startsWith("act_") ? metaActIdRaw : `act_${metaActIdRaw}`;
 
         // Map Meta ad_id → internal ads.id (new schema: meta_ad_id)
         const { data: allStoredAds } = await admin
           .from("ads")
           .select("id, meta_ad_id")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
         const adMap = new Map<string, string>(
           (allStoredAds || []).map((a: any) => [a.meta_ad_id as string, a.id as string]),
         );
