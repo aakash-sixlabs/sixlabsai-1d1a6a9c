@@ -78,8 +78,8 @@ export const DataSyncStep = ({
     if (syncStarted) return;
     setSyncStarted(true);
 
-    // Dev mode: simulate sync with delays
-    if (isDevMode) {
+    // Dev mode or Demo mode: simulate sync with delays (no real backend call)
+    if (isDevMode || isDemoMode) {
       let i = 0;
       const interval = setInterval(() => {
         i++;
