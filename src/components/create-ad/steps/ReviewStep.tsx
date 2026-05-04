@@ -35,13 +35,40 @@ const formatOffer = (d: CreateAdState["promoDetails"]): string => {
 
 interface ReviewStepProps {
   state: CreateAdState;
+  onUpdate: (partial: Partial<CreateAdState>) => void;
   onBack: () => void;
   onGenerate: () => void;
 }
 
-export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
+export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepProps) => {
   const goalInfo = state.goal ? GOAL_LABELS[state.goal] : null;
   const GoalIcon = goalInfo?.icon;
+
+  const [guidelines, setGuidelines] = useState<{ filename: string | null; path: string | null } | null>(null);
+  const [loadingGuidelines, setLoadingGuidelines] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingGuidelines(false); return; }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("default_ad_account_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile?.default_ad_account_id) { setLoadingGuidelines(false); return; }
+      const { data } = await supabase
+        .from("ad_account_profiles")
+        .select("brand_guidelines_path, brand_guidelines_filename")
+        .eq("ad_account_id", profile.default_ad_account_id)
+        .maybeSingle();
+      setGuidelines({
+        filename: data?.brand_guidelines_filename ?? null,
+        path: data?.brand_guidelines_path ?? null,
+      });
+      setLoadingGuidelines(false);
+    })();
+  }, []);
 
   return (
     <div>
