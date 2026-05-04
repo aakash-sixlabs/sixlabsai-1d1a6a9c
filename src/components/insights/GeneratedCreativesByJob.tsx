@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import { Loader2, ImageOff, ThumbsUp, ThumbsDown, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isDevSession } from "@/lib/devMode";
+import { CreativeImageCard } from "./CreativeImageCard";
 
 interface GeneratedCreative {
   id: string;
@@ -222,7 +222,7 @@ export const GeneratedCreativesByJob = ({
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {group.creatives.map((c, i) => (
-                  <CreativeCard
+                  <CreativeImageCard
                     key={c.id}
                     creative={c}
                     index={i}
@@ -235,93 +235,5 @@ export const GeneratedCreativesByJob = ({
         ))}
       </div>
     </div>
-  );
-};
-
-const CreativeCard = ({
-  creative,
-  index,
-  onFeedback,
-}: {
-  creative: GeneratedCreative;
-  index: number;
-  onFeedback: (v: "like" | "dislike") => void;
-}) => {
-  const [errored, setErrored] = useState(false);
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: Math.min(index * 0.03, 0.3) }}
-      className="rounded-2xl border border-border/60 bg-card overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300"
-    >
-      <div className="relative aspect-square bg-secondary/20">
-        {errored ? (
-          <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-            <ImageOff className="w-6 h-6" />
-          </div>
-        ) : (
-          <img
-            src={creative.thumbnail_url ?? creative.image_url}
-            alt={creative.headline ?? `Variant ${creative.variant_index + 1}`}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={() => setErrored(true)}
-          />
-        )}
-      </div>
-      <div className="px-3 py-2.5 flex items-center justify-between">
-        <span className="text-xs font-medium text-foreground truncate">
-          Variant {creative.variant_index + 1}
-          {creative.aspect_ratio && (
-            <span className="text-muted-foreground"> · {creative.aspect_ratio}</span>
-          )}
-        </span>
-        <div className="flex items-center gap-1 shrink-0">
-          <FeedbackButton
-            active={creative.feedback === "like"}
-            tone="like"
-            onClick={() => onFeedback("like")}
-          />
-          <FeedbackButton
-            active={creative.feedback === "dislike"}
-            tone="dislike"
-            onClick={() => onFeedback("dislike")}
-          />
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-const FeedbackButton = ({
-  active,
-  tone,
-  onClick,
-}: {
-  active: boolean;
-  tone: "like" | "dislike";
-  onClick: () => void;
-}) => {
-  const Icon = tone === "like" ? ThumbsUp : ThumbsDown;
-  const activeClass =
-    tone === "like"
-      ? "bg-accent/15 text-accent"
-      : "bg-destructive/10 text-destructive";
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className={`h-7 w-7 rounded-lg flex items-center justify-center transition-colors ${
-        active ? activeClass : "text-muted-foreground hover:bg-secondary/80"
-      }`}
-      aria-label={tone === "like" ? "Like" : "Dislike"}
-      aria-pressed={active}
-    >
-      <Icon className="w-3.5 h-3.5" />
-    </button>
   );
 };
