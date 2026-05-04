@@ -14,12 +14,14 @@ import {
   FileText,
   Image as ImageIcon,
   Link as LinkIcon,
+  Download,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CreativeImageCard } from "@/components/insights/CreativeImageCard";
+import { downloadAll, extOf } from "@/lib/downloadImage";
 
 interface GenerationJob {
   id: string;
