@@ -296,7 +296,7 @@ export const InsightsStep = () => {
     // RLS already scopes everything to the user's account; filter campaigns/adsets to this ad_account.
     const accountIdFilter = state.selectedAccount;
     const [creativesRes, perfRes, adsetsRes, campaignsRes] = await Promise.all([
-      supabase.from("ad_creatives").select("id, ad_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls").limit(1000),
+      supabase.from("ad_creatives").select("id, ad_id, meta_creative_id, creative_type, headline, primary_text, stored_image_url, image_url, stored_image_urls, thumbnail_url").limit(2000),
       supabase.from("ad_performance_daily").select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases").limit(1000),
       supabase.from("ad_sets").select("id, campaign_id, name").limit(1000),
       supabase.from("campaigns").select("id, name").eq("ad_account_id", accountIdFilter as any).limit(1000),
