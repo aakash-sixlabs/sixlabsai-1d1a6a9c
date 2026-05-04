@@ -4,17 +4,21 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useWizard } from "@/context/WizardContext";
 import { isDevSession } from "@/lib/devMode";
+import { getCurrentAccountId } from "@/lib/accountContext";
 import type { CreateAdState } from "../CreateAdFlow";
 
 interface GeneratingStepProps {
   state: CreateAdState;
 }
 
+const MOCK_DELAY_MS = 3 * 60 * 1000; // 3 minutes
+
 /**
- * Fire-and-forget kickoff for a creative generation request.
- * Triggers the edge function and immediately navigates the user back to /home.
- * The global GenerationNotificationsProvider listens for the job's status
- * change and will toast + ping the bell when it's done.
+ * Mock generation kickoff:
+ *  - Inserts a `generation_jobs` row (status: pending)
+ *  - Navigates user back to /home with a confirmation toast
+ *  - After 3 minutes, marks the job `completed` so the realtime
+ *    notification provider toasts + pings the bell.
  */
 export const GeneratingStep = ({ state }: GeneratingStepProps) => {
   const navigate = useNavigate();
@@ -26,68 +30,81 @@ export const GeneratingStep = ({ state }: GeneratingStepProps) => {
     startedRef.current = true;
 
     (async () => {
-      // Dev mode — keep local stub behavior, but still don't block the user.
+      // Dev-mode sandbox: skip Supabase entirely.
       if (isDevSession()) {
-        const ratios = state.aspectRatios?.length ? state.aspectRatios : ["1:1"];
-        const dimsFor = (r: string) => {
-          switch (r) {
-            case "9:16": return { w: 720, h: 1280 };
-            case "16:9": return { w: 1280, h: 720 };
-            case "4:5": return { w: 1080, h: 1350 };
-            default: return { w: 1080, h: 1080 };
-          }
-        };
-        const creatives: any[] = [];
-        let idx = 0;
-        for (const ratio of ratios) {
-          const { w, h } = dimsFor(ratio);
-          for (let v = 0; v < 3; v++) {
-            const seed = `dev-${Date.now()}-${idx}`;
-            creatives.push({
-              id: `dev_${idx}`,
-              variant_index: idx,
-              aspect_ratio: ratio,
-              image_url: `https://picsum.photos/seed/${seed}/${w}/${h}`,
-              thumbnail_url: `https://picsum.photos/seed/${seed}/${Math.round(w / 4)}/${Math.round(h / 4)}`,
-              headline: `Headline variant ${idx + 1}`,
-              primary_text: `Generated copy for ${state.goal ?? "your ad"} (${ratio}).`,
-              description: "Dev mode stub.",
-            });
-            idx++;
-          }
-        }
-        const devJobId = `dev_${Date.now()}`;
-        try {
-          sessionStorage.setItem(`dev_creatives_${devJobId}`, JSON.stringify(creatives));
-        } catch {}
-        toast.success("Generation complete (dev)", {
-          description: "Tap to view your new creatives.",
-          action: { label: "View", onClick: () => navigate(`/output?jobId=${devJobId}`) },
+        toast.success("Generation started (dev)", {
+          description: "We'll notify you in ~3 minutes when it's ready.",
         });
+        navigate("/home");
         return;
       }
 
-      // Real flow — fire and forget. We don't await the response; the user
-      // is sent back to /home and notified when the job finishes.
-      supabase.functions
-        .invoke("generate-creatives", {
-          body: { ...state, adAccountId: wizardState.selectedAccount ?? null },
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You need to be signed in to generate ads.");
+        navigate("/home");
+        return;
+      }
+
+      const accountId = await getCurrentAccountId();
+      if (!accountId) {
+        toast.error("Couldn't resolve your workspace.");
+        navigate("/home");
+        return;
+      }
+
+      const { data: job, error } = await supabase
+        .from("generation_jobs")
+        .insert({
+          account_id: accountId,
+          user_id: user.id,
+          ad_account_id: wizardState.selectedAccount ?? null,
+          status: "pending",
+          trigger_type: "manual",
+          goal: state.goal,
+          promo_scope: state.promoScope,
+          aspect_ratios: state.aspectRatios ?? [],
+          product_input_method: state.productInputMethod,
+          product_url: state.productUrl || null,
+          product_image_url: state.productImage || null,
+          icp_id: state.icpId,
+          icp_snapshot: state.icpName
+            ? { id: state.icpId, name: state.icpName, description: state.icpDescription }
+            : null,
+          promo_details: state.promoDetails as any,
+          offer_type: state.promoDetails?.offerType ?? null,
+          disclaimer_ids: state.promoDetails?.disclaimerIds ?? [],
+          service_request_payload: {
+            ...state,
+            adAccountId: wizardState.selectedAccount ?? null,
+            mocked: true,
+          } as any,
         })
-        .then(({ error }) => {
-          if (error) {
-            toast.error("Couldn't start generation", {
-              description: error.message ?? "Please try again.",
-            });
-          }
+        .select("id")
+        .single();
+
+      if (error || !job) {
+        toast.error("Couldn't start generation", {
+          description: error?.message ?? "Please try again.",
         });
+        navigate("/home");
+        return;
+      }
 
       toast.success("Generation started", {
         description: "We'll notify you when your creatives are ready.",
       });
-    })();
+      navigate("/home");
 
-    // Hand control back to the user immediately.
-    navigate("/home");
+      // Mock background processing — flip to completed after 3 minutes.
+      // (Survives even if user navigates within the SPA; lost on full reload.)
+      setTimeout(async () => {
+        await supabase
+          .from("generation_jobs")
+          .update({ status: "completed" })
+          .eq("id", job.id);
+      }, MOCK_DELAY_MS);
+    })();
   }, [state, wizardState.selectedAccount, navigate]);
 
   return null;

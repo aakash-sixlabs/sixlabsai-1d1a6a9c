@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users, FileText, Upload } from "lucide-react";
+import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users, FileText, Upload, Target } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
@@ -46,6 +46,7 @@ export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepPr
 
   const [guidelines, setGuidelines] = useState<{ filename: string | null; path: string | null } | null>(null);
   const [loadingGuidelines, setLoadingGuidelines] = useState(true);
+  const [competitors, setCompetitors] = useState<{ id: string; competitor_name: string | null; website_url: string | null }[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -57,15 +58,24 @@ export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepPr
         .eq("id", user.id)
         .maybeSingle();
       if (!profile?.default_ad_account_id) { setLoadingGuidelines(false); return; }
-      const { data } = await supabase
-        .from("ad_account_profiles")
-        .select("brand_guidelines_path, brand_guidelines_filename")
-        .eq("ad_account_id", profile.default_ad_account_id)
-        .maybeSingle();
+      const [{ data: acctProfile }, { data: comps }] = await Promise.all([
+        supabase
+          .from("ad_account_profiles")
+          .select("brand_guidelines_path, brand_guidelines_filename")
+          .eq("ad_account_id", profile.default_ad_account_id)
+          .maybeSingle(),
+        supabase
+          .from("brand_competitors")
+          .select("id, competitor_name, website_url")
+          .eq("ad_account_id", profile.default_ad_account_id)
+          .eq("is_active", true)
+          .order("created_at", { ascending: true }),
+      ]);
       setGuidelines({
-        filename: data?.brand_guidelines_filename ?? null,
-        path: data?.brand_guidelines_path ?? null,
+        filename: acctProfile?.brand_guidelines_filename ?? null,
+        path: acctProfile?.brand_guidelines_path ?? null,
       });
+      setCompetitors(comps ?? []);
       setLoadingGuidelines(false);
     })();
   }, []);
@@ -171,6 +181,38 @@ export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepPr
             </div>
           </div>
         )}
+
+        {/* Competitive Intelligence */}
+        <div className="p-4 rounded-lg bg-card border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className="w-4 h-4 text-primary" />
+            <p className="text-xs text-muted-foreground uppercase tracking-wide">Competitive intelligence</p>
+          </div>
+          {competitors.length > 0 ? (
+            <>
+              <p className="text-sm text-muted-foreground mb-3">
+                We'll pull insights from these brands to inform your creative.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {competitors.map((c) => (
+                  <span
+                    key={c.id}
+                    className="px-3 py-1 rounded-full bg-muted text-foreground text-sm font-medium"
+                  >
+                    {c.competitor_name ?? c.website_url ?? "Competitor"}
+                  </span>
+                ))}
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No competitors set ·{" "}
+              <Link to="/settings?tab=competitors" className="text-primary hover:underline">
+                Add competitors
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
 
       <div className="mt-10 flex justify-between">
