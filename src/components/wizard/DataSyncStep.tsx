@@ -20,10 +20,12 @@ export const DataSyncStep = ({
   asOverlay = false,
   onComplete,
   isDevMode = false,
+  isDemoMode = false,
 }: {
   asOverlay?: boolean;
   onComplete?: () => void;
   isDevMode?: boolean;
+  isDemoMode?: boolean;
 }) => {
   const { state, updateState } = useWizard();
   const navigate = useNavigate();
