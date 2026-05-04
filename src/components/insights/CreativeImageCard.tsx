@@ -40,6 +40,21 @@ export const CreativeImageCard = ({ creative, index, onFeedback }: Props) => {
     aspectRatio: naturalRatio ?? ratioFallback(creative.aspect_ratio),
   };
 
+  // Derive a clean ratio label (e.g. "4:5") from the loaded image dimensions.
+  const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
+  const ratioLabel = (() => {
+    if (naturalRatio) {
+      const [wStr, hStr] = naturalRatio.split(" / ");
+      const w = Number(wStr);
+      const h = Number(hStr);
+      if (w > 0 && h > 0) {
+        const d = gcd(Math.round(w), Math.round(h));
+        return `${Math.round(w) / d}:${Math.round(h) / d}`;
+      }
+    }
+    return creative.aspect_ratio ?? null;
+  })();
+
   const filename = `variant-${creative.variant_index + 1}.${extOf(creative.image_url)}`;
   const handleDownload = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -79,8 +94,8 @@ export const CreativeImageCard = ({ creative, index, onFeedback }: Props) => {
         <div className="px-3 py-2.5 flex items-center justify-between">
           <span className="text-xs font-medium text-foreground truncate">
             Variant {creative.variant_index + 1}
-            {creative.aspect_ratio && (
-              <span className="text-muted-foreground"> · {creative.aspect_ratio}</span>
+            {ratioLabel && (
+              <span className="text-muted-foreground"> · {ratioLabel}</span>
             )}
           </span>
           <div className="flex items-center gap-1 shrink-0">
