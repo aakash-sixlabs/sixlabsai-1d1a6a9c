@@ -46,18 +46,18 @@ const Onboarding = () => {
         return;
       }
 
-      // Returning-user shortcut: once a default ad account exists, onboarding
-      // has already been completed for this user. /home triggers the non-blocking
-      // 30-day resync on landing.
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("default_ad_account_id")
-        .eq("id", session.user.id)
-        .maybeSingle();
+      // Returning-user shortcut: skip when replay mode is active.
+      if (!replayMode) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("default_ad_account_id")
+          .eq("id", session.user.id)
+          .maybeSingle();
 
-      if (profile?.default_ad_account_id) {
-        navigate("/home", { replace: true });
-        return;
+        if (profile?.default_ad_account_id) {
+          navigate("/home", { replace: true });
+          return;
+        }
       }
 
       if (searchParams.get("meta") === "connected") {
