@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         }));
         if (campaignRecords.length > 0) {
           const { error: campaignUpsertError } = await admin.from("campaigns").upsert(campaignRecords, {
-            onConflict: "meta_campaign_id",
+            onConflict: "account_id,meta_campaign_id",
           });
           if (campaignUpsertError) {
             throw new Error(`campaigns upsert failed: ${campaignUpsertError.message}`);
@@ -315,7 +315,7 @@ Deno.serve(async (req) => {
         }));
         if (adsetRecords.length > 0) {
           const { error: adsetUpsertError } = await admin.from("ad_sets").upsert(adsetRecords, {
-            onConflict: "meta_adset_id",
+            onConflict: "account_id,meta_adset_id",
           });
           if (adsetUpsertError) {
             throw new Error(`ad_sets upsert failed: ${adsetUpsertError.message}`);
@@ -381,7 +381,7 @@ Deno.serve(async (req) => {
         }));
         if (adRecords.length > 0) {
           const { error: adsUpsertError } = await admin.from("ads").upsert(adRecords, {
-            onConflict: "meta_ad_id",
+            onConflict: "account_id,meta_ad_id",
           });
           if (adsUpsertError) {
             throw new Error(`ads upsert failed: ${adsUpsertError.message}`);
