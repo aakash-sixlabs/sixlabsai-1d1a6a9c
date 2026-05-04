@@ -20,6 +20,8 @@ const Onboarding = () => {
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const [phase, setPhase] = useState<OnboardingPhase>("loading");
   const isDevMode = searchParams.get("dev") === "true";
+  const replayMode = searchParams.get("replay") === "true";
+  const skipSync = searchParams.get("skipSync") === "true";
 
   useEffect(() => {
     const init = async () => {
