@@ -328,7 +328,7 @@ Deno.serve(async (req) => {
         const { data: existingCreatives } = await admin
           .from("ad_creatives")
           .select("meta_creative_id, image_hashes, stored_image_urls")
-          .eq("user_id", userId);
+          .eq("account_id", accountId);
         const existingMap = new Map<string, { image_hashes: any; stored_image_urls: any }>();
         for (const ec of existingCreatives || []) {
           if (ec.meta_creative_id) {
