@@ -136,14 +136,66 @@ export const PromoDetailsStep = ({ details, onUpdate, onNext, onBack }: PromoDet
     set({ endDate: date?.toISOString() ?? "" });
   };
 
+  const showCreateForm = mode === "new" || savedOffers.length === 0;
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-foreground mb-1">Promotion details</h2>
       <p className="text-muted-foreground mb-8">
-        What kind of offer are you running?
+        Pick a saved offer or create a new one.
       </p>
 
-      <div className="space-y-8">
+      {!loadingOffers && savedOffers.length > 0 && (
+        <div className="mb-6 inline-flex rounded-lg border border-border bg-card p-1">
+          <button
+            onClick={() => { setMode("saved"); }}
+            className={cn(
+              "px-4 py-1.5 text-sm rounded-md transition-colors",
+              mode === "saved" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Tag className="w-3.5 h-3.5 inline mr-1.5" /> Saved offers
+          </button>
+          <button
+            onClick={() => { setMode("new"); setSelectedSavedId(null); }}
+            className={cn(
+              "px-4 py-1.5 text-sm rounded-md transition-colors",
+              mode === "new" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Sparkles className="w-3.5 h-3.5 inline mr-1.5" /> Create new
+          </button>
+        </div>
+      )}
+
+      {!showCreateForm && savedOffers.length > 0 && (
+        <div className="space-y-3 mb-6">
+          {savedOffers.map((o) => (
+            <Card
+              key={o.id}
+              onClick={() => handlePickSaved(o)}
+              className={cn(
+                "p-4 cursor-pointer transition-all",
+                selectedSavedId === o.id
+                  ? "border-primary bg-primary/5"
+                  : "hover:border-primary/40"
+              )}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-medium text-sm">{o.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {offerSummary(o)}{o.promo_code && ` · Code: ${o.promo_code}`}
+                  </p>
+                </div>
+                {selectedSavedId === o.id && <Check className="w-4 h-4 text-primary shrink-0" />}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <div className={cn("space-y-8", !showCreateForm && "hidden")}>
         {/* Offer Type Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {OFFER_TYPES.map(({ type, label, description, icon: Icon }) => (
