@@ -78,36 +78,53 @@ export const InsightsSidebar = ({
 
       {/* Main nav */}
       <nav className="px-3 py-1 space-y-1 flex-1">
-        {mainNav.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onViewChange(item.id)}
-            className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200",
-              activeView === item.id
-                ? "bg-primary/10 text-primary shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
-            )}
-          >
-            <span className={cn(
-              "transition-colors",
-              activeView === item.id ? "text-primary" : "text-muted-foreground"
-            )}>
-              {item.icon}
-            </span>
-            <span className="flex-1 text-left">{item.label}</span>
-            {item.count != null && (
+        {mainNav.map((item) => {
+          if (item.upcoming) {
+            return (
+              <div
+                key={item.id}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium text-muted-foreground/60 cursor-not-allowed select-none"
+                title="Coming soon"
+              >
+                <span className="text-muted-foreground/60">{item.icon}</span>
+                <span className="flex-1 text-left">{item.label}</span>
+                <span className="text-[10px] font-semibold rounded-full px-1.5 py-0.5 bg-secondary text-muted-foreground">
+                  Soon
+                </span>
+              </div>
+            );
+          }
+          return (
+            <button
+              key={item.id}
+              onClick={() => onViewChange(item.id)}
+              className={cn(
+                "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-200",
+                activeView === item.id
+                  ? "bg-primary/10 text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/80"
+              )}
+            >
               <span className={cn(
-                "text-[10px] font-semibold tabular-nums rounded-full px-1.5 py-0.5 min-w-[20px] text-center",
-                item.id === "needs-review"
-                  ? "bg-destructive/10 text-destructive"
-                  : "bg-accent/10 text-accent"
+                "transition-colors",
+                activeView === item.id ? "text-primary" : "text-muted-foreground"
               )}>
-                {item.count}
+                {item.icon}
               </span>
-            )}
-          </button>
-        ))}
+              <span className="flex-1 text-left">{item.label}</span>
+              {item.count != null && (
+                <span className={cn(
+                  "text-[10px] font-semibold tabular-nums rounded-full px-1.5 py-0.5 min-w-[20px] text-center",
+                  item.id === "needs-review"
+                    ? "bg-destructive/10 text-destructive"
+                    : "bg-accent/10 text-accent"
+                )}>
+                  {item.count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </nav>
     </aside>
   );
