@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, RefreshCw, Save, Sparkles, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
+import { BrandGuidelinesSection } from "@/components/settings/BrandGuidelinesSection";
 
 interface Profile {
   id: string;
