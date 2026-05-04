@@ -359,7 +359,7 @@ export const InsightsStep = () => {
         : Promise.resolve({ data: [] as any[] }),
       adIds.length
         ? supabase.from("ad_performance_daily")
-            .select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases, revenue")
+            .select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases")
             .in("ad_id", adIds).limit(50000)
         : Promise.resolve({ data: [] as any[] }),
     ]);

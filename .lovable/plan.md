@@ -1,38 +1,50 @@
-## Changes to /home
+# Demo Mode for v1 Onboarding Walkthrough
 
-### 1. Mark "Needs Review" and "Opportunities" as upcoming (not clickable)
+Goal: record a clean demo of the full `/loginv1` → `/onboarding` flow without waiting on the real Meta sync (which is slow), while keeping the real Meta auth + the real data already in the database intact.
 
-File: `src/components/insights/InsightsSidebar.tsx`
+## Approach
 
-- Add an `upcoming?: boolean` flag to the `NavItemMeta` items for `opportunities` and `needs-review`.
-- Drop their numeric counts (4 and 3) — they're fake placeholders.
-- In the render loop, when `upcoming` is true:
-  - Render the row as a `<div>` (not a button), `disabled`-styled (muted text, `cursor-not-allowed`, no hover bg).
-  - Replace the count pill with a small "Soon" badge (`bg-secondary text-muted-foreground`).
-  - Skip the `onViewChange` handler so clicks do nothing.
+Add a lightweight **demo flag** that travels through the onboarding URL. When set, it makes one and only one change: the `DataSyncStep` plays a scripted animated progress sequence instead of invoking `meta-sync-accounts`. Everything else — Meta OAuth, account selection, brand kit, ICP, competitors, and the eventual landing on `/home` — runs against the real database, so the dashboard shows the real data we already synced.
 
-### 2. Hide the "Replay onboarding v1" floating button
+We do NOT touch:
+- `meta-oauth` / `meta-token-connect` edge functions
+- `meta-sync-accounts` edge function
+- The non-demo path of `DataSyncStep`
+- `OnboardingV2` (only v1 is in scope)
 
-File: `src/pages/Insights.tsx`
+## Changes
 
-- Remove the entire `showReplay` state, the super-admin email check that sets it, and the floating `<Button>` block (lines ~31–35 + 86–98).
-- Drop the now-unused imports: `FlaskConical`, `Button`, `isSuperAdmin`.
+### 1. `src/components/wizard/LandingV1Step.tsx`
+- Read `?demo=true` from current URL on mount; if present, append `&demo=true` to the post-auth navigation so it persists into `/onboarding`.
+- Add a small "Demo Mode" toggle button next to the existing Dev Mode button (only visible when the page is loaded with `?demo=true`, OR show it always — your call). Recommend: always show a subtle "🎬 Demo Mode" link that re-loads the page with `?demo=true` so it's discoverable when recording.
+- In `handleAuthMessage` (Meta OAuth popup callback) and `handleTokenSubmit`, preserve the demo flag in the redirect: `navigate(\`/onboarding?meta=connected${demo ? "&demo=true" : ""}\`)`.
 
-### 3. Fix ROAS showing 0.0x on every product card
+### 2. `src/pages/Onboarding.tsx`
+- Read `const isDemoMode = searchParams.get("demo") === "true"` alongside the existing `isDevMode`.
+- Pass `isDemoMode` down to `<DataSyncStep />` as a new prop (separate from `isDevMode`, because `isDevMode` also bypasses auth — we don't want that here since real auth happened).
 
-File: `src/components/wizard/InsightsStep.tsx` (line 362)
+### 3. `src/components/wizard/DataSyncStep.tsx`
+- Add a new prop `isDemoMode?: boolean`.
+- In the `useEffect` that starts the sync, branch:
+  - If `isDemoMode` is true → run the same scripted progression that `isDevMode` already runs (step every ~1.2s through the 6 SYNC_STEPS, then mark complete) but **do not** call `supabase.functions.invoke("meta-sync-accounts", …)` and do **not** subscribe to realtime updates.
+  - Else → existing behavior unchanged.
+- This reuses the existing animation infrastructure; no UI changes needed.
 
-The aggregation loop reads `p.revenue` (line 442) to compute `roas = revenue / spend`, but the Supabase select for `ad_performance_daily` does not include the `revenue` column — so `revenue` is always `undefined → 0`, giving ROAS `0`.
+### 4. (Optional polish) `AccountSelectStep`
+- No code change required. Real `ad_accounts` rows are already in the DB from prior syncs, so the account list will populate normally.
+- If we want the demo to *always* select a known good account, we can add a tiny note — but I'd skip this and just click it manually during recording.
 
-Fix: add `revenue` to the select list:
+## Demo flow
 
-```ts
-.select("ad_id, date, spend, impressions, clicks, ctr, roas, purchases, revenue")
-```
+1. Open `/loginv1?demo=true`.
+2. Click "Login with Meta" → real OAuth popup → real session.
+3. Land on `/onboarding?meta=connected&demo=true`.
+4. Profile → Tool Explanation → Account Select → Brand Kit → ICP → Competitors all run normally against real data.
+5. Data Sync step plays the scripted 6-step animation in ~8 seconds, then routes to `/home`.
+6. `/home` shows the real creatives/insights already in the database.
 
-This makes the per-creative ROAS aggregation work for real synced accounts. (Mock/dev data already has correct ROAS values and will continue to render unchanged.)
+## Technical notes
 
-### Out of scope
-
-- No schema changes, no edge-function changes, no changes to the dev-mode mock generator.
-- The "Top Performers" sidebar item stays clickable.
+- Demo mode is purely a frontend display tweak; no DB writes are skipped that matter, because in demo mode we deliberately don't *want* a fresh sync — we want to showcase pre-existing data.
+- The flag is URL-based (no env var, no build flag), so we can demo from the production preview without redeploying.
+- Easy to remove later: drop the `isDemoMode` branch in `DataSyncStep` and the prop plumbing.
