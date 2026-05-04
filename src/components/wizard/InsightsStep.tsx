@@ -326,6 +326,9 @@ export const InsightsStep = () => {
       const campMap = new Map(campaigns.map((c: any) => [c.id, c]));
       const adById = new Map(ads.map((a: any) => [a.id, a]));
       const creativeByAdId = new Map(creatives.map((c: any) => [c.ad_id, c]));
+      const creativeByMetaId = new Map(creatives.map((c: any) => [c.meta_creative_id, c]));
+      const getCreative = (ad: any) =>
+        creativeByAdId.get(ad.id) || creativeByMetaId.get(ad.meta_creative_id);
 
       const rows: any[] = [];
       for (const p of perf) {
