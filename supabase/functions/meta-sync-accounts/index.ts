@@ -230,6 +230,7 @@ Deno.serve(async (req) => {
         );
 
         const campaignRecords = campaigns.map((c: any) => ({
+          account_id: accountId,
           ad_account_id: adAccountId,
           user_id: userId,
           meta_campaign_id: c.id,
@@ -244,7 +245,7 @@ Deno.serve(async (req) => {
         }));
         if (campaignRecords.length > 0) {
           await admin.from("campaigns").upsert(campaignRecords, {
-            onConflict: "user_id,meta_campaign_id",
+            onConflict: "account_id,meta_campaign_id",
           });
         }
 
