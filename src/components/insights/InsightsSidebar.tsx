@@ -22,15 +22,16 @@ interface NavItemMeta {
   count?: number;
   description?: string;
   badge?: string;
+  upcoming?: boolean;
 }
 
 const mainNav: NavItemMeta[] = [
   { label: "Home", icon: <Home className="w-[18px] h-[18px]" />, id: "discover" },
   { label: "Top Performers", icon: <TrendingUp className="w-[18px] h-[18px]" />, id: "top" },
-  { label: "Opportunities", icon: <Lightbulb className="w-[18px] h-[18px]" />, id: "opportunities", count: 4 },
+  { label: "Opportunities", icon: <Lightbulb className="w-[18px] h-[18px]" />, id: "opportunities", upcoming: true },
   { label: "Ad Library", icon: <FolderOpen className="w-[18px] h-[18px]" />, id: "library" },
   { label: "My Generations", icon: <History className="w-[18px] h-[18px]" />, id: "generations" },
-  { label: "Needs Review", icon: <AlertCircle className="w-[18px] h-[18px]" />, id: "needs-review", count: 3 },
+  { label: "Needs Review", icon: <AlertCircle className="w-[18px] h-[18px]" />, id: "needs-review", upcoming: true },
 ];
 
 interface AdAccount {
