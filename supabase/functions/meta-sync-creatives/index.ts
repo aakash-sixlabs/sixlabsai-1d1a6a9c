@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
         if (dcoHashes.length > 0) {
           await updateStep(`Resolving ${dcoHashes.length} DCO image hashes`);
           hashUrlMap = await resolveImageHashesToUrls(
-            adAccount.account_id,
+            metaActIdNoPrefix,
             dcoHashes,
             accessToken,
           );
