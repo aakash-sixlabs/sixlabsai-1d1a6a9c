@@ -236,15 +236,8 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Refresh the materialized view so dashboard sees fresh data
-        try {
-          await admin.rpc("refresh_campaign_ad_data");
-        } catch (refreshErr) {
-          console.warn("MV refresh failed (non-fatal):", refreshErr);
-        }
-
         await admin.from("sync_jobs").update({
-          status: "complete",
+          status: "completed",
           current_step: "Complete",
           phase: "done",
           cursor_date: null,
