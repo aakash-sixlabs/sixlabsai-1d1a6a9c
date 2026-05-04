@@ -451,6 +451,8 @@ export const BrandKitStep = ({
       }
 
       // Optional: upload brand guidelines PDF to private storage (skipped in dev mode)
+      let guidelinesPath: string | null = null;
+      let guidelinesFilename: string | null = null;
       if (guidelinesFile && !isDevMode) {
         setUploadingGuidelines(true);
         try {
@@ -463,6 +465,8 @@ export const BrandKitStep = ({
               upsert: false,
             });
           if (uploadErr) throw uploadErr;
+          guidelinesPath = path;
+          guidelinesFilename = guidelinesFile.name;
         } finally {
           setUploadingGuidelines(false);
         }
