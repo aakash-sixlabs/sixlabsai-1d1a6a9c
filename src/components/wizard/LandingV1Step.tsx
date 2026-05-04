@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Loader2, Zap, Bug, KeyRound } from "lucide-react";
+import { Loader2, Zap, Bug, KeyRound, Mail } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -303,41 +303,37 @@ export const LandingV1Step = () => {
           </Button>
           <div className="flex items-center gap-4 my-6"><div className="flex-1 h-px bg-border" /><span className="text-xs text-muted-foreground">or</span><div className="flex-1 h-px bg-border" /></div>
           <div className="relative">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            {isDemoMode ? (
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+            ) : (
+              <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            )}
             <input type="email" placeholder="Email" disabled className="w-full h-12 pl-11 pr-4 rounded-full border bg-secondary/40 text-sm text-muted-foreground placeholder:text-muted-foreground/60 cursor-not-allowed" />
           </div>
           <Button variant="secondary" disabled className="w-full mt-3 h-12 rounded-full text-sm font-medium text-muted-foreground">Continue with email</Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setTokenDialogOpen(true)}
-            className="w-full mt-2 gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <KeyRound className="w-3.5 h-3.5" />
-            Have an access token? Connect with token
-          </Button>
+          {easterEgg && (
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setTokenDialogOpen(true)}
+                className="w-full mt-2 gap-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <KeyRound className="w-3.5 h-3.5" />
+                Have an access token? Connect with token
+              </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleDevBypass}
-            className="w-full mt-4 gap-2 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <Bug className="w-3.5 h-3.5" />
-            Dev Mode — Test New User Flow (v1)
-          </Button>
-
-          <button
-            onClick={() => {
-              const url = new URL(window.location.href);
-              if (isDemoMode) url.searchParams.delete("demo");
-              else url.searchParams.set("demo", "true");
-              window.location.href = url.toString();
-            }}
-            className={`w-full mt-2 text-[11px] transition-colors ${isDemoMode ? "text-primary font-medium" : "text-muted-foreground/60 hover:text-foreground"}`}
-          >
-            {isDemoMode ? "🎬 Demo mode ON — sync will be mocked" : "🎬 Enable demo mode (mocks data sync)"}
-          </button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleDevBypass}
+                className="w-full mt-4 gap-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <Bug className="w-3.5 h-3.5" />
+                Dev Mode — Test New User Flow (v1)
+              </Button>
+            </>
+          )}
 
           <p className="text-[11px] text-muted-foreground text-center mt-6"><a href="/privacy" className="hover:underline text-primary">Privacy Policy</a>{" · "}<a href="#" className="hover:underline text-primary">Terms of Service</a></p>
           {easterEgg && (
