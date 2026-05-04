@@ -29,6 +29,14 @@ const Insights = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { navigate("/loginvcollect"); return; }
 
+      // Show replay CTA only for super admin (v1 onboarding tester).
+      const { data: meProfile } = await supabase
+        .from("profiles")
+        .select("email")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (isSuperAdmin(meProfile?.email)) setShowReplay(true);
+
       // Hydrate wizard state from profile so background resync can run
       // for returning users who land here directly.
       if (!state.selectedAccount) {
