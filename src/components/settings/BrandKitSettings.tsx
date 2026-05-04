@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, RefreshCw, Save, Sparkles, PencilLine } from "lucide-react";
 import { toast } from "sonner";
 import { BrandKitStep } from "@/components/wizard/BrandKitStep";
+import { BrandGuidelinesSection } from "@/components/settings/BrandGuidelinesSection";
 
 interface Profile {
   id: string;
@@ -116,6 +117,8 @@ export const BrandKitSettings = ({ adAccountId }: Props) => {
           </div>
         </Card>
 
+        <BrandGuidelinesSection adAccountId={adAccountId} />
+
         {rebuildOpen && (
           <BrandKitStep
             open={rebuildOpen}
@@ -193,6 +196,8 @@ export const BrandKitSettings = ({ adAccountId }: Props) => {
           </Button>
         </div>
       </Card>
+
+      <BrandGuidelinesSection adAccountId={adAccountId} />
 
       {rebuildOpen && (
         <BrandKitStep

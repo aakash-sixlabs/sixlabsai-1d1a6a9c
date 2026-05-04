@@ -78,6 +78,9 @@ export type Database = {
           accent_color: string | null
           account_id: string
           ad_account_id: string
+          brand_guidelines_filename: string | null
+          brand_guidelines_path: string | null
+          brand_guidelines_uploaded_at: string | null
           brand_id: string | null
           brand_kit: Json | null
           brand_kit_status:
@@ -106,6 +109,9 @@ export type Database = {
           accent_color?: string | null
           account_id: string
           ad_account_id: string
+          brand_guidelines_filename?: string | null
+          brand_guidelines_path?: string | null
+          brand_guidelines_uploaded_at?: string | null
           brand_id?: string | null
           brand_kit?: Json | null
           brand_kit_status?:
@@ -134,6 +140,9 @@ export type Database = {
           accent_color?: string | null
           account_id?: string
           ad_account_id?: string
+          brand_guidelines_filename?: string | null
+          brand_guidelines_path?: string | null
+          brand_guidelines_uploaded_at?: string | null
           brand_id?: string | null
           brand_kit?: Json | null
           brand_kit_status?:

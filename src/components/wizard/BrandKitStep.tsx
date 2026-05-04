@@ -451,6 +451,8 @@ export const BrandKitStep = ({
       }
 
       // Optional: upload brand guidelines PDF to private storage (skipped in dev mode)
+      let guidelinesPath: string | null = null;
+      let guidelinesFilename: string | null = null;
       if (guidelinesFile && !isDevMode) {
         setUploadingGuidelines(true);
         try {
@@ -463,6 +465,8 @@ export const BrandKitStep = ({
               upsert: false,
             });
           if (uploadErr) throw uploadErr;
+          guidelinesPath = path;
+          guidelinesFilename = guidelinesFile.name;
         } finally {
           setUploadingGuidelines(false);
         }
@@ -493,6 +497,13 @@ export const BrandKitStep = ({
             brand_kit_status: "completed",
             brand_kit_updated_at: new Date().toISOString(),
             confirmed: true,
+            ...(guidelinesPath
+              ? {
+                  brand_guidelines_path: guidelinesPath,
+                  brand_guidelines_filename: guidelinesFilename,
+                  brand_guidelines_uploaded_at: new Date().toISOString(),
+                }
+              : {}),
           },
           { onConflict: "ad_account_id,user_id" },
         );

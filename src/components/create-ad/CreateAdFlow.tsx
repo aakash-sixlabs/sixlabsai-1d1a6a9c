@@ -48,6 +48,7 @@ export interface CreateAdState {
   icpId: string | null;
   icpName: string | null;
   icpDescription: string | null;
+  useBrandGuidelines: boolean;
 }
 
 const initialState: CreateAdState = {
@@ -76,6 +77,7 @@ const initialState: CreateAdState = {
   icpId: null,
   icpName: null,
   icpDescription: null,
+  useBrandGuidelines: true,
 };
 
 // Which goals need a product input step
@@ -229,7 +231,7 @@ export const CreateAdFlow = () => {
               />
             )}
             {stepKey === "review" && (
-              <ReviewStep state={state} onBack={back} onGenerate={() => setIsGenerating(true)} />
+              <ReviewStep state={state} onUpdate={update} onBack={back} onGenerate={() => setIsGenerating(true)} />
             )}
           </motion.div>
         </AnimatePresence>

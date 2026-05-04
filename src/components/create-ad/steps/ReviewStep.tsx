@@ -1,6 +1,10 @@
+import { useEffect, useState } from "react";
 import { CreateAdState } from "../CreateAdFlow";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users } from "lucide-react";
+import { ArrowLeft, Sparkles, Tag, Rocket, Heart, LayoutGrid, Users, FileText, Upload } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const GOAL_LABELS: Record<string, { label: string; icon: React.ElementType }> = {
   "sale-promo": { label: "Sale / Promotion", icon: Tag },
@@ -31,13 +35,40 @@ const formatOffer = (d: CreateAdState["promoDetails"]): string => {
 
 interface ReviewStepProps {
   state: CreateAdState;
+  onUpdate: (partial: Partial<CreateAdState>) => void;
   onBack: () => void;
   onGenerate: () => void;
 }
 
-export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
+export const ReviewStep = ({ state, onUpdate, onBack, onGenerate }: ReviewStepProps) => {
   const goalInfo = state.goal ? GOAL_LABELS[state.goal] : null;
   const GoalIcon = goalInfo?.icon;
+
+  const [guidelines, setGuidelines] = useState<{ filename: string | null; path: string | null } | null>(null);
+  const [loadingGuidelines, setLoadingGuidelines] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoadingGuidelines(false); return; }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("default_ad_account_id")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!profile?.default_ad_account_id) { setLoadingGuidelines(false); return; }
+      const { data } = await supabase
+        .from("ad_account_profiles")
+        .select("brand_guidelines_path, brand_guidelines_filename")
+        .eq("ad_account_id", profile.default_ad_account_id)
+        .maybeSingle();
+      setGuidelines({
+        filename: data?.brand_guidelines_filename ?? null,
+        path: data?.brand_guidelines_path ?? null,
+      });
+      setLoadingGuidelines(false);
+    })();
+  }, []);
 
   return (
     <div>
@@ -108,6 +139,36 @@ export const ReviewStep = ({ state, onBack, onGenerate }: ReviewStepProps) => {
                 {state.promoDetails.endDate && new Date(state.promoDetails.endDate).toLocaleDateString()}
               </p>
             )}
+          </div>
+        )}
+
+        {/* Brand Guidelines */}
+        {!loadingGuidelines && (
+          <div className="p-4 rounded-lg bg-card border border-border">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="w-4 h-4 text-primary flex-shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Brand guidelines</p>
+                  {guidelines?.path ? (
+                    <p className="font-medium text-foreground truncate">{guidelines.filename ?? "guidelines.pdf"}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      None uploaded ·{" "}
+                      <Link to="/settings?tab=brand" className="text-primary hover:underline inline-flex items-center gap-1">
+                        <Upload className="w-3 h-3" /> Upload in settings
+                      </Link>
+                    </p>
+                  )}
+                </div>
+              </div>
+              {guidelines?.path && (
+                <Switch
+                  checked={state.useBrandGuidelines}
+                  onCheckedChange={(v) => onUpdate({ useBrandGuidelines: v })}
+                />
+              )}
+            </div>
           </div>
         )}
       </div>
