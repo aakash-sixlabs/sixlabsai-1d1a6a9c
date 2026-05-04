@@ -47,8 +47,8 @@ const Onboarding = () => {
         return;
       }
 
-      // Returning-user shortcut: skip when replay mode is active.
-      if (!replayMode) {
+      // Returning-user shortcut: skip when replay or demo mode is active.
+      if (!replayMode && !isDemoMode) {
         const { data: profile } = await supabase
           .from("profiles")
           .select("default_ad_account_id")
@@ -61,8 +61,8 @@ const Onboarding = () => {
         }
       }
 
-      if (replayMode) {
-        // Replay from the very first step.
+      if (replayMode || isDemoMode) {
+        // Replay/demo from the very first step.
         setShowProfileDialog(true);
         setPhase("profile");
       } else if (searchParams.get("meta") === "connected") {
@@ -154,10 +154,10 @@ const Onboarding = () => {
       <AccountSelectOverlay
         open={phase === "account-select" && !showProfileDialog}
         onStartSync={handleAccountSelected}
-        onReturningAccountSelected={replayMode ? handleAccountSelected : () => navigate("/home", { replace: true })}
+        onReturningAccountSelected={(replayMode || isDemoMode) ? handleAccountSelected : () => navigate("/home", { replace: true })}
         isDevMode={isDevMode}
         saveAsDefault
-        skipCompletedAccountSetup={!replayMode}
+        skipCompletedAccountSetup={!replayMode && !isDemoMode}
       />
       {phase === "brand-kit" && state.selectedAccount && (
         <BrandKitStep
