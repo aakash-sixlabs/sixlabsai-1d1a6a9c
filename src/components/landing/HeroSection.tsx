@@ -6,16 +6,18 @@ export const HeroSection = () => {
   const navigate = useNavigate();
   return (
     <section className="relative pt-32 pb-28 px-6 overflow-hidden min-h-[90vh] flex flex-col items-center justify-center">
-      {/* Subtle grid background */}
-      <div
-        className="absolute inset-0 opacity-[0.045]"
-        style={{
-          backgroundImage: `linear-gradient(hsl(220 20% 70%) 1px, transparent 1px), linear-gradient(90deg, hsl(220 20% 70%) 1px, transparent 1px)`,
-          backgroundSize: "48px 48px",
-        }}
+      {/* Background video */}
+      <video
+        className="absolute inset-0 w-full h-full object-cover"
+        src="/hero-bg.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
       />
-      {/* Very subtle top gradient wash */}
-      <div className="absolute top-0 left-0 right-0 h-[500px] bg-gradient-to-b from-primary/[0.03] to-transparent" />
+      {/* Readability overlay */}
+      <div className="absolute inset-0 bg-background/60" />
 
       <div className="relative max-w-4xl mx-auto text-center">
         <h1 className="font-display font-extrabold text-6xl md:text-7xl lg:text-[5.5rem] leading-[1.05] tracking-tight text-foreground">
