@@ -6,9 +6,9 @@ export const HeroSection = () => {
   const navigate = useNavigate();
   return (
     <section className="relative pt-32 pb-28 px-6 overflow-hidden min-h-[90vh] flex flex-col items-center justify-center">
-      {/* Background video */}
+      {/* Background video — starts below the fixed navbar (h-16) */}
       <video
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute top-16 left-0 right-0 bottom-0 w-full h-[calc(100%-4rem)] object-cover"
         src="/hero-bg.mp4"
         autoPlay
         loop
@@ -17,7 +17,7 @@ export const HeroSection = () => {
         preload="auto"
       />
       {/* Readability overlay */}
-      <div className="absolute inset-0 bg-background/60" />
+      <div className="absolute top-16 left-0 right-0 bottom-0 bg-background/60" />
 
       <div className="relative max-w-4xl mx-auto text-center">
         <h1 className="font-display font-extrabold text-6xl md:text-7xl lg:text-[5.5rem] leading-[1.05] tracking-tight text-foreground">
