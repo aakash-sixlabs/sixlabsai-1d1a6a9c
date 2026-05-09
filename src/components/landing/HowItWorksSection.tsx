@@ -23,11 +23,12 @@ export const HowItWorksSection = () => (
     <video
       className="absolute inset-0 w-full h-full object-cover"
       src="/how-it-works-bg.mp4"
+      poster="/how-it-works-bg-poster.jpg"
       autoPlay
       loop
       muted
       playsInline
-      preload="auto"
+      preload="metadata"
     />
     <div className="absolute inset-0 bg-background/70" />
     <div className="relative max-w-3xl mx-auto">
