@@ -8,7 +8,7 @@ export const HeroSection = () => {
     <section className="relative pt-20 pb-28 px-6 overflow-hidden min-h-[90vh] flex flex-col items-center justify-center">
       {/* Background video — starts below the fixed navbar */}
       <video
-        className="absolute top-16 left-0 right-0 bottom-0 w-full h-[calc(100%-4rem)] object-cover"
+        className="absolute inset-0 w-full h-full object-cover"
         src="/hero-bg.mp4"
         poster="/hero-bg-poster.jpg"
         autoPlay
@@ -18,7 +18,7 @@ export const HeroSection = () => {
         preload="metadata"
       />
       {/* Readability overlay */}
-      <div className="absolute top-16 left-0 right-0 bottom-0 bg-background/60" />
+      <div className="absolute inset-0 bg-background/60" />
 
       <div className="relative max-w-4xl mx-auto text-center">
         <h1 className="font-display font-extrabold md:text-7xl lg:text-[5.5rem] leading-[1.05] tracking-tight text-foreground text-6xl">
