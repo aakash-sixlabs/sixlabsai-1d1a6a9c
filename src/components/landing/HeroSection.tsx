@@ -10,11 +10,12 @@ export const HeroSection = () => {
       <video
         className="absolute top-16 left-0 right-0 bottom-0 w-full h-[calc(100%-4rem)] object-cover"
         src="/hero-bg.mp4"
+        poster="/hero-bg-poster.jpg"
         autoPlay
         loop
         muted
         playsInline
-        preload="auto"
+        preload="metadata"
       />
       {/* Readability overlay */}
       <div className="absolute top-16 left-0 right-0 bottom-0 bg-background/60" />
