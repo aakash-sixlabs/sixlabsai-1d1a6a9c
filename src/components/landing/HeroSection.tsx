@@ -20,15 +20,12 @@ export const HeroSection = () => {
       <div className="absolute top-16 left-0 right-0 bottom-0 bg-background/60" />
 
       <div className="relative max-w-4xl mx-auto text-center">
-        <h1 className="font-display font-extrabold text-6xl md:text-7xl lg:text-[5.5rem] leading-[1.05] tracking-tight text-foreground">
-          AI Agents for Ad
-          <br />
-          Creative Teams
+        <h1 className="font-display font-extrabold md:text-7xl lg:text-[5.5rem] leading-[1.05] tracking-tight text-foreground text-6xl">
+          Make the ads your growth team needs next.
         </h1>
 
         <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-body">
-          AI that analyzes what's working, learns from every campaign,
-          and generates creatives that win — all autonomously.
+          Turn creative learnings into on-brand Meta ads — faster than any agency workflow.
         </p>
 
         <div className="mt-10">
