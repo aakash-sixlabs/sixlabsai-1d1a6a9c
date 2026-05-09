@@ -21,7 +21,7 @@ export const HeroSection = () => {
 
       <div className="relative max-w-4xl mx-auto text-center">
         <h1 className="font-display font-extrabold md:text-7xl lg:text-[5.5rem] leading-[1.05] tracking-tight text-foreground text-6xl">
-          Make the ads your growth team needs next.
+          Make the ads your team needs next.
         </h1>
 
         <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-body">
