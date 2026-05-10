@@ -1,10 +1,12 @@
-import { useNavigate } from "react-router-dom";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DotFieldBackground } from "./DotFieldBackground";
+import { smoothScrollTo } from "@/lib/smoothScroll";
 
 export const HeroSection = () => {
-  const navigate = useNavigate();
+  const handleContact = () => {
+    smoothScrollTo("#contact", { duration: 1200, offset: -64 });
+  };
   return (
     <section className="relative pt-20 pb-28 px-6 overflow-hidden min-h-[90vh] flex flex-col items-center justify-center bg-background">
       <DotFieldBackground />
@@ -22,9 +24,9 @@ export const HeroSection = () => {
           <Button
             size="lg"
             className="font-semibold rounded-xl px-10 h-13 text-base gap-2 shadow-lg shadow-primary/25"
-            onClick={() => navigate("/loginvcollect")}
+            onClick={handleContact}
           >
-            Get Started <ArrowRight className="w-4 h-4" />
+            Get In Touch <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
       </div>
