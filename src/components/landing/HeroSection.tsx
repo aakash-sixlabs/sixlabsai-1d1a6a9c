@@ -30,7 +30,7 @@ export const HeroSection = () => {
       </div>
 
       {/* Scroll indicator pinned to bottom */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/30">
+      <div className="absolute z-10 bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-muted-foreground/30">
         <ChevronDown className="w-5 h-5 animate-bounce" />
       </div>
     </section>
