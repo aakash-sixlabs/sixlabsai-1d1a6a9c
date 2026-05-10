@@ -7,7 +7,6 @@ import { SignalsSection } from "@/components/landing/SignalsSection";
 import { ClosedLoopSection } from "@/components/landing/ClosedLoopSection";
 import { DifferentiatorSection } from "@/components/landing/DifferentiatorSection";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
-import { CTASection } from "@/components/landing/CTASection";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { Footer } from "@/components/landing/Footer";
 import { ConnectorBlock } from "@/components/landing/Connector";
@@ -47,9 +46,6 @@ export default function SixLabsLanding() {
       <DifferentiatorSection />
       <ConnectorBlock />
       <SocialProofSection />
-      <ConnectorBlock />
-      <CTASection />
-      <ConnectorBlock />
       <ContactSection />
       <Footer />
     </div>
