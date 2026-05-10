@@ -46,9 +46,6 @@ export default function SixLabsLanding() {
       <DifferentiatorSection />
       <ConnectorBlock />
       <SocialProofSection />
-      <ConnectorBlock />
-      <CTASection />
-      <ConnectorBlock />
       <ContactSection />
       <Footer />
     </div>
