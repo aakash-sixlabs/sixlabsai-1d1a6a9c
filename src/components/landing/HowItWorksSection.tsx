@@ -19,18 +19,7 @@ const StepCard = ({ num, title, desc, icon: Icon }: { num: string; title: string
 };
 
 export const HowItWorksSection = () => (
-  <Section id="how-it-works" className="relative px-6 py-16 overflow-hidden">
-    <video
-      className="absolute inset-0 w-full h-full object-cover"
-      src="/how-it-works-bg.mp4"
-      poster="/how-it-works-bg-poster.jpg"
-      autoPlay
-      loop
-      muted
-      playsInline
-      preload="metadata"
-    />
-    <div className="absolute inset-0 bg-background/70" />
+  <Section id="how-it-works" className="relative px-6 py-16 overflow-hidden bg-background">
     <div className="relative max-w-3xl mx-auto">
       <div className="text-center mb-14">
         <p className="text-xs font-mono text-primary/60 tracking-wider uppercase mb-3">How it works</p>
