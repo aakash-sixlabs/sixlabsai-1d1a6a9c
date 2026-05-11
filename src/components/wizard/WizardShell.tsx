@@ -22,7 +22,7 @@ export const WizardShell = ({
           className="flex items-center gap-2.5 cursor-pointer shrink-0"
           onClick={() => navigate("/home")}
         >
-          <Logo variant="light" heightClass="h-6" />
+          <Logo variant="light" heightClass="h-12" />
         </div>
         <div className="flex-1" />
         {showStepper && <StepIndicator currentStep={currentStep} />}

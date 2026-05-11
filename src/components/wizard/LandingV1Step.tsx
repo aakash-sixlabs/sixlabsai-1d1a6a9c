@@ -280,7 +280,7 @@ export const LandingV1Step = () => {
       <div className="w-full lg:w-[45%] flex flex-col items-center justify-center px-6 sm:px-12 lg:px-16 bg-background py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-sm">
           <div className="flex items-center justify-center mb-6 lg:hidden">
-            <Logo heightClass="h-8" />
+            <Logo heightClass="h-16" />
           </div>
           <div className="lg:hidden mb-8 relative h-56 overflow-hidden rounded-xl bg-secondary/40">
             <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(hsl(var(--foreground)) 1px, transparent 1px)", backgroundSize: "20px 20px" }} />

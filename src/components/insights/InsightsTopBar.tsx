@@ -73,7 +73,7 @@ export const InsightsTopBar = ({
         className="flex items-center gap-2.5 cursor-pointer shrink-0"
         onClick={() => navigate("/")}
       >
-        <Logo variant="light" heightClass="h-6" />
+        <Logo variant="light" heightClass="h-12" />
       </div>
 
       {/* Spacer */}
