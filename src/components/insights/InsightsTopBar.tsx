@@ -1,4 +1,5 @@
-import { Search, Bell, Zap, RefreshCw, Check, AlertCircle, Settings as SettingsIcon, Sparkles, XCircle, Clock } from "lucide-react";
+import { Search, Bell, RefreshCw, Check, AlertCircle, Settings as SettingsIcon, Sparkles, XCircle, Clock } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -72,12 +73,7 @@ export const InsightsTopBar = ({
         className="flex items-center gap-2.5 cursor-pointer shrink-0"
         onClick={() => navigate("/")}
       >
-        <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-          <Zap className="w-3.5 h-3.5 text-primary-foreground" />
-        </div>
-        <span className="font-display font-bold text-[15px] text-white tracking-tight">
-          Six Labs
-        </span>
+        <Logo variant="light" heightClass="h-6" />
       </div>
 
       {/* Spacer */}
