@@ -9,7 +9,6 @@ import { DifferentiatorSection } from "@/components/landing/DifferentiatorSectio
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { Footer } from "@/components/landing/Footer";
-import { ConnectorBlock } from "@/components/landing/Connector";
 
 export default function SixLabsLanding() {
   const [scrollY, setScrollY] = useState(0);
@@ -36,15 +35,10 @@ export default function SixLabsLanding() {
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <Navbar scrollY={scrollY} />
       <HeroSection />
-      <ConnectorBlock />
       <HowItWorksSection />
-      <ConnectorBlock />
       <SignalsSection />
-      <ConnectorBlock />
       <ClosedLoopSection />
-      <ConnectorBlock />
       <DifferentiatorSection />
-      <ConnectorBlock />
       <SocialProofSection />
       <ContactSection />
       <Footer />
