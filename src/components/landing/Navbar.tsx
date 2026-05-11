@@ -11,7 +11,7 @@ export const Navbar = ({ scrollY }: { scrollY: number }) => {
       }`}
     >
       <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-6">
-        <Logo heightClass="h-8" />
+        <Logo heightClass="h-16" />
         <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
           <a href="#how-it-works" className="hover:text-foreground transition-colors">How it works</a>
           <a href="#signals" className="hover:text-foreground transition-colors">Signals</a>
