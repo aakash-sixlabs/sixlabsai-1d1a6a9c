@@ -17,7 +17,7 @@ export const HeroSection = () => {
         </h1>
 
         <p className="mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed font-body">
-          Turn creative learnings into on-brand Meta ads — faster than any agency workflow.
+          Turn creative learnings into on-brand Meta ads - faster than any agency workflow.
         </p>
 
         <div className="mt-10">
