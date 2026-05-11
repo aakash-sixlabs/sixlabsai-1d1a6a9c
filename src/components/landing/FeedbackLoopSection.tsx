@@ -356,13 +356,13 @@ export const FeedbackLoopSection = () => {
             <StepCard step="learn" num="01" title="LEARN" desc="Ingest signals from brand, competitors, and the market." Icon={BarChart3} />
           </div>
 
-          {/* Inputs supporting LEARN — upper left */}
-          <div className="absolute left-[40px] top-[90px]">
+          {/* Inputs supporting LEARN — closer to LEARN card */}
+          <div className="absolute left-[230px] top-[90px]">
             <InputsCard />
           </div>
 
-          {/* Performance metrics card — upper right */}
-          <div className="absolute right-[40px] top-[90px]">
+          {/* Performance metrics card — closer to LEARN card */}
+          <div className="absolute right-[210px] top-[90px]">
             <MetricsHeaderCard />
           </div>
 
