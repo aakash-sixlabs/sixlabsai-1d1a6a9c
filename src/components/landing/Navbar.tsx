@@ -3,7 +3,9 @@ import { Logo } from "@/components/Logo";
 import { smoothScrollTo } from "@/lib/smoothScroll";
 
 export const Navbar = ({ scrollY }: { scrollY: number }) => {
-  const navigate = useNavigate();
+  const handleContact = () => {
+    smoothScrollTo("#contact", { duration: 1200, offset: -64 });
+  };
 
   const scrollToSection = (id: string) => {
     const section = document.getElementById(id);
