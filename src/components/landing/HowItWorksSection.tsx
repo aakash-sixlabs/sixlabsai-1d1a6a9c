@@ -3,6 +3,50 @@ import { Section } from "./Section";
 import { useInView } from "./useInView";
 import benefitsCreatives from "@/assets/benefits-creatives.png";
 
+const ConnectingLine = () => {
+  const { ref, visible } = useInView(0.2);
+  // Path traces: card 1 icon → card 2 icon → card 3 icon → target on right
+  // Coordinates in a 1200x260 viewBox (cards row area).
+  const d =
+    "M 175 70 Q 280 30, 410 110 T 720 130 Q 880 150, 1020 110";
+  return (
+    <div
+      ref={ref}
+      className="hidden md:block absolute inset-0 z-[15] pointer-events-none"
+      aria-hidden
+    >
+      <svg
+        viewBox="0 0 1200 260"
+        preserveAspectRatio="none"
+        className="w-full h-[260px]"
+      >
+        <path
+          d={d}
+          fill="none"
+          stroke="hsl(var(--primary))"
+          strokeWidth="1.5"
+          strokeDasharray="6 7"
+          strokeLinecap="round"
+          style={{
+            strokeDashoffset: visible ? 0 : 1400,
+            transition: "stroke-dashoffset 2.4s cubic-bezier(0.65, 0, 0.35, 1)",
+            // dash pattern length to support animation
+            strokeDasharray: "6 7",
+          }}
+          pathLength={1400}
+        />
+        {/* Target / radar on the right */}
+        <g transform="translate(1080 110)" opacity={visible ? 1 : 0} style={{ transition: "opacity 0.6s ease 1.8s" }}>
+          <circle r="34" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.18" strokeWidth="1" />
+          <circle r="22" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.28" strokeWidth="1" />
+          <circle r="12" fill="none" stroke="hsl(var(--primary))" strokeOpacity="0.45" strokeWidth="1" />
+          <circle r="5" fill="hsl(var(--primary))" />
+        </g>
+      </svg>
+    </div>
+  );
+};
+
 type Benefit = {
   icon: typeof BarChart3;
   title: string;
