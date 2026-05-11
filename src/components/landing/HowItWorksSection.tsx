@@ -52,13 +52,13 @@ const benefits: Benefit[] = [
   },
   {
     icon: Rocket,
-    title: "Launch 7x faster",
-    description: "Ship high-performing ads in minutes, not days.",
+    title: "Launch 11x faster",
+    description: "Ship 100s of data-backed high-performing ads in minutes, not days.",
   },
   {
     icon: Bell,
     title: "Never miss a signal",
-    description: "Auto-detect trends and act on opportunities instantly.",
+    description: "Auto-detect performance trends and act on opportunities instantly.",
   },
 ];
 
