@@ -24,8 +24,11 @@ const Digit = ({
     return <span className="tabular-nums">{value}</span>;
   }
 
-  const digits = Array.from({ length: 10 }, (_, i) => i);
-  const offset = play ? -value * 100 : 0;
+  // Strip: 0..9 then 0..value again, so every digit rolls at least one full cycle
+  // and lands on the final value.
+  const stripDigits = [...Array.from({ length: 10 }, (_, i) => i), ...Array.from({ length: value + 1 }, (_, i) => i)];
+  const finalIndex = 10 + value; // index of the resting digit
+  const offsetEm = play ? -finalIndex : 0;
 
   return (
     <span
@@ -34,17 +37,17 @@ const Digit = ({
       aria-hidden
     >
       <span
-        className="absolute left-0 top-0 right-0"
+        className="absolute left-0 right-0 top-0"
         style={{
-          transform: `translateY(${offset}%)`,
+          transform: `translateY(${offsetEm}em)`,
           transition: play
             ? `transform ${duration}ms cubic-bezier(0.22, 1, 0.36, 1) ${delay}ms`
             : "none",
         }}
       >
-        {digits.map((d) => (
+        {stripDigits.map((d, i) => (
           <span
-            key={d}
+            key={i}
             className="block text-center"
             style={{ height: "1em", lineHeight: 1 }}
           >
@@ -123,7 +126,7 @@ export const PilotMetricsSection = () => {
   }, [visible]);
 
   return (
-    <Section className="bg-white px-6 py-20 md:py-28">
+    <Section className="bg-white px-6 pt-4 pb-12 md:pt-6 md:pb-16">
       <div ref={ref} className="max-w-5xl mx-auto">
         <div className="text-center max-w-3xl mx-auto">
           <h2 className="font-display font-bold text-3xl md:text-4xl leading-tight tracking-tight text-foreground">
