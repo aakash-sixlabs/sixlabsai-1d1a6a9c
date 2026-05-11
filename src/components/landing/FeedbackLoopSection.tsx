@@ -297,6 +297,14 @@ const LoopConnectors = () => {
         "M 460 600 C 260 600, 220 540, 220 420",
         // Launch (left) -> Learn (top) — feedback (more visible / primary blue)
         "M 220 340 C 220 220, 320 170, 480 170",
+        // Inputs card -> Learn card (feeds in)
+        "M 470 155 C 478 155, 478 155, 488 155",
+        // Launch -> Performance metrics card (feedback up)
+        "M 320 270 C 460 200, 600 140, 720 175",
+        // Create -> ad row (left pointer)
+        "M 560 555 C 500 600, 430 650, 360 690",
+        // Create -> ad row (right pointer)
+        "M 640 555 C 720 600, 820 650, 900 690",
       ].map((d, i) => (
         <path
           key={i}
