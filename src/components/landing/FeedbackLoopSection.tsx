@@ -183,25 +183,6 @@ const SignalChips = () => {
 };
 
 /* ---------- ad creative cards ---------- */
-type Ad = {
-  bg: string;
-  text: string;
-  accent: string;
-  title: string;
-  body: string;
-  cta?: string;
-  quote?: boolean;
-};
-
-const ads: Ad[] = [
-  { bg: "bg-gradient-to-br from-sky-100 to-blue-200", text: "text-blue-950", accent: "bg-blue-600", title: "Hydrate\nBetter.", body: "Clean electrolytes.\nMore energy. Everyday.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-orange-100 to-amber-200", text: "text-orange-950", accent: "bg-orange-500", title: "Fuel Your\nBest Everyday", body: "Energy that\nkeeps up.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-slate-800 to-slate-950", text: "text-white", accent: "bg-white text-slate-900", title: "Made for\nFocus.", body: "Sharper mind.\nBetter you.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-emerald-100 to-emerald-200", text: "text-emerald-950", accent: "bg-emerald-600", title: "Train\nStronger.", body: "Support performance.\nBuild better.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-violet-100 to-violet-200", text: "text-violet-950", accent: "bg-violet-600", quote: true, title: "“Game changer”\nfor my routine.", body: "— Alex R.\nTastes great. Works better.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-stone-100 to-stone-200", text: "text-stone-900", accent: "bg-stone-900", title: "Clean Ingredients.\nReal Results.", body: "Nothing extra.\nEverything you need.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-cyan-100 to-blue-300", text: "text-blue-950", accent: "bg-blue-700", title: "Power Your\nRecovery.", body: "Replenish. Refuel.\nCome back stronger.", cta: "Shop Now" },
-];
 
 type Ad = { src: string; alt: string };
 
