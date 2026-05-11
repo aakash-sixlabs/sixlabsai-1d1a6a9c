@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Section } from "./Section";
 import { useInView } from "./useInView";
+import hydrateAd from "@/assets/hydrate-ad.png";
 
 /* ---------- color tokens (kept inline for the colorful diagram) ---------- */
 const STEP = {
