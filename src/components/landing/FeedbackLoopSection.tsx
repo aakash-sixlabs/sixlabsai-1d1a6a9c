@@ -239,10 +239,8 @@ const LaunchedAdCard = () => {
             <Music2 className="w-3.5 h-3.5" />
           </div>
         </div>
-        <div className="rounded-lg overflow-hidden bg-gradient-to-br from-sky-100 to-blue-200 p-3 h-[160px] flex flex-col justify-between text-blue-950">
-          <div className="font-display font-bold text-[14px] leading-tight">Hydrate{"\n"}Better.</div>
-          <div className="text-[10px] leading-snug">Clean electrolytes.{"\n"}More energy.{"\n"}Everyday.</div>
-          <div className="self-start px-2 py-0.5 rounded-md bg-blue-700 text-white text-[10px] font-semibold">Shop Now</div>
+        <div className="rounded-lg overflow-hidden h-[200px]">
+          <img src={hydrateAd} alt="Hydrate Better launched ad" className="w-full h-full object-cover" />
         </div>
       </div>
       {/* metrics under the ad */}
