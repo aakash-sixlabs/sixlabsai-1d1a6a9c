@@ -4,8 +4,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
 import { FeedbackLoopSection } from "@/components/landing/FeedbackLoopSection";
-
-import { SocialProofSection } from "@/components/landing/SocialProofSection";
+import { PilotMetricsSection } from "@/components/landing/PilotMetricsSection";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { Footer } from "@/components/landing/Footer";
 
@@ -36,7 +35,7 @@ export default function SixLabsLanding() {
       <HeroSection />
       <HowItWorksSection />
       <FeedbackLoopSection />
-      <SocialProofSection />
+      <PilotMetricsSection />
       <ContactSection />
       <Footer />
     </div>
