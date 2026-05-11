@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
-import { Zap } from "lucide-react";
 import { InsightsSidebar } from "@/components/insights/InsightsSidebar";
+import { Logo } from "@/components/Logo";
 
 interface AppShellProps {
   children: ReactNode;
@@ -40,12 +40,7 @@ export const AppShell = ({
             className="flex items-center gap-2.5 cursor-pointer shrink-0"
             onClick={() => navigate("/home")}
           >
-            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-primary-foreground" />
-            </div>
-            <span className="font-display font-bold text-[15px] text-white tracking-tight">
-              Six Labs
-            </span>
+            <Logo variant="light" heightClass="h-6" />
           </div>
         )}
         <div className="flex-1" />

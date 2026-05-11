@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Zap, Mail, Lock, ArrowRight } from "lucide-react";
+import { Mail, Lock, ArrowRight } from "lucide-react";
+import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
 
 const Auth = () => {
@@ -42,11 +43,8 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm p-8">
-        <div className="flex items-center gap-2 justify-center mb-6">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" />
-          </div>
-          <span className="font-display font-bold text-lg text-foreground">CreativeGen</span>
+        <div className="flex items-center justify-center mb-6">
+          <Logo heightClass="h-8" />
         </div>
 
         <h2 className="text-xl font-bold text-foreground text-center mb-6">
