@@ -22,11 +22,11 @@ export const HeroSection = () => {
 
         <div className="mt-10">
           <Button
-            size="lg"
-            className="font-semibold rounded-xl px-10 h-13 text-base gap-2 shadow-lg shadow-primary/25"
+            size="sm"
+            className="font-semibold text-sm rounded-lg shadow-md shadow-primary/25"
             onClick={handleContact}
           >
-            Get In Touch <ArrowRight className="w-4 h-4" />
+            Get In Touch
           </Button>
         </div>
       </div>
