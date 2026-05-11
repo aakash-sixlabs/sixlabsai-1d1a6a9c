@@ -10,8 +10,7 @@ export const ContactSection = () => {
           <div
             className="absolute inset-0"
             style={{
-              background:
-                "linear-gradient(135deg, hsl(220 80% 52%) 0%, hsl(245 75% 50%) 45%, hsl(265 70% 45%) 100%)",
+              background: "linear-gradient(135deg, hsl(220 80% 52%) 0%, hsl(245 75% 50%) 45%, hsl(265 70% 45%) 100%)",
             }}
             aria-hidden
           />
@@ -32,8 +31,7 @@ export const ContactSection = () => {
           <div
             className="absolute inset-0 opacity-[0.18] mix-blend-overlay"
             style={{
-              backgroundImage:
-                "radial-gradient(hsl(0 0% 100% / 0.6) 1px, transparent 1px)",
+              backgroundImage: "radial-gradient(hsl(0 0% 100% / 0.6) 1px, transparent 1px)",
               backgroundSize: "22px 22px",
             }}
             aria-hidden
@@ -60,12 +58,9 @@ export const ContactSection = () => {
             <div className="mt-10">
               <Button
                 asChild
-                size="sm"
-                className="font-semibold text-sm rounded-lg bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/20"
+                className="h-12 px-8 text-base font-semibold rounded-xl bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/20"
               >
-                <a href="mailto:badri@sixlabs.ai?subject=SixLabs%20Pilot%20Request">
-                  Start a pilot
-                </a>
+                <a href="mailto:badri@sixlabs.ai?subject=SixLabs%20Pilot%20Request">Start a pilot</a>
               </Button>
             </div>
           </div>
