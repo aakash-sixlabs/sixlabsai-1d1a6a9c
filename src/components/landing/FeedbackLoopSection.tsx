@@ -268,13 +268,13 @@ const LaunchedAdCard = () => {
 
 /* ---------- center card ---------- */
 const CenterCard = () => (
-  <div className="rounded-2xl bg-white ring-1 ring-border/60 shadow-[0_18px_40px_-22px_rgba(15,23,42,0.2)] p-5 w-[260px] text-center">
-    <div className="w-10 h-10 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-2">
-      <InfinityIcon className="w-5 h-5 text-primary" strokeWidth={2.2} />
+  <div className="rounded-2xl bg-white ring-1 ring-border/60 shadow-[0_18px_40px_-22px_rgba(15,23,42,0.2)] p-3.5 w-[180px] text-center">
+    <div className="w-8 h-8 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-1.5">
+      <InfinityIcon className="w-4 h-4 text-primary" strokeWidth={2.2} />
     </div>
-    <div className="font-display font-bold text-foreground text-[15px]">Continuous feedback loop</div>
-    <p className="mt-1.5 text-[11.5px] text-muted-foreground leading-relaxed">
-      Each launched creative generates new performance data. Signals feed back into the system. Every cycle improves what to make next.
+    <div className="font-display font-bold text-foreground text-[12px] leading-tight">Continuous feedback loop</div>
+    <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+      Every launched creative makes the next generation smarter.
     </p>
   </div>
 );
