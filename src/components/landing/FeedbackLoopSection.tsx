@@ -17,6 +17,11 @@ import {
 import { Section } from "./Section";
 import { useInView } from "./useInView";
 import hydrateAd from "@/assets/hydrate-ad.png";
+import adFuel from "@/assets/ad-fuel.png";
+import adFocus from "@/assets/ad-focus.png";
+import adTrain from "@/assets/ad-train.png";
+import adCalm from "@/assets/ad-calm.png";
+import adClean from "@/assets/ad-clean.png";
 
 /* ---------- color tokens (kept inline for the colorful diagram) ---------- */
 const STEP = {
@@ -178,24 +183,15 @@ const SignalChips = () => {
 };
 
 /* ---------- ad creative cards ---------- */
-type Ad = {
-  bg: string;
-  text: string;
-  accent: string;
-  title: string;
-  body: string;
-  cta?: string;
-  quote?: boolean;
-};
+
+type Ad = { src: string; alt: string };
 
 const ads: Ad[] = [
-  { bg: "bg-gradient-to-br from-sky-100 to-blue-200", text: "text-blue-950", accent: "bg-blue-600", title: "Hydrate\nBetter.", body: "Clean electrolytes.\nMore energy. Everyday.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-orange-100 to-amber-200", text: "text-orange-950", accent: "bg-orange-500", title: "Fuel Your\nBest Everyday", body: "Energy that\nkeeps up.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-slate-800 to-slate-950", text: "text-white", accent: "bg-white text-slate-900", title: "Made for\nFocus.", body: "Sharper mind.\nBetter you.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-emerald-100 to-emerald-200", text: "text-emerald-950", accent: "bg-emerald-600", title: "Train\nStronger.", body: "Support performance.\nBuild better.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-violet-100 to-violet-200", text: "text-violet-950", accent: "bg-violet-600", quote: true, title: "“Game changer”\nfor my routine.", body: "— Alex R.\nTastes great. Works better.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-stone-100 to-stone-200", text: "text-stone-900", accent: "bg-stone-900", title: "Clean Ingredients.\nReal Results.", body: "Nothing extra.\nEverything you need.", cta: "Shop Now" },
-  { bg: "bg-gradient-to-br from-cyan-100 to-blue-300", text: "text-blue-950", accent: "bg-blue-700", title: "Power Your\nRecovery.", body: "Replenish. Refuel.\nCome back stronger.", cta: "Shop Now" },
+  { src: adFuel, alt: "Fuel Your Best Everyday" },
+  { src: adFocus, alt: "Made for Focus" },
+  { src: adTrain, alt: "Train Stronger" },
+  { src: adCalm, alt: "Game changer for my routine" },
+  { src: adClean, alt: "Clean Ingredients. Real Results." },
 ];
 
 const AdCard = ({ ad, index }: { ad: Ad; index: number }) => {
@@ -204,18 +200,11 @@ const AdCard = ({ ad, index }: { ad: Ad; index: number }) => {
     <div
       ref={ref}
       style={{ transitionDelay: `${index * 70}ms` }}
-      className={`relative shrink-0 w-[160px] h-[210px] rounded-xl ${ad.bg} ${ad.text} p-3 flex flex-col justify-between shadow-[0_14px_30px_-18px_rgba(15,23,42,0.3)] ring-1 ring-black/5 transition-all duration-700 ease-out ${
+      className={`relative shrink-0 w-[160px] h-[210px] rounded-xl overflow-hidden bg-white shadow-[0_14px_30px_-18px_rgba(15,23,42,0.3)] ring-1 ring-black/5 transition-all duration-700 ease-out ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
     >
-      {ad.quote && <div className="text-[10px] tracking-widest opacity-80">★★★★★</div>}
-      <div className="font-display font-bold text-[15px] leading-tight whitespace-pre-line">{ad.title}</div>
-      <div className="text-[10.5px] leading-snug whitespace-pre-line opacity-90">{ad.body}</div>
-      {ad.cta && (
-        <div className={`self-start mt-1 px-2.5 py-1 rounded-md text-[10px] font-semibold ${ad.accent} ${ad.accent.includes("text-") ? "" : "text-white"}`}>
-          {ad.cta}
-        </div>
-      )}
+      <img src={ad.src} alt={ad.alt} className="w-full h-full object-cover" />
     </div>
   );
 };
