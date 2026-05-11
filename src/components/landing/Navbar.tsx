@@ -36,7 +36,7 @@ export const Navbar = ({ scrollY }: { scrollY: number }) => {
         <Button
           size="sm"
           className="font-semibold text-sm rounded-lg shadow-md shadow-primary/25"
-          onClick={() => navigate("/loginvcollect")}
+          onClick={handleContact}
         >
           Get Started
         </Button>
