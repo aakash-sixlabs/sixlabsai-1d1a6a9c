@@ -17,6 +17,11 @@ import {
 import { Section } from "./Section";
 import { useInView } from "./useInView";
 import hydrateAd from "@/assets/hydrate-ad.png";
+import adFuel from "@/assets/ad-fuel.png";
+import adFocus from "@/assets/ad-focus.png";
+import adTrain from "@/assets/ad-train.png";
+import adCalm from "@/assets/ad-calm.png";
+import adClean from "@/assets/ad-clean.png";
 
 /* ---------- color tokens (kept inline for the colorful diagram) ---------- */
 const STEP = {
