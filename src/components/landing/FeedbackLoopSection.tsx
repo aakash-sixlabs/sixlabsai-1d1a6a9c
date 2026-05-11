@@ -204,7 +204,7 @@ const AdCard = ({ ad, index }: { ad: Ad; index: number }) => {
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
     >
-      <img src={ad.src} alt={ad.alt} className="w-full h-full object-cover" />
+      <img src={ad.src} alt={ad.alt} className="w-full h-full object-contain bg-white" />
     </div>
   );
 };
@@ -229,7 +229,7 @@ const LaunchedAdCard = () => {
           </div>
         </div>
         <div className="rounded-lg overflow-hidden h-[200px]">
-          <img src={hydrateAd} alt="Hydrate Better launched ad" className="w-full h-full object-cover" />
+          <img src={hydrateAd} alt="Hydrate Better launched ad" className="w-full h-full object-contain bg-white" />
         </div>
       </div>
       {/* metrics under the ad */}
