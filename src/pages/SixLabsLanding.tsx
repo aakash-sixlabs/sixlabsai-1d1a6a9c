@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
-import { ClosedLoopSection } from "@/components/landing/ClosedLoopSection";
+import { FeedbackLoopSection } from "@/components/landing/FeedbackLoopSection";
+import { PilotMetricsSection } from "@/components/landing/PilotMetricsSection";
+import { SocialProofSection } from "@/components/landing/SocialProofSection";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { Footer } from "@/components/landing/Footer";
 
@@ -33,7 +35,9 @@ export default function SixLabsLanding() {
       <Navbar scrollY={scrollY} />
       <HeroSection />
       <HowItWorksSection />
-      <ClosedLoopSection />
+      <FeedbackLoopSection />
+      <PilotMetricsSection />
+      <SocialProofSection />
       <ContactSection />
       <Footer />
     </div>
