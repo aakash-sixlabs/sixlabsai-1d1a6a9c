@@ -387,7 +387,7 @@ export const FeedbackLoopSection = () => {
           </div>
 
           {/* Ad row under CREATE — anchored right of launched card to avoid overlap */}
-          <div className="absolute right-[20px] left-[300px] top-[640px] overflow-hidden">
+          <div className="absolute right-[20px] left-[300px] top-[690px] overflow-hidden">
             <div className="flex gap-3 justify-end">
               {ads.slice(0, 5).map((a, i) => (
                 <AdCard key={i} ad={a} index={i} />
