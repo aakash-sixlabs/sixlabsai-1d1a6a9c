@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
+import { smoothScrollTo } from "@/lib/smoothScroll";
 
 export const Navbar = ({ scrollY }: { scrollY: number }) => {
   const navigate = useNavigate();
