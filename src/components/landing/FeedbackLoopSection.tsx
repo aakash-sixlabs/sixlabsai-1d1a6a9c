@@ -297,6 +297,14 @@ const LoopConnectors = () => {
         "M 460 600 C 260 600, 220 540, 220 420",
         // Launch (left) -> Learn (top) — feedback (more visible / primary blue)
         "M 220 340 C 220 220, 320 170, 480 170",
+        // Inputs card -> Learn card (feeds in)
+        "M 470 155 C 478 155, 478 155, 488 155",
+        // Launch -> Performance metrics card (feedback up)
+        "M 320 270 C 460 200, 600 140, 720 175",
+        // Create -> ad row (left pointer)
+        "M 560 555 C 500 600, 430 650, 360 690",
+        // Create -> ad row (right pointer)
+        "M 640 555 C 720 600, 820 650, 900 690",
       ].map((d, i) => (
         <path
           key={i}
@@ -348,13 +356,13 @@ export const FeedbackLoopSection = () => {
             <StepCard step="learn" num="01" title="LEARN" desc="Ingest signals from brand, competitors, and the market." Icon={BarChart3} />
           </div>
 
-          {/* Inputs supporting LEARN — upper left */}
-          <div className="absolute left-[40px] top-[90px]">
+          {/* Inputs supporting LEARN — closer to LEARN card */}
+          <div className="absolute left-[230px] top-[90px]">
             <InputsCard />
           </div>
 
-          {/* Performance metrics card — upper right */}
-          <div className="absolute right-[40px] top-[90px]">
+          {/* Performance metrics card — closer to LEARN card */}
+          <div className="absolute right-[210px] top-[90px]">
             <MetricsHeaderCard />
           </div>
 
@@ -379,7 +387,7 @@ export const FeedbackLoopSection = () => {
           </div>
 
           {/* Ad row under CREATE — anchored right of launched card to avoid overlap */}
-          <div className="absolute right-[20px] left-[300px] top-[640px] overflow-hidden">
+          <div className="absolute right-[20px] left-[300px] top-[690px] overflow-hidden">
             <div className="flex gap-3 justify-end">
               {ads.slice(0, 5).map((a, i) => (
                 <AdCard key={i} ad={a} index={i} />
