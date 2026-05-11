@@ -58,7 +58,7 @@ export const ContactSection = () => {
             <div className="mt-10">
               <Button
                 asChild
-                className="h-12 px-8 text-base font-semibold rounded-xl bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/20"
+                className="h-14 px-10 text-base font-semibold rounded-xl bg-white text-primary hover:bg-white/90 shadow-lg shadow-black/20"
               >
                 <a href="mailto:badri@sixlabs.ai?subject=SixLabs%20Pilot%20Request">Start a pilot</a>
               </Button>
