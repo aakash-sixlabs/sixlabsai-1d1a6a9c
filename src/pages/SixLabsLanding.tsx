@@ -36,7 +36,7 @@ export default function SixLabsLanding() {
       <HeroSection />
       <HowItWorksSection />
       <FeedbackLoopSection />
-      <SocialProofSection />
+      <PilotMetricsSection />
       <ContactSection />
       <Footer />
     </div>
