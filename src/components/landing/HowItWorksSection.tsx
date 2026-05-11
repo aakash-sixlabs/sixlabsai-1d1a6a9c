@@ -134,8 +134,8 @@ export const HowItWorksSection = () => {
         <div className="relative mt-16 md:mt-24">
           <div className="hidden md:flex justify-center items-start gap-6 lg:gap-10 relative z-20">
             <BenefitCard benefit={benefits[0]} index={0} offsetClass="translate-y-0" />
-            <BenefitCard benefit={benefits[1]} index={1} offsetClass="translate-y-24" />
-            <BenefitCard benefit={benefits[2]} index={2} offsetClass="translate-y-10" />
+            <BenefitCard benefit={benefits[1]} index={1} offsetClass="translate-y-16" />
+            <BenefitCard benefit={benefits[2]} index={2} offsetClass="translate-y-28" />
           </div>
 
           {/* Connecting dashed progress line — desktop only */}
