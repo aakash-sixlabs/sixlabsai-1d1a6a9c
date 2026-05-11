@@ -228,8 +228,8 @@ const LaunchedAdCard = () => {
             <Music2 className="w-3.5 h-3.5" />
           </div>
         </div>
-        <div className="rounded-lg overflow-hidden h-[200px]">
-          <img src={hydrateAd} alt="Hydrate Better launched ad" className="w-full h-full object-contain bg-white" />
+        <div className="rounded-lg overflow-hidden">
+          <img src={hydrateAd} alt="Hydrate Better launched ad" className="block w-full h-auto" />
         </div>
       </div>
       {/* metrics under the ad */}
