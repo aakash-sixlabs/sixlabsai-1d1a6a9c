@@ -200,11 +200,11 @@ const AdCard = ({ ad, index }: { ad: Ad; index: number }) => {
     <div
       ref={ref}
       style={{ transitionDelay: `${index * 70}ms` }}
-      className={`relative shrink-0 w-[160px] h-[210px] rounded-xl overflow-hidden bg-white shadow-[0_14px_30px_-18px_rgba(15,23,42,0.3)] ring-1 ring-black/5 transition-all duration-700 ease-out ${
+      className={`relative shrink-0 w-[160px] rounded-xl overflow-hidden bg-white shadow-[0_14px_30px_-18px_rgba(15,23,42,0.3)] ring-1 ring-black/5 transition-all duration-700 ease-out ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
     >
-      <img src={ad.src} alt={ad.alt} className="w-full h-full object-contain bg-white" />
+      <img src={ad.src} alt={ad.alt} className="block w-full h-auto" />
     </div>
   );
 };
