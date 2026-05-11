@@ -1,9 +1,11 @@
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/Logo";
+import { smoothScrollTo } from "@/lib/smoothScroll";
 
 export const Navbar = ({ scrollY }: { scrollY: number }) => {
-  const navigate = useNavigate();
+  const handleContact = () => {
+    smoothScrollTo("#contact", { duration: 1200, offset: -64 });
+  };
 
   const scrollToSection = (id: string) => {
     const section = document.getElementById(id);
@@ -34,7 +36,7 @@ export const Navbar = ({ scrollY }: { scrollY: number }) => {
         <Button
           size="sm"
           className="font-semibold text-sm rounded-lg shadow-md shadow-primary/25"
-          onClick={() => navigate("/loginvcollect")}
+          onClick={handleContact}
         >
           Get Started
         </Button>
