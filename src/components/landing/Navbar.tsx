@@ -26,7 +26,7 @@ export const Navbar = ({ scrollY }: { scrollY: number }) => {
           <button onClick={() => scrollToSection("signals")} className="hover:text-foreground transition-colors">
             Signals
           </button>
-          <button onClick={() => scrollToSection("loop")} className="hover:text-foreground transition-colors">
+          <button onClick={() => scrollToSection("solution")} className="hover:text-foreground transition-colors">
             The Loop
           </button>
         </div>
