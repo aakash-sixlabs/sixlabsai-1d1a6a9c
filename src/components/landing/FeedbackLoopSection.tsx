@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Section } from "./Section";
 import { useInView } from "./useInView";
+import hydrateAd from "@/assets/hydrate-ad.png";
 
 /* ---------- color tokens (kept inline for the colorful diagram) ---------- */
 const STEP = {
@@ -238,10 +239,8 @@ const LaunchedAdCard = () => {
             <Music2 className="w-3.5 h-3.5" />
           </div>
         </div>
-        <div className="rounded-lg overflow-hidden bg-gradient-to-br from-sky-100 to-blue-200 p-3 h-[160px] flex flex-col justify-between text-blue-950">
-          <div className="font-display font-bold text-[14px] leading-tight">Hydrate{"\n"}Better.</div>
-          <div className="text-[10px] leading-snug">Clean electrolytes.{"\n"}More energy.{"\n"}Everyday.</div>
-          <div className="self-start px-2 py-0.5 rounded-md bg-blue-700 text-white text-[10px] font-semibold">Shop Now</div>
+        <div className="rounded-lg overflow-hidden h-[200px]">
+          <img src={hydrateAd} alt="Hydrate Better launched ad" className="w-full h-full object-cover" />
         </div>
       </div>
       {/* metrics under the ad */}
@@ -269,13 +268,13 @@ const LaunchedAdCard = () => {
 
 /* ---------- center card ---------- */
 const CenterCard = () => (
-  <div className="rounded-2xl bg-white ring-1 ring-border/60 shadow-[0_18px_40px_-22px_rgba(15,23,42,0.2)] p-5 w-[260px] text-center">
-    <div className="w-10 h-10 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-2">
-      <InfinityIcon className="w-5 h-5 text-primary" strokeWidth={2.2} />
+  <div className="rounded-2xl bg-white ring-1 ring-border/60 shadow-[0_18px_40px_-22px_rgba(15,23,42,0.2)] p-3.5 w-[180px] text-center">
+    <div className="w-8 h-8 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-1.5">
+      <InfinityIcon className="w-4 h-4 text-primary" strokeWidth={2.2} />
     </div>
-    <div className="font-display font-bold text-foreground text-[15px]">Continuous feedback loop</div>
-    <p className="mt-1.5 text-[11.5px] text-muted-foreground leading-relaxed">
-      Each launched creative generates new performance data. Signals feed back into the system. Every cycle improves what to make next.
+    <div className="font-display font-bold text-foreground text-[12px] leading-tight">Continuous feedback loop</div>
+    <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+      Every launched creative makes the next generation smarter.
     </p>
   </div>
 );
@@ -342,7 +341,6 @@ export const FeedbackLoopSection = () => {
             visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
           }`}
         >
-          <p className="text-xs font-mono font-semibold tracking-[0.2em] text-primary">THE SOLUTION</p>
           <h2 className="mt-3 font-display font-bold text-4xl md:text-5xl lg:text-[60px] leading-[1.05] tracking-tight text-foreground">
             A new approach to <span className="text-primary">generating creatives</span>
           </h2>
@@ -353,60 +351,60 @@ export const FeedbackLoopSection = () => {
         </div>
 
         {/* ============= DESKTOP LOOP ============= */}
-        <div className="hidden lg:block relative mt-16 h-[720px]">
+        <div className="hidden lg:block relative mt-6 h-[720px]">
           <LoopConnectors />
 
           {/* Step 1 LEARN — top center */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-[110px]">
+          <div className="absolute left-1/2 -translate-x-1/2 top-[40px]">
             <StepCard step="learn" num="01" title="LEARN" desc="Ingest signals from brand, competitors, and the market." Icon={BarChart3} />
           </div>
 
           {/* Inputs supporting LEARN — upper left */}
-          <div className="absolute left-[40px] top-[160px]">
+          <div className="absolute left-[40px] top-[90px]">
             <InputsCard />
           </div>
 
           {/* Performance metrics card — upper right */}
-          <div className="absolute right-[40px] top-[160px]">
+          <div className="absolute right-[40px] top-[90px]">
             <MetricsHeaderCard />
           </div>
 
           {/* Step 2 DECIDE — right */}
-          <div className="absolute right-[150px] top-[330px]">
+          <div className="absolute right-[150px] top-[260px]">
             <StepCard step="decide" num="02" title="DECIDE" desc="Extract winning signals and prioritize what to test." Icon={Target} delay={150} />
           </div>
 
           {/* Signal chips beside DECIDE */}
-          <div className="absolute right-[20px] top-[360px] hidden xl:block">
+          <div className="absolute right-[20px] top-[290px] hidden xl:block">
             <SignalChips />
           </div>
 
           {/* Center card */}
-          <div className="absolute left-1/2 top-[330px] -translate-x-1/2">
+          <div className="absolute left-1/2 top-[300px] -translate-x-1/2">
             <CenterCard />
           </div>
 
           {/* Step 3 CREATE — bottom center */}
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-[110px]">
+          <div className="absolute left-1/2 -translate-x-1/2 top-[480px]">
             <StepCard step="create" num="03" title="CREATE" desc="Generate multiple creative variations at scale." Icon={Sparkles} delay={300} />
           </div>
 
-          {/* Ad row under CREATE */}
-          <div className="absolute left-1/2 -translate-x-1/2 bottom-[-90px]">
-            <div className="flex gap-3">
-              {ads.map((a, i) => (
+          {/* Ad row under CREATE — anchored right of launched card to avoid overlap */}
+          <div className="absolute right-[20px] left-[300px] top-[640px] overflow-hidden">
+            <div className="flex gap-3 justify-end">
+              {ads.slice(0, 5).map((a, i) => (
                 <AdCard key={i} ad={a} index={i} />
               ))}
             </div>
           </div>
 
           {/* Step 4 LAUNCH — left */}
-          <div className="absolute left-[150px] top-[330px]">
+          <div className="absolute left-[150px] top-[260px]">
             <StepCard step="launch" num="04" title="LAUNCH" desc="Launch top creatives. Measure performance." Icon={Send} delay={450} />
           </div>
 
           {/* Launched ad preview — far left */}
-          <div className="absolute left-[20px] top-[470px] hidden xl:block">
+          <div className="absolute left-[20px] top-[420px] hidden xl:block">
             <LaunchedAdCard />
           </div>
         </div>
