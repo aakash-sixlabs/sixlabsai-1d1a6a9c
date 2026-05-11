@@ -203,24 +203,27 @@ const ads: Ad[] = [
   { bg: "bg-gradient-to-br from-cyan-100 to-blue-300", text: "text-blue-950", accent: "bg-blue-700", title: "Power Your\nRecovery.", body: "Replenish. Refuel.\nCome back stronger.", cta: "Shop Now" },
 ];
 
+type Ad = { src: string; alt: string };
+
+const ads: Ad[] = [
+  { src: adFuel, alt: "Fuel Your Best Everyday" },
+  { src: adFocus, alt: "Made for Focus" },
+  { src: adTrain, alt: "Train Stronger" },
+  { src: adCalm, alt: "Game changer for my routine" },
+  { src: adClean, alt: "Clean Ingredients. Real Results." },
+];
+
 const AdCard = ({ ad, index }: { ad: Ad; index: number }) => {
   const { ref, visible } = useInView(0.15);
   return (
     <div
       ref={ref}
       style={{ transitionDelay: `${index * 70}ms` }}
-      className={`relative shrink-0 w-[160px] h-[210px] rounded-xl ${ad.bg} ${ad.text} p-3 flex flex-col justify-between shadow-[0_14px_30px_-18px_rgba(15,23,42,0.3)] ring-1 ring-black/5 transition-all duration-700 ease-out ${
+      className={`relative shrink-0 w-[160px] h-[210px] rounded-xl overflow-hidden bg-white shadow-[0_14px_30px_-18px_rgba(15,23,42,0.3)] ring-1 ring-black/5 transition-all duration-700 ease-out ${
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       }`}
     >
-      {ad.quote && <div className="text-[10px] tracking-widest opacity-80">★★★★★</div>}
-      <div className="font-display font-bold text-[15px] leading-tight whitespace-pre-line">{ad.title}</div>
-      <div className="text-[10.5px] leading-snug whitespace-pre-line opacity-90">{ad.body}</div>
-      {ad.cta && (
-        <div className={`self-start mt-1 px-2.5 py-1 rounded-md text-[10px] font-semibold ${ad.accent} ${ad.accent.includes("text-") ? "" : "text-white"}`}>
-          {ad.cta}
-        </div>
-      )}
+      <img src={ad.src} alt={ad.alt} className="w-full h-full object-cover" />
     </div>
   );
 };
