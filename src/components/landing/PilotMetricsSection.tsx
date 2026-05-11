@@ -19,27 +19,22 @@ const Digit = ({
   play: boolean;
 }) => {
   const [reduced] = useState(prefersReducedMotion);
-  const offset = play ? -value * 100 : 0;
-  // Start position: show 0 (top of strip). Animate to value.
-  // Use a strip 0..9, then repeat 0..value to give a roll feel.
-  const digits = Array.from({ length: 10 }, (_, i) => i);
 
   if (reduced) {
-    return (
-      <span className="inline-block tabular-nums" aria-hidden>
-        {value}
-      </span>
-    );
+    return <span className="tabular-nums">{value}</span>;
   }
+
+  const digits = Array.from({ length: 10 }, (_, i) => i);
+  const offset = play ? -value * 100 : 0;
 
   return (
     <span
-      className="relative inline-block overflow-hidden align-baseline tabular-nums"
-      style={{ height: "1em", lineHeight: 1, width: "0.62em" }}
+      className="relative inline-block overflow-hidden tabular-nums align-top"
+      style={{ height: "1em", width: "0.6em", lineHeight: 1 }}
       aria-hidden
     >
       <span
-        className="absolute left-0 top-0 flex flex-col"
+        className="absolute left-0 top-0 right-0"
         style={{
           transform: `translateY(${offset}%)`,
           transition: play
@@ -48,7 +43,11 @@ const Digit = ({
         }}
       >
         {digits.map((d) => (
-          <span key={d} style={{ height: "1em", lineHeight: 1 }}>
+          <span
+            key={d}
+            className="block text-center"
+            style={{ height: "1em", lineHeight: 1 }}
+          >
             {d}
           </span>
         ))}
@@ -62,14 +61,14 @@ const RollingNumber = ({
   play,
   baseDelay,
 }: {
-  digits: string; // e.g. "40", "11", "262"
+  digits: string;
   play: boolean;
   baseDelay: number;
 }) => {
   const arr = digits.split("").map((c) => parseInt(c, 10));
   const duration = 1500;
   return (
-    <span className="inline-flex">
+    <span className="inline-flex items-baseline">
       {arr.map((d, i) => (
         <Digit
           key={i}
@@ -99,13 +98,13 @@ const tiles: Tile[] = [
 ];
 
 const MetricTile = ({ tile, play }: { tile: Tile; play: boolean }) => (
-  <div className="flex-1 rounded-2xl bg-white border border-border/60 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.18)] px-8 py-12 md:py-14 text-center">
-    <div className="font-display font-bold tracking-tight text-foreground text-6xl md:text-7xl lg:text-[88px] leading-none">
-      {tile.prefix && <span className="text-primary">{tile.prefix}</span>}
+  <div className="flex-1 rounded-2xl bg-white border border-border/60 px-8 py-10 text-center shadow-[0_2px_8px_-4px_rgba(15,23,42,0.06)]">
+    <div className="font-display font-bold tracking-tight text-primary text-4xl md:text-5xl leading-none flex items-baseline justify-center">
+      {tile.prefix && <span>{tile.prefix}</span>}
       <RollingNumber digits={tile.digits} play={play} baseDelay={tile.delay} />
-      {tile.suffix && <span className="text-primary">{tile.suffix}</span>}
+      {tile.suffix && <span>{tile.suffix}</span>}
     </div>
-    <p className="mt-6 text-sm md:text-base text-muted-foreground font-body max-w-[260px] mx-auto leading-relaxed">
+    <p className="mt-4 text-sm text-muted-foreground font-body max-w-[260px] mx-auto leading-relaxed">
       {tile.label}
     </p>
   </div>
@@ -119,27 +118,26 @@ export const PilotMetricsSection = () => {
   useEffect(() => {
     if (visible && !played.current) {
       played.current = true;
-      // small delay so the strip mounts at 0 first, then animates
       requestAnimationFrame(() => requestAnimationFrame(() => setPlay(true)));
     }
   }, [visible]);
 
   return (
-    <Section className="bg-[hsl(220_20%_98%)] px-6 py-24 md:py-32">
-      <div ref={ref} className="max-w-[1200px] mx-auto">
+    <Section className="bg-white px-6 py-20 md:py-28">
+      <div ref={ref} className="max-w-5xl mx-auto">
         <div className="text-center max-w-3xl mx-auto">
-          <h2 className="font-display font-bold text-4xl md:text-5xl lg:text-[60px] leading-[1.05] tracking-tight text-foreground">
-            Our pilots have shown:
+          <h2 className="font-display font-bold text-3xl md:text-4xl leading-tight tracking-tight text-foreground">
+            Our pilots have shown
           </h2>
         </div>
 
-        <div className="mt-14 md:mt-20 flex flex-col md:flex-row gap-6 md:gap-8">
+        <div className="mt-10 md:mt-14 flex flex-col md:flex-row gap-5">
           {tiles.map((t, i) => (
             <MetricTile key={i} tile={t} play={play} />
           ))}
         </div>
 
-        <p className="mt-10 text-center text-xs md:text-sm text-muted-foreground font-body">
+        <p className="mt-8 text-center text-xs text-muted-foreground font-body">
           Early pilot results from Meta creative testing workflows.
         </p>
       </div>
