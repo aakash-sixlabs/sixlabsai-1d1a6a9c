@@ -199,7 +199,7 @@ function computeDecay(insight: Insight | undefined): number {
 
 export const InsightsStep = () => {
   const navigate = useNavigate();
-  const { state } = useWizard();
+  const { state, updateState } = useWizard();
   const [loading, setLoading] = useState(true);
   // Raw rows kept as separate arrays so the date-range filter can re-aggregate
   // perf without losing creatives that happen to have zero recent spend.
@@ -214,6 +214,17 @@ export const InsightsStep = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [adAccounts, setAdAccounts] = useState<{ id: string; account_id: string; account_name: string }[]>([]);
   const [selectedAccountId, setSelectedAccountId] = useState<string>("");
+
+  const handleAccountChange = useCallback(async (id: string) => {
+    setSelectedAccountId(id);
+    const acct = adAccounts.find(a => a.id === id);
+    if (!acct) return;
+    updateState({ selectedAccount: acct.id, selectedAccountName: acct.account_name, selectedMetaAccountId: acct.account_id });
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profiles").update({ default_ad_account_id: id }).eq("id", user.id);
+    }
+  }, [adAccounts, updateState]);
   const [syncStatus, setSyncStatus] = useState<"idle" | "syncing" | "complete" | "error">("idle");
   const [syncStep, setSyncStep] = useState<string>("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
@@ -791,7 +802,7 @@ export const InsightsStep = () => {
           campaignBoards={campaignBoards}
           adAccounts={adAccounts}
           selectedAccountId={selectedAccountId}
-          onAccountChange={setSelectedAccountId}
+          onAccountChange={handleAccountChange}
           kpis={activeView === "discover" ? sidebarKpis : undefined}
         />
         <main className="flex-1 overflow-auto border-l border-border/60">
