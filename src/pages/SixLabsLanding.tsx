@@ -18,7 +18,7 @@ export default function SixLabsLanding() {
     <div className="min-h-screen bg-midnight text-white overflow-x-hidden font-body">
       <Navbar scrollY={scrollY} />
       <HeroSection />
-      <PipelineSection />
+      <SixLabsWorkflowVisual />
       <ContactSection />
       <Footer />
     </div>
