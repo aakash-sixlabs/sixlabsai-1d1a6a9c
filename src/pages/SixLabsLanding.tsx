@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { PipelineSection } from "@/components/landing/PipelineSection";
+import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisual";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { Footer } from "@/components/landing/Footer";
 
@@ -18,7 +18,7 @@ export default function SixLabsLanding() {
     <div className="min-h-screen bg-midnight text-white overflow-x-hidden font-body">
       <Navbar scrollY={scrollY} />
       <HeroSection />
-      <PipelineSection />
+      <SixLabsWorkflowVisual />
       <ContactSection />
       <Footer />
     </div>
