@@ -12,8 +12,9 @@ import {
   ChevronRight,
   Play,
   RefreshCw,
-  Hexagon,
 } from "lucide-react";
+import sixIcon from "@/assets/six-icon.png";
+
 
 /* ---------- Editable copy ---------- */
 const COPY = {
