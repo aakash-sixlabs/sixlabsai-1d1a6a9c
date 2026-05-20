@@ -429,9 +429,9 @@ export const SixLabsWorkflowVisual = () => {
                   <path d="M0,0 L10,5 L0,10 z" fill="#A78BFA" />
                 </marker>
               </defs>
-              {/* right side: Creative out (~1140) down to pill (center ~640) */}
+              {/* right side: Creative out (~1140) gently arcs down into pill (right edge ~720, y=28) */}
               <path
-                d="M1140 0 C 1140 30, 1000 28, 720 28"
+                d="M1140 4 C 1080 8, 900 50, 720 32"
                 stroke="#A78BFA"
                 strokeOpacity="0.7"
                 strokeWidth="1.4"
@@ -439,9 +439,9 @@ export const SixLabsWorkflowVisual = () => {
                 strokeDasharray="5 7"
                 style={{ animation: "dashFlow 4s linear infinite" }}
               />
-              {/* left side: pill (center ~560) to Signals in (~130) with arrow at end */}
+              {/* left side: pill (left edge ~560, y=28) arcs down and back up to Signals in (~140) */}
               <path
-                d="M560 28 C 280 28, 140 30, 140 0"
+                d="M560 32 C 380 50, 200 8, 140 4"
                 stroke="#A78BFA"
                 strokeOpacity="0.7"
                 strokeWidth="1.4"
@@ -450,6 +450,7 @@ export const SixLabsWorkflowVisual = () => {
                 markerEnd="url(#arrowBack)"
                 style={{ animation: "dashFlow 4s linear infinite" }}
               />
+
             </svg>
             <div className="absolute inset-0 flex justify-center items-center">
               <LoopPill />
