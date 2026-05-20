@@ -203,9 +203,8 @@ const DashboardCard = () => (
   >
     {/* header */}
     <div className="flex items-center gap-2 mb-4">
-      <div className="w-6 h-6 rounded-md bg-brand-gradient flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.6)]">
-        <Hexagon className="w-3.5 h-3.5 text-white" strokeWidth={2.4} />
-      </div>
+      <img src={sixIcon} alt="" className="w-6 h-6 object-contain" draggable={false} />
+
       <span className="text-white font-display font-semibold text-[14px]">
         {COPY.brand}
       </span>
