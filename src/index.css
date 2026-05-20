@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700,900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -44,6 +45,13 @@
 
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
+
+    /* SixLabs Brand Kit v1.0 */
+    --midnight: 229 64% 5%;        /* #020617 */
+    --signal: 221 83% 53%;         /* #2563EB */
+    --lilac: 252 92% 76%;          /* #A78BFA */
+    --mist: 249 100% 98%;          /* #F5F3FF */
+    --brand-gradient: linear-gradient(90deg, hsl(var(--signal)) 0%, hsl(var(--lilac)) 100%);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 220 10% 30%;
@@ -102,6 +110,18 @@
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
   }
+  .text-brand-gradient {
+    background-image: var(--brand-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .bg-brand-gradient {
+    background-image: var(--brand-gradient);
+  }
+  .font-satoshi {
+    font-family: 'Satoshi', 'Outfit', sans-serif;
+  }
 }
 
 @keyframes scrollUp {
@@ -112,4 +132,8 @@
 @keyframes scrollDown {
   0% { transform: translateY(-50%); }
   100% { transform: translateY(0); }
+}
+
+@keyframes loopDash {
+  to { stroke-dashoffset: -24; }
 }
