@@ -380,30 +380,33 @@ export const SixLabsWorkflowVisual = () => {
               {/* hex glow */}
               <circle cx="320" cy="215" r="38" fill="url(#hexglow)" />
 
-              {/* dashboard → creative out (3 arrows) right edge of dashboard ~960, creative card left ~1000 */}
+              {/* dashboard → creative out: mirror of signals, diverging from one glowing point */}
               {[120, 215, 310].map((y, i) => (
                 <path
                   key={i}
-                  d={`M960 215 C 980 215, 985 ${y}, 1000 ${y}`}
-                  stroke="#A78BFA"
-                  strokeOpacity="0.85"
-                  strokeWidth="1.6"
+                  d={`M960 215 C 985 215, 975 ${y}, 1000 ${y}`}
+                  stroke="url(#flow)"
+                  strokeWidth="1.4"
                   fill="none"
                   markerEnd="url(#arrowL)"
                   style={{
-                    filter: "drop-shadow(0 0 4px rgba(167,139,250,0.6))",
-                    animation: `pulseGlow 2.4s ease-in-out infinite`,
-                    animationDelay: `${i * 0.2}s`,
+                    strokeDasharray: "4 6",
+                    animation: `dashFlowRev 3s linear infinite`,
+                    animationDelay: `${i * 0.15}s`,
                   }}
                 />
               ))}
+
+              {/* right-side divergence glow */}
+              <circle cx="960" cy="215" r="30" fill="url(#hexglow)" />
             </svg>
 
-            {/* Six icon mark between signals & dashboard */}
-            <div className="pointer-events-none absolute left-[286px] top-[191px] w-12 h-12 flex items-center justify-center drop-shadow-[0_0_24px_rgba(167,139,250,0.65)]">
-              <img src={sixIcon} alt="" className="w-11 h-11 object-contain" draggable={false} />
+            {/* Six icon mark — centered on the convergence glow (x=320/1280=25%, y=215/460=46.7%) */}
+            <div className="pointer-events-none absolute left-[25%] top-[46.7%] -translate-x-1/2 -translate-y-1/2 w-12 h-12 flex items-center justify-center drop-shadow-[0_0_24px_rgba(167,139,250,0.75)]">
+              <img src={sixIcon} alt="" className="w-12 h-12 object-contain" draggable={false} />
             </div>
           </div>
+
 
           {/* Loop pill + dashed return loop */}
           <div className="relative mt-10 h-14">
