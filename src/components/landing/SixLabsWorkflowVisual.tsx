@@ -460,34 +460,9 @@ export const SixLabsWorkflowVisual = () => {
 
         {/* ============== MOBILE / TABLET ============== */}
         <div className="lg:hidden">
-          <div className="relative grid grid-cols-2 gap-3">
-            {[
-              { n: "01", t: "Detect", d: "Signals & fatigue" },
-              { n: "02", t: "Generate", d: "On-brand creative" },
-              { n: "03", t: "Deploy", d: "Across platforms" },
-              { n: "04", t: "Learn", d: "Feedback loop" },
-            ].map((s) => (
-              <div
-                key={s.n}
-                className={`${CARD} p-4`}
-                style={CARD_BORDER}
-              >
-                <div className="text-signal font-display font-bold text-[13px]">
-                  {s.n}
-                </div>
-                <div className="text-white font-display font-semibold text-[15px] mt-0.5">
-                  {s.t}
-                </div>
-                <div className="text-white/55 text-[11px] mt-1">{s.d}</div>
-              </div>
-            ))}
-
-            {/* center loop */}
-            <div className="col-span-2 flex justify-center mt-1">
-              <LoopPill />
-            </div>
-          </div>
+          <SixLabsMobileWorkflowVisual />
         </div>
+
       </div>
     </section>
   );
