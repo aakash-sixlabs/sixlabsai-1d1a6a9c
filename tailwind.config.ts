@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        display: ["Outfit", "sans-serif"],
+        display: ["Satoshi", "Outfit", "sans-serif"],
         body: ["Inter", "sans-serif"],
+        satoshi: ["Satoshi", "Outfit", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -63,6 +64,10 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        midnight: "hsl(var(--midnight))",
+        signal: "hsl(var(--signal))",
+        lilac: "hsl(var(--lilac))",
+        mist: "hsl(var(--mist))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
