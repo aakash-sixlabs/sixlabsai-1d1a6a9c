@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
-import { PipelineSection } from "@/components/landing/PipelineSection";
+import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisual";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { Footer } from "@/components/landing/Footer";
 
