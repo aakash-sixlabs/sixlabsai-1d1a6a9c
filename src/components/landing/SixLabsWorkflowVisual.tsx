@@ -14,6 +14,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import sixIcon from "@/assets/six-icon.png";
+import SixLabsMobileWorkflowVisual from "./SixLabsMobileWorkflowVisual";
+
 
 
 /* ---------- Editable copy ---------- */
