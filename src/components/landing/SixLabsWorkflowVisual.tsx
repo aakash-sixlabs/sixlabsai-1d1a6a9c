@@ -12,8 +12,9 @@ import {
   ChevronRight,
   Play,
   RefreshCw,
-  Hexagon,
 } from "lucide-react";
+import sixIcon from "@/assets/six-icon.png";
+
 
 /* ---------- Editable copy ---------- */
 const COPY = {
@@ -202,9 +203,8 @@ const DashboardCard = () => (
   >
     {/* header */}
     <div className="flex items-center gap-2 mb-4">
-      <div className="w-6 h-6 rounded-md bg-brand-gradient flex items-center justify-center shadow-[0_0_12px_rgba(167,139,250,0.6)]">
-        <Hexagon className="w-3.5 h-3.5 text-white" strokeWidth={2.4} />
-      </div>
+      <img src={sixIcon} alt="" className="w-6 h-6 object-contain" draggable={false} />
+
       <span className="text-white font-display font-semibold text-[14px]">
         {COPY.brand}
       </span>
@@ -399,9 +399,9 @@ export const SixLabsWorkflowVisual = () => {
               ))}
             </svg>
 
-            {/* Hexagon mark between signals & dashboard */}
-            <div className="pointer-events-none absolute left-[290px] top-[195px] w-10 h-10 rounded-xl bg-brand-gradient flex items-center justify-center shadow-[0_0_30px_rgba(167,139,250,0.7)]">
-              <Hexagon className="w-5 h-5 text-white" strokeWidth={2.2} />
+            {/* Six icon mark between signals & dashboard */}
+            <div className="pointer-events-none absolute left-[286px] top-[191px] w-12 h-12 flex items-center justify-center drop-shadow-[0_0_24px_rgba(167,139,250,0.65)]">
+              <img src={sixIcon} alt="" className="w-11 h-11 object-contain" draggable={false} />
             </div>
           </div>
 
