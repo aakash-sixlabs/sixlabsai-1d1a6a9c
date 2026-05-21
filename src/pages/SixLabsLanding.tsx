@@ -20,6 +20,7 @@ export default function SixLabsLanding() {
       <Navbar scrollY={scrollY} />
       <HeroSection />
       <SixLabsWorkflowVisual />
+      <ProblemSection />
       <ContactSection />
       <Footer />
     </div>
