@@ -19,6 +19,11 @@ import {
   Play,
   Pause,
   RefreshCw,
+  Users,
+  DollarSign,
+  Activity,
+  Star,
+  Citrus,
 } from "lucide-react";
 
 /* ---------- Editable copy ---------- */
