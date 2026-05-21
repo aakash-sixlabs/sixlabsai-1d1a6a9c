@@ -3,6 +3,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisual";
 import { ProblemSection } from "@/components/landing/ProblemSection";
+import { ProblemSectionV2 } from "@/components/landing/ProblemSectionV2";
 import { ProofStrip } from "@/components/landing/ProofStrip";
 import { ProductSection } from "@/components/landing/ProductSection";
 import { ContactSection } from "@/components/landing/ContactSection";
@@ -24,6 +25,7 @@ export default function SixLabsLanding() {
       <SixLabsWorkflowVisual />
       <ProofStrip />
       <ProblemSection />
+      <ProblemSectionV2 />
       <ProductSection />
       <ContactSection />
       <Footer />
