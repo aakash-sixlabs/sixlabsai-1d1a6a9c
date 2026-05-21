@@ -18,7 +18,7 @@ const COPY = {
   eyebrow: "THE PROBLEM",
   headlineA: "Paid media moves in real time.",
   headlineB: "Agencies don't.",
-  sub: "Campaigns generate signals every day — fatigue, CAC drift, winning hooks, competitor moves. But most agency workflows still take weeks to turn those signals into new creative and media decisions.",
+  sub: "Campaigns generate signals every day. Fatigue, CAC drift, Winning hooks, Competitor moves. But most agency workflows still take weeks to turn those signals into new creative and media decisions.",
   left: {
     pill: "CAMPAIGNS NEED",
     title: "Always-on speed and scale",
@@ -29,10 +29,8 @@ const COPY = {
     title: "Manual workflows and slow handoffs",
     desc: "Built around headcount, hours, and meetings — not real-time learning loops.",
   },
-  callout:
-    "Brands pay more for slower decisions, while the window to act on campaign learnings closes.",
-  calloutMobile:
-    "Brands pay more for slower decisions while campaign learnings expire.",
+  callout: "Brands pay more for slower decisions, while the window to act on campaign learnings closes.",
+  calloutMobile: "Brands pay more for slower decisions while campaign learnings expire.",
 };
 
 type Pair = {
@@ -112,10 +110,7 @@ const useInView = <T extends HTMLElement>(threshold = 0.15) => {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
     if (!ref.current) return;
-    const obs = new IntersectionObserver(
-      ([e]) => e.isIntersecting && setVisible(true),
-      { threshold }
-    );
+    const obs = new IntersectionObserver(([e]) => e.isIntersecting && setVisible(true), { threshold });
     obs.observe(ref.current);
     return () => obs.disconnect();
   }, [threshold]);
@@ -158,11 +153,7 @@ const Row = ({
       }`}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible
-          ? active
-            ? "translateY(-2px)"
-            : "translateY(0)"
-          : "translateY(12px)",
+        transform: visible ? (active ? "translateY(-2px)" : "translateY(0)") : "translateY(12px)",
         transitionProperty: "opacity, transform, border-color, box-shadow, background-color",
         transitionDuration: "500ms",
         transitionDelay: `${delay}ms`,
@@ -170,20 +161,13 @@ const Row = ({
     >
       <div
         className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
-          isBlue
-            ? "bg-[#EFF4FF] border border-[#2563EB]/15"
-            : "bg-[#F3EEFF] border border-[#A78BFA]/20"
+          isBlue ? "bg-[#EFF4FF] border border-[#2563EB]/15" : "bg-[#F3EEFF] border border-[#A78BFA]/20"
         } ${active ? (isBlue ? "shadow-[0_0_18px_-2px_rgba(37,99,235,0.55)]" : "shadow-[0_0_18px_-2px_rgba(167,139,250,0.6)]") : ""}`}
       >
-        <Icon
-          className={`w-5 h-5 ${isBlue ? "text-[#2563EB]" : "text-[#7C5DE8]"}`}
-          strokeWidth={2}
-        />
+        <Icon className={`w-5 h-5 ${isBlue ? "text-[#2563EB]" : "text-[#7C5DE8]"}`} strokeWidth={2} />
       </div>
       <div className="min-w-0">
-        <div className="text-[15px] font-display font-semibold text-[#020617] leading-tight">
-          {title}
-        </div>
+        <div className="text-[15px] font-display font-semibold text-[#020617] leading-tight">{title}</div>
         <div className="text-[13px] text-[#475569] mt-0.5 leading-snug">{sub}</div>
       </div>
     </div>
@@ -354,9 +338,7 @@ const CompareCarousel = () => {
                 <div className="text-[13px] font-display font-semibold text-[#020617] leading-tight">
                   {pair.campaign.title}
                 </div>
-                <div className="text-[11px] text-[#475569] mt-0.5 leading-snug">
-                  {pair.campaign.sub}
-                </div>
+                <div className="text-[11px] text-[#475569] mt-0.5 leading-snug">{pair.campaign.sub}</div>
               </div>
             </div>
           </div>
@@ -372,16 +354,13 @@ const CompareCarousel = () => {
                 <div className="text-[13px] font-display font-semibold text-[#020617] leading-tight">
                   {pair.agency.title}
                 </div>
-                <div className="text-[11px] text-[#475569] mt-0.5 leading-snug">
-                  {pair.agency.sub}
-                </div>
+                <div className="text-[11px] text-[#475569] mt-0.5 leading-snug">{pair.agency.sub}</div>
               </div>
             </div>
           </div>
         </div>
         <div className="mt-3 pt-3 border-t border-[#E5E7EB] text-[12.5px] text-[#020617]">
-          <GradientSpan>{pair.gap}:</GradientSpan>{" "}
-          <span className="text-[#475569]">{pair.consequence}</span>
+          <GradientSpan>{pair.gap}:</GradientSpan> <span className="text-[#475569]">{pair.consequence}</span>
         </div>
       </div>
       <div className="mt-3 flex justify-center gap-1.5">
@@ -412,10 +391,7 @@ export const ProblemSection = () => {
   const activeGap = PAIRS.find((p) => p.id === activePair)?.gap ?? null;
 
   return (
-    <section
-      id="problem"
-      className="relative bg-[#F8FAFC] text-[#020617] py-20 md:py-28 px-5 md:px-8 overflow-hidden"
-    >
+    <section id="problem" className="relative bg-[#F8FAFC] text-[#020617] py-20 md:py-28 px-5 md:px-8 overflow-hidden">
       <Waves />
 
       <div className="relative max-w-[1240px] mx-auto">
@@ -432,8 +408,10 @@ export const ProblemSection = () => {
           <span className="inline-block px-3.5 py-1.5 rounded-full bg-[#EEF0FF] border border-[#A78BFA]/25 text-[#4F46E5] text-[10.5px] font-display font-bold tracking-[0.16em]">
             {COPY.eyebrow}
           </span>
-          <h2 className="mt-5 font-display font-bold tracking-tight text-[#020617] leading-[1.05]"
-              style={{ fontSize: "clamp(36px, 6vw, 60px)" }}>
+          <h2
+            className="mt-5 font-display font-bold tracking-tight text-[#020617] leading-[1.05]"
+            style={{ fontSize: "clamp(36px, 6vw, 60px)" }}
+          >
             {COPY.headlineA}
             <br />
             <GradientSpan>{COPY.headlineB}</GradientSpan>
@@ -448,10 +426,12 @@ export const ProblemSection = () => {
           {/* Toggle */}
           <div className="flex justify-center mb-8">
             <div className="inline-flex p-1 rounded-full bg-white border border-[#E5E7EB] shadow-sm">
-              {([
-                { k: "campaign", label: "Campaign Reality" },
-                { k: "agency", label: "Agency Bottleneck" },
-              ] as const).map((t) => {
+              {(
+                [
+                  { k: "campaign", label: "Campaign Reality" },
+                  { k: "agency", label: "Agency Bottleneck" },
+                ] as const
+              ).map((t) => {
                 const on = emphasis === t.k;
                 return (
                   <button
@@ -472,10 +452,7 @@ export const ProblemSection = () => {
             </div>
           </div>
 
-          <div
-            ref={cardsRef}
-            className="grid grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-stretch"
-          >
+          <div ref={cardsRef} className="grid grid-cols-[1fr_auto_1fr] gap-6 lg:gap-8 items-stretch">
             {/* Left card */}
             <CardShell
               emphasized={emphasis === "campaign" || activePair !== null}
@@ -551,10 +528,12 @@ export const ProblemSection = () => {
             aria-label="Compare campaigns and agencies"
             className="inline-flex w-full p-1 rounded-full bg-white border border-[#E5E7EB] shadow-sm"
           >
-            {([
-              { k: "campaign", label: "Campaigns need", variant: "blue" as const },
-              { k: "agency", label: "Agencies deliver", variant: "lilac" as const },
-            ] as const).map((t) => {
+            {(
+              [
+                { k: "campaign", label: "Campaigns need", variant: "blue" as const },
+                { k: "agency", label: "Agencies deliver", variant: "lilac" as const },
+              ] as const
+            ).map((t) => {
               const on = mobileTab === t.k;
               return (
                 <button
@@ -653,8 +632,7 @@ export const ProblemSection = () => {
               <GradientSpan>The result:</GradientSpan>{" "}
               <span className="hidden md:inline">
                 Brands pay more for <GradientSpan>slower decisions</GradientSpan>, while the{" "}
-                <GradientSpan>window to act</GradientSpan> on{" "}
-                <GradientSpan>campaign learnings closes</GradientSpan>.
+                <GradientSpan>window to act</GradientSpan> on <GradientSpan>campaign learnings closes</GradientSpan>.
               </span>
               <span className="md:hidden">
                 Brands pay more for <GradientSpan>slower decisions</GradientSpan> while{" "}
