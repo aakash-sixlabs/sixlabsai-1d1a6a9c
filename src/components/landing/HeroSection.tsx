@@ -10,8 +10,7 @@ const pills = [
 ];
 
 export const HeroSection = () => {
-  const handleContact = () =>
-    smoothScrollTo("#contact", { duration: 1100, offset: -64 });
+  const handleContact = () => smoothScrollTo("#contact", { duration: 1100, offset: -64 });
 
   return (
     <section className="relative pt-32 md:pt-36 pb-10 md:pb-14 px-6 overflow-hidden">
@@ -40,7 +39,7 @@ export const HeroSection = () => {
             onClick={handleContact}
             className="h-12 px-7 rounded-xl font-display font-semibold text-[15px] text-white bg-brand-gradient hover:opacity-95 border-0 shadow-[0_10px_40px_-10px_hsl(var(--signal)/0.7)] transition-opacity"
           >
-            Book a demo
+            Talk to the founders
           </Button>
         </div>
 
