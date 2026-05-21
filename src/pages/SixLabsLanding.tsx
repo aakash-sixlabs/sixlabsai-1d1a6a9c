@@ -25,6 +25,7 @@ export default function SixLabsLanding() {
       <SixLabsWorkflowVisual />
       <ProofStrip />
       <ProblemSection />
+      <ProblemSectionV2 />
       <ProductSection />
       <ContactSection />
       <Footer />
