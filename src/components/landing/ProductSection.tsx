@@ -250,50 +250,228 @@ const InsightCard = ({
   </div>
 );
 
+const MARKET_CHIPS: {
+  label: string;
+  Icon: any;
+  // position relative to orbit container (percent)
+  top: string;
+  left: string;
+}[] = [
+  { label: "Competitor move", Icon: Users, top: "8%", left: "22%" },
+  { label: "CAC drift", Icon: DollarSign, top: "8%", left: "78%" },
+  { label: "Creative fatigue", Icon: BarChart3, top: "50%", left: "96%" },
+  { label: "Audience shift", Icon: Users, top: "88%", left: "76%" },
+  { label: "Winning hook", Icon: Star, top: "88%", left: "24%" },
+  { label: "Category trend", Icon: TrendingUp, top: "50%", left: "4%" },
+];
+
+const SignalChip = ({
+  label,
+  Icon,
+  style,
+}: {
+  label: string;
+  Icon: any;
+  style?: React.CSSProperties;
+}) => (
+  <div
+    className="absolute -translate-x-1/2 -translate-y-1/2 group"
+    style={style}
+  >
+    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.08)] text-[11.5px] font-display text-slate-700 whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_4px_14px_-4px_rgba(99,102,241,0.35)] animate-[floatY_6s_ease-in-out_infinite]">
+      <Icon className="w-3 h-3 text-blue-500" strokeWidth={2.2} />
+      {label}
+    </div>
+  </div>
+);
+
 const MarketVisual = () => {
-  const chips = [
-    "Competitor move",
-    "CAC drift",
-    "Creative fatigue",
-    "Audience shift",
-    "Winning hook",
-    "Category trend",
-  ];
   return (
-    <div className="relative flex flex-col items-center justify-center h-full">
-      <div className="relative w-[320px] h-[280px] md:w-[420px] md:h-[320px]">
-        {/* orbital rings */}
-        <div className="absolute inset-0 rounded-full border border-dashed border-blue-200/70 animate-[spinSlow_30s_linear_infinite]" />
-        <div className="absolute inset-8 rounded-full border border-dashed border-violet-200/70 animate-[spinSlow_22s_linear_infinite_reverse]" />
-        {/* center */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500/10 to-violet-500/10 border border-blue-300/40 flex items-center justify-center shadow-[0_0_30px_-6px_rgba(99,102,241,0.5)]">
-            <BarChart3 className="w-8 h-8 text-blue-600" />
+    <div className="relative flex flex-col h-full gap-4">
+      {/* Orbit area */}
+      <div className="relative flex-1 min-h-[280px]">
+        {/* SVG orbit */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          viewBox="0 0 600 320"
+          preserveAspectRatio="none"
+          aria-hidden
+        >
+          <defs>
+            <linearGradient id="orbitStroke" x1="0" x2="1">
+              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.55" />
+            </linearGradient>
+            <marker
+              id="orbitArrow"
+              viewBox="0 0 10 10"
+              refX="6"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M0,0 L10,5 L0,10 z" fill="#A78BFA" />
+            </marker>
+          </defs>
+          {/* outer dashed ellipse */}
+          <ellipse
+            cx="300"
+            cy="160"
+            rx="250"
+            ry="130"
+            fill="none"
+            stroke="url(#orbitStroke)"
+            strokeWidth="1"
+            strokeDasharray="2 6"
+          />
+          {/* inner dashed ellipse */}
+          <ellipse
+            cx="300"
+            cy="160"
+            rx="210"
+            ry="105"
+            fill="none"
+            stroke="#C4B5FD"
+            strokeOpacity="0.5"
+            strokeWidth="1"
+            strokeDasharray="1 5"
+          />
+          {/* arrowheads suggesting motion */}
+          <path
+            d="M 295 30 L 305 30"
+            stroke="#A78BFA"
+            strokeWidth="1.4"
+            markerEnd="url(#orbitArrow)"
+          />
+          <path
+            d="M 295 290 L 285 290"
+            stroke="#A78BFA"
+            strokeWidth="1.4"
+            markerEnd="url(#orbitArrow)"
+          />
+          {/* tiny pulsing dots */}
+          {[
+            { cx: 50, cy: 160 },
+            { cx: 550, cy: 160 },
+            { cx: 300, cy: 30 },
+            { cx: 300, cy: 290 },
+            { cx: 120, cy: 60 },
+            { cx: 480, cy: 260 },
+          ].map((d, i) => (
+            <circle
+              key={i}
+              cx={d.cx}
+              cy={d.cy}
+              r="2.5"
+              fill="#6366F1"
+              className="animate-[pulseDot_2.4s_ease-in-out_infinite]"
+              style={{ animationDelay: `${i * 0.35}s` }}
+            />
+          ))}
+        </svg>
+
+        {/* Signal chips */}
+        {MARKET_CHIPS.map((c, i) => (
+          <SignalChip
+            key={c.label}
+            label={c.label}
+            Icon={c.Icon}
+            style={{ top: c.top, left: c.left, animationDelay: `${i * 0.4}s` }}
+          />
+        ))}
+
+        {/* Center insight card */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] md:w-[280px]">
+          <div className="rounded-2xl bg-white border border-violet-200 p-4 shadow-[0_0_40px_-8px_rgba(167,139,250,0.45)] animate-[softGlow_4s_ease-in-out_infinite]">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500/15 to-violet-500/20 border border-violet-200 flex items-center justify-center">
+                <Sparkles className="w-3 h-3 text-violet-600" />
+              </div>
+              <div className="text-[12px] font-display font-semibold text-slate-900">
+                New segment detected
+              </div>
+            </div>
+            <p className="text-[12.5px] text-slate-700 leading-snug">
+              Hydration-focused buyers responding to citrus + bundle offers
+            </p>
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-display bg-blue-50 text-blue-700 border border-blue-200">
+                Intent shift
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-display bg-violet-50 text-violet-700 border border-violet-200">
+                Offer sensitivity
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-display bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
+                High-propensity segment
+              </span>
+            </div>
           </div>
         </div>
-        {/* chips around circle */}
-        {chips.map((c, i) => {
-          const angle = (i / chips.length) * Math.PI * 2 - Math.PI / 2;
-          const r = 150;
-          const x = Math.cos(angle) * r;
-          const y = Math.sin(angle) * r;
-          return (
-            <div
-              key={c}
-              className="absolute left-1/2 top-1/2"
-              style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }}
-            >
-              <Chip>{c}</Chip>
-            </div>
-          );
-        })}
       </div>
-      <div className="mt-4">
-        <InsightCard
-          title="New segment detected"
-          body="Hydration-focused buyers responding to citrus + bundle offers"
-          Icon={Target}
-        />
+
+      {/* Bottom row */}
+      <div className="grid grid-cols-[1.5fr_1fr] gap-3">
+        {/* Market context */}
+        <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center gap-3">
+          <div className="shrink-0 relative w-10 h-12 rounded-md bg-gradient-to-b from-cyan-50 to-blue-100 border border-slate-200 flex items-center justify-center">
+            <Citrus className="w-5 h-5 text-amber-500" />
+            <div className="absolute inset-x-1 top-1 h-[2px] rounded bg-white/70" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-[12.5px] font-display font-semibold text-slate-900">
+              Flavored water market
+            </div>
+            <div className="text-[11.5px] text-slate-600 leading-snug mt-0.5">
+              Monitoring 12M+ signals across news, social, search, reviews, and
+              first-party customer data.
+            </div>
+          </div>
+        </div>
+
+        {/* Signal velocity */}
+        <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="text-[11px] font-display font-semibold text-slate-500 uppercase tracking-wider">
+              Real-time signal velocity
+            </div>
+            <span className="inline-flex items-center gap-1 text-[10px] font-display font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
+          </div>
+          <svg viewBox="0 0 160 36" className="w-full h-8 mt-1.5">
+            <defs>
+              <linearGradient id="velGrad" x1="0" x2="1">
+                <stop offset="0%" stopColor="#6366F1" />
+                <stop offset="100%" stopColor="#A78BFA" />
+              </linearGradient>
+            </defs>
+            <path
+              d="M0,24 L20,20 L36,26 L54,16 L72,22 L92,12 L112,18 L132,10 L150,14 L160,8"
+              fill="none"
+              stroke="url(#velGrad)"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <circle cx="160" cy="8" r="2.5" fill="#6366F1" />
+          </svg>
+          <div className="mt-1.5 space-y-1 text-[10.5px] font-display">
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Category shifts</span>
+              <span className="text-emerald-600 font-semibold">↑ 23%</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Audience clusters</span>
+              <span className="text-emerald-600 font-semibold">↑ 17%</span>
+            </div>
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Signal velocity</span>
+              <span className="text-blue-600 font-semibold">High</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
