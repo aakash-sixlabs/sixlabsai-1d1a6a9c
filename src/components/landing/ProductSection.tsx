@@ -111,7 +111,7 @@ const CAPS: Capability[] = [
   },
 ];
 
-const DEFAULT_ID: CapId = "qa";
+const DEFAULT_ID: CapId = "market";
 
 /* ---------- Reusable bits ---------- */
 const Can = ({
