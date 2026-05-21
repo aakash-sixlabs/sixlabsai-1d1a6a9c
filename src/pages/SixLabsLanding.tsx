@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisual";
+import { ProblemSection } from "@/components/landing/ProblemSection";
 import { ContactSection } from "@/components/landing/ContactSection";
 import { Footer } from "@/components/landing/Footer";
 
