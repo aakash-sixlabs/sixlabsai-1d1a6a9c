@@ -880,6 +880,9 @@ export const ProductSection = () => {
     <section className="relative bg-[#F8FAFC] py-20 md:py-28 lg:py-32 overflow-hidden">
       <style>{`
         @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes floatY { 0%,100% { transform: translate(-50%, -50%) translateY(0); } 50% { transform: translate(-50%, -50%) translateY(-2px); } }
+        @keyframes pulseDot { 0%,100% { opacity: 0.3; r: 2; } 50% { opacity: 1; r: 3.5; } }
+        @keyframes softGlow { 0%,100% { box-shadow: 0 0 32px -10px rgba(167,139,250,0.35); } 50% { box-shadow: 0 0 48px -8px rgba(167,139,250,0.55); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}</style>
