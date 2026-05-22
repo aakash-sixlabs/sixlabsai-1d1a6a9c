@@ -382,46 +382,70 @@ function WorkflowTimeline({
   );
 }
 
-/* ---------- Gap annotation (right side bracket) ---------- */
+/* ---------- Gap annotation (right side) ---------- */
 function GapAnnotation() {
-  const [hover, setHover] = useState(false);
   return (
-    <div
-      className="relative h-full flex items-center justify-center"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
-      <svg viewBox="0 0 40 200" className="h-full w-10" aria-hidden>
-        <defs>
-          <linearGradient id="gap-grad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#6366F1" />
-            <stop offset="100%" stopColor="#8B5CF6" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M 8 8 L 20 8 L 20 192 L 8 192"
-          stroke="url(#gap-grad)"
-          strokeWidth="1.2"
-          fill="none"
-          strokeDasharray="3 3"
-          className={hover ? "animate-pulse" : ""}
-        />
-        <path d="M 14 4 L 20 8 L 26 4" stroke="url(#gap-grad)" strokeWidth="1.2" fill="none" />
-        <path d="M 14 196 L 20 192 L 26 196" stroke="url(#gap-grad)" strokeWidth="1.2" fill="none" />
-      </svg>
-      <div className="absolute -right-2 translate-x-full text-left max-w-[100px]">
-        <div className="text-[11px] leading-tight font-semibold text-[#4F46E5]">
-          The gap gets wider every day
-        </div>
-      </div>
-      {hover && (
+    <div className="relative h-full flex items-center justify-center py-4">
+      <div className="relative flex flex-col items-center h-full w-full min-h-[260px]">
+        {/* Top arrow */}
+        <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden className="text-[#8B5CF6]">
+          <path
+            d="M 7 1 L 7 9 M 2 5 L 7 1 L 12 5"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+
+        {/* Dashed line above label */}
         <div
-          role="tooltip"
-          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[200px] rounded-lg bg-[#0B123F] text-white text-[11px] leading-snug px-3 py-2 shadow-xl z-20"
-        >
-          Campaigns update daily. Workflow action lands days later.
+          className="flex-1 w-px"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
+            backgroundSize: "1px 8px",
+            backgroundRepeat: "repeat-y",
+          }}
+          aria-hidden
+        />
+
+        {/* Centered label */}
+        <div className="my-2 text-center">
+          <div className="text-[12px] leading-[1.25] font-semibold text-[#0B123F]">
+            The gap
+            <br />
+            gets wider
+            <br />
+            every day
+          </div>
         </div>
-      )}
+
+        {/* Dashed line below label */}
+        <div
+          className="flex-1 w-px"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
+            backgroundSize: "1px 8px",
+            backgroundRepeat: "repeat-y",
+          }}
+          aria-hidden
+        />
+
+        {/* Bottom arrow */}
+        <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden className="text-[#8B5CF6]">
+          <path
+            d="M 7 9 L 7 1 M 2 5 L 7 9 L 12 5"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
     </div>
   );
 }
