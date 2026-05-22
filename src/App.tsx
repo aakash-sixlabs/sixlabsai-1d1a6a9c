@@ -64,7 +64,9 @@ const AppRoutes = () => {
 
   return (
     <WizardProvider>
-      <GenerationNotificationsProvider>{routes}</GenerationNotificationsProvider>
+      <Suspense fallback={<LoadingScreen />}>
+        <GenerationNotificationsProvider>{routes}</GenerationNotificationsProvider>
+      </Suspense>
     </WizardProvider>
   );
 };
