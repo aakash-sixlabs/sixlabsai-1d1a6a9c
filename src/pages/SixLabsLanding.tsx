@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navbar } from "@/components/landing/Navbar";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisual";
-import { ProblemSection } from "@/components/landing/ProblemSection";
+//import { ProblemSection } from "@/components/landing/ProblemSection";
 import { ProblemSectionV2 } from "@/components/landing/ProblemSectionV2";
 import { ProofStrip } from "@/components/landing/ProofStrip";
 import { ProductSection } from "@/components/landing/ProductSection";
@@ -24,7 +24,9 @@ export default function SixLabsLanding() {
       <HeroSection />
       <SixLabsWorkflowVisual />
       <ProofStrip />
+      /*
       <ProblemSection />
+      */
       <ProblemSectionV2 />
       <ProductSection />
       <ContactSection />
