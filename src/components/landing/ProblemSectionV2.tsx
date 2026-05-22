@@ -137,26 +137,27 @@ function CampaignTimeline({
   inView: boolean;
   reduced: boolean;
 }) {
-  // 7 columns
   const cols = CAMPAIGN_SIGNALS.length;
+  // Single gentle sine wave across full width; dots align under each card center
   const points = useMemo(() => {
     const arr: { x: number; y: number }[] = [];
     for (let i = 0; i < cols; i++) {
       const x = (i + 0.5) * (100 / cols);
-      const y = 50 + Math.sin(i * 1.1) * 18;
+      const y = 30 + Math.sin((i / (cols - 1)) * Math.PI * 2) * 9;
       arr.push({ x, y });
     }
     return arr;
   }, [cols]);
 
+  // Smooth wave path built from cubic beziers with horizontal control handles
   const pathD = useMemo(() => {
     if (points.length === 0) return "";
     let d = `M ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length; i++) {
       const prev = points[i - 1];
       const curr = points[i];
-      const cx = (prev.x + curr.x) / 2;
-      d += ` Q ${cx} ${prev.y}, ${cx} ${(prev.y + curr.y) / 2} T ${curr.x} ${curr.y}`;
+      const dx = (curr.x - prev.x) * 0.5;
+      d += ` C ${prev.x + dx} ${prev.y}, ${curr.x - dx} ${curr.y}, ${curr.x} ${curr.y}`;
     }
     return d;
   }, [points]);
@@ -172,9 +173,7 @@ function CampaignTimeline({
           <div key={s.id} className="text-center">
             <span
               className={`inline-block text-[10.5px] font-bold tracking-[0.16em] px-2 py-0.5 rounded-full transition-colors ${
-                i === 0
-                  ? "bg-[#4F46E5] text-white"
-                  : "text-[#64748B]"
+                i === 0 ? "bg-[#4F46E5] text-white" : "text-[#64748B]"
               }`}
             >
               {s.day}
@@ -227,9 +226,14 @@ function CampaignTimeline({
         })}
       </div>
 
-      {/* Timeline line + dots */}
-      <div className="relative mt-4 h-10">
-        <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" aria-hidden>
+      {/* Single smooth wave line with dots aligned under each card */}
+      <div className="relative mt-5 h-12">
+        <svg
+          viewBox="0 0 100 60"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full overflow-visible"
+          aria-hidden
+        >
           <defs>
             <linearGradient id="camp-line" x1="0" x2="1">
               <stop offset="0%" stopColor="#6366F1" />
@@ -239,9 +243,10 @@ function CampaignTimeline({
           <path
             d={pathD}
             stroke="url(#camp-line)"
-            strokeWidth="1"
+            strokeWidth="1.4"
             fill="none"
             strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
             style={
               reduced
                 ? undefined
@@ -252,26 +257,17 @@ function CampaignTimeline({
                   }
             }
           />
-        </svg>
-        <div
-          className="absolute inset-0 grid"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-        >
           {points.map((p, i) => {
             const sId = CAMPAIGN_SIGNALS[i].id;
             const active = hoveredSignal === sId || hoveredPair === sId;
             return (
-              <div key={i} className="relative">
-                <span
-                  className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-[#4F46E5] transition-all ${
-                    active ? "scale-125 shadow-[0_0_0_5px_rgba(99,102,241,0.25)]" : ""
-                  }`}
-                  style={{ top: `${p.y - 5}%` }}
-                />
-              </div>
+              <g key={i}>
+                {active && <circle cx={p.x} cy={p.y} r={3} fill="#6366F1" opacity={0.25} />}
+                <circle cx={p.x} cy={p.y} r={active ? 1.8 : 1.3} fill="#4F46E5" />
+              </g>
             );
           })}
-        </div>
+        </svg>
       </div>
     </div>
   );
@@ -386,46 +382,70 @@ function WorkflowTimeline({
   );
 }
 
-/* ---------- Gap annotation (right side bracket) ---------- */
+/* ---------- Gap annotation (right side) ---------- */
 function GapAnnotation() {
-  const [hover, setHover] = useState(false);
   return (
-    <div
-      className="relative h-full flex items-center justify-center"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-    >
-      <svg viewBox="0 0 40 200" className="h-full w-10" aria-hidden>
-        <defs>
-          <linearGradient id="gap-grad" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#6366F1" />
-            <stop offset="100%" stopColor="#8B5CF6" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M 8 8 L 20 8 L 20 192 L 8 192"
-          stroke="url(#gap-grad)"
-          strokeWidth="1.2"
-          fill="none"
-          strokeDasharray="3 3"
-          className={hover ? "animate-pulse" : ""}
-        />
-        <path d="M 14 4 L 20 8 L 26 4" stroke="url(#gap-grad)" strokeWidth="1.2" fill="none" />
-        <path d="M 14 196 L 20 192 L 26 196" stroke="url(#gap-grad)" strokeWidth="1.2" fill="none" />
-      </svg>
-      <div className="absolute -right-2 translate-x-full text-left max-w-[100px]">
-        <div className="text-[11px] leading-tight font-semibold text-[#4F46E5]">
-          The gap gets wider every day
-        </div>
-      </div>
-      {hover && (
+    <div className="relative h-full flex items-center justify-center py-4">
+      <div className="relative flex flex-col items-center h-full w-full min-h-[260px]">
+        {/* Top arrow */}
+        <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden className="text-[#8B5CF6]">
+          <path
+            d="M 7 1 L 7 9 M 2 5 L 7 1 L 12 5"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+
+        {/* Dashed line above label */}
         <div
-          role="tooltip"
-          className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[200px] rounded-lg bg-[#0B123F] text-white text-[11px] leading-snug px-3 py-2 shadow-xl z-20"
-        >
-          Campaigns update daily. Workflow action lands days later.
+          className="flex-1 w-px"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
+            backgroundSize: "1px 8px",
+            backgroundRepeat: "repeat-y",
+          }}
+          aria-hidden
+        />
+
+        {/* Centered label */}
+        <div className="my-2 text-center">
+          <div className="text-[12px] leading-[1.25] font-semibold text-[#0B123F]">
+            The gap
+            <br />
+            gets wider
+            <br />
+            every day
+          </div>
         </div>
-      )}
+
+        {/* Dashed line below label */}
+        <div
+          className="flex-1 w-px"
+          style={{
+            backgroundImage:
+              "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
+            backgroundSize: "1px 8px",
+            backgroundRepeat: "repeat-y",
+          }}
+          aria-hidden
+        />
+
+        {/* Bottom arrow */}
+        <svg width="14" height="10" viewBox="0 0 14 10" aria-hidden className="text-[#8B5CF6]">
+          <path
+            d="M 7 9 L 7 1 M 2 5 L 7 9 L 12 5"
+            stroke="currentColor"
+            strokeWidth="1.4"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </div>
     </div>
   );
 }
@@ -459,8 +479,18 @@ function ResultCallout({ inView, reduced }: { inView: boolean; reduced: boolean 
   );
 }
 
-/* ---------- Mobile timeline (horizontal scroll) ---------- */
-function MobileTimeline({
+/* ---------- Mobile layout (no horizontal scroll) ---------- */
+const PAIR_EXPLAIN: Record<string, string> = {
+  s1: "Pairs with: Brief written — learning becomes a request.",
+  s2: "Pairs with: Report pulled — signal enters after the shift.",
+  s3: "Pairs with: Creative reviewed — execution waits on approvals.",
+  s4: "Pairs with: Campaign updated — action arrives after the market moves.",
+  s5: "Pairs with: Campaign updated — action arrives after the market moves.",
+  s6: "Pairs with: Signal expired — the opportunity has moved on.",
+  s7: "More signals keep emerging while workflows catch up.",
+};
+
+function MobileLayout({
   tappedSignal,
   setTappedSignal,
   expandedWorkflow,
@@ -471,114 +501,214 @@ function MobileTimeline({
   expandedWorkflow: string | null;
   setExpandedWorkflow: (id: string | null) => void;
 }) {
+  // First 6 signals in 2-col grid; 7th as full-width subtle card
+  const gridSignals = CAMPAIGN_SIGNALS.slice(0, 6);
+  const extraSignal = CAMPAIGN_SIGNALS[6];
+  const activePairId = tappedSignal
+    ? CAMPAIGN_SIGNALS.find((s) => s.id === tappedSignal)?.pairId ?? null
+    : null;
+
   return (
-    <div className="space-y-6">
-      {/* Campaign reality */}
+    <div className="space-y-7">
+      {/* SECTION 1: Campaign reality */}
       <div>
         <div className="flex items-start gap-3">
           <span className="w-10 h-10 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
             <Activity size={18} />
           </span>
-          <div>
-            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">Campaign reality</h3>
-            <p className="text-[12px] text-[#64748B] mt-0.5">The market is changing every day.</p>
-            <span className="inline-block mt-1.5 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5]">
-              FAST MOVING
-            </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">
+              Campaign reality
+            </h3>
+            <p className="text-[12.5px] text-[#64748B] mt-0.5">
+              The market is changing every day.
+            </p>
           </div>
+          <span className="text-[10px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5] shrink-0">
+            FAST MOVING
+          </span>
         </div>
-        <div className="mt-3 -mx-1 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2.5 px-1 pb-3 snap-x snap-mandatory">
-            {CAMPAIGN_SIGNALS.map((s) => {
-              const isActive = tappedSignal === s.id;
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  aria-label={`${s.day}: ${s.label}`}
-                  onClick={() => setTappedSignal(isActive ? null : s.id)}
-                  className={`snap-start shrink-0 w-[140px] min-h-[120px] rounded-2xl border bg-white p-3 text-center transition-all ${
-                    isActive
-                      ? "border-[#4F46E5] shadow-[0_8px_24px_-12px_rgba(79,70,229,0.5)]"
-                      : "border-[rgba(15,23,42,0.08)] shadow-sm"
-                  }`}
-                >
-                  <div className="text-[10px] font-bold tracking-[0.16em] text-[#4F46E5]">{s.day}</div>
-                  <div className="mt-1.5 flex justify-center">
-                    <span className="w-8 h-8 rounded-full flex items-center justify-center bg-[#EEF2FF] text-[#4F46E5]">
-                      <s.Icon size={14} />
-                    </span>
+
+        {/* 2-col grid (1-col if very narrow) */}
+        <div className="mt-3 grid grid-cols-2 max-[339px]:grid-cols-1 gap-2.5">
+          {gridSignals.map((s) => {
+            const isActive = tappedSignal === s.id;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                aria-label={`${s.day}: ${s.label}`}
+                aria-pressed={isActive}
+                onClick={() => setTappedSignal(isActive ? null : s.id)}
+                className={`text-left rounded-2xl border bg-white p-3.5 min-h-[96px] transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]/40 ${
+                  isActive
+                    ? "border-[#4F46E5] shadow-[0_10px_24px_-14px_rgba(79,70,229,0.45)]"
+                    : "border-[rgba(15,23,42,0.08)] shadow-[0_2px_8px_-4px_rgba(15,23,42,0.08)]"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[9.5px] font-bold tracking-[0.16em] text-[#4F46E5]">
+                    {s.day}
+                  </span>
+                  <span className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EEF2FF] text-[#4F46E5]">
+                    <s.Icon size={13} />
+                  </span>
+                </div>
+                <div className="mt-1.5 text-[12.5px] leading-snug font-semibold text-[#0B123F]">
+                  {s.label}
+                </div>
+                {isActive && (
+                  <div className="mt-2 text-[11px] leading-snug text-[#64748B] border-t border-dashed border-[#E0E7FF] pt-2">
+                    {PAIR_EXPLAIN[s.id]}
                   </div>
-                  <div className="mt-1.5 text-[11px] leading-snug font-semibold text-[#0B123F]">{s.label}</div>
-                </button>
-              );
-            })}
-          </div>
-          <div className="h-[2px] mx-3 rounded-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Day 7 subtle full-width card */}
+        <button
+          type="button"
+          aria-label={extraSignal.label}
+          aria-pressed={tappedSignal === extraSignal.id}
+          onClick={() =>
+            setTappedSignal(tappedSignal === extraSignal.id ? null : extraSignal.id)
+          }
+          className={`mt-2.5 w-full flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]/40 ${
+            tappedSignal === extraSignal.id
+              ? "bg-white border-[#4F46E5] shadow-[0_8px_20px_-14px_rgba(79,70,229,0.45)]"
+              : "bg-[#F5F3FF]/60 border-[rgba(79,70,229,0.18)]"
+          }`}
+        >
+          <span className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EEF2FF] text-[#4F46E5] shrink-0">
+            <MoreHorizontal size={13} />
+          </span>
+          <span className="text-[12.5px] font-semibold text-[#0B123F]">
+            More signals emerge daily
+          </span>
+        </button>
+
+        {/* Pulse indicator */}
+        <div className="mt-3 flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-60 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4F46E5]" />
+          </span>
+          <span className="flex-1 h-[2px] rounded-full bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-transparent" />
+          <span className="text-[10.5px] font-semibold tracking-wide text-[#4F46E5]">
+            Signals keep moving
+          </span>
         </div>
       </div>
 
-      {/* Gap cue */}
+      {/* GAP CUE */}
       <div className="flex flex-col items-center gap-1.5 py-1">
-        <svg width="14" height="28" viewBox="0 0 14 28" aria-hidden>
-          <line x1="7" y1="2" x2="7" y2="26" stroke="#8B5CF6" strokeWidth="1.2" strokeDasharray="3 3" />
-          <path d="M 3 6 L 7 2 L 11 6" stroke="#8B5CF6" strokeWidth="1.2" fill="none" />
-          <path d="M 3 22 L 7 26 L 11 22" stroke="#8B5CF6" strokeWidth="1.2" fill="none" />
+        <svg width="14" height="48" viewBox="0 0 14 48" aria-hidden>
+          <defs>
+            <linearGradient id="mobile-gap-grad" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#8B5CF6" />
+              <stop offset="100%" stopColor="#FB7185" />
+            </linearGradient>
+          </defs>
+          <path d="M 3 5 L 7 1 L 11 5" stroke="#8B5CF6" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <line x1="7" y1="4" x2="7" y2="44" stroke="url(#mobile-gap-grad)" strokeWidth="1.3" strokeDasharray="3 3" />
+          <path d="M 3 43 L 7 47 L 11 43" stroke="#FB7185" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <div className="text-[11px] font-semibold text-[#4F46E5]">The gap gets wider every day</div>
+        <div className="text-[11.5px] font-semibold text-[#0B123F]">
+          The gap gets wider every day
+        </div>
       </div>
 
-      {/* Workflow reality */}
+      {/* SECTION 2: Workflow reality */}
       <div>
         <div className="flex items-start gap-3">
           <span className="w-10 h-10 rounded-full bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center shrink-0">
             <Clock size={18} />
           </span>
-          <div>
-            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">Workflow reality</h3>
-            <p className="text-[12px] text-[#64748B] mt-0.5">Traditional workflows move in sequence.</p>
-            <span className="inline-block mt-1.5 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#FFF1F2] text-[#E11D48]">
-              SLOW MOVING
-            </span>
+          <div className="min-w-0 flex-1">
+            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">
+              Workflow reality
+            </h3>
+            <p className="text-[12.5px] text-[#64748B] mt-0.5">
+              Traditional workflows move in sequence.
+            </p>
           </div>
+          <span className="text-[10px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#FFF1F2] text-[#E11D48] shrink-0">
+            SLOW MOVING
+          </span>
         </div>
-        <div className="mt-3 -mx-1 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-2.5 px-1 pb-3 snap-x snap-mandatory">
-            {WORKFLOW_STEPS.map((step) => {
-              const expanded = expandedWorkflow === step.id;
-              return (
+
+        {/* Vertical stepper */}
+        <ol className="mt-4 relative">
+          {/* Vertical line */}
+          <span
+            className="absolute left-[18px] top-2 bottom-2 w-px"
+            style={{
+              backgroundImage:
+                "linear-gradient(to bottom, #FB7185 0, #FB7185 4px, transparent 4px, transparent 8px)",
+              backgroundSize: "1px 8px",
+              backgroundRepeat: "repeat-y",
+            }}
+            aria-hidden
+          />
+          {WORKFLOW_STEPS.map((step) => {
+            const expanded = expandedWorkflow === step.id;
+            const isPaired = activePairId === step.id;
+            return (
+              <li key={step.id} className="relative pl-11 mb-2.5 last:mb-0">
+                {/* Marker */}
+                <span
+                  className={`absolute left-0 top-2 w-9 h-9 rounded-full flex items-center justify-center border-2 ${
+                    step.isExpired
+                      ? "bg-[#FFF1F2] border-[#FB7185] text-[#E11D48]"
+                      : "bg-white border-[#FB7185] text-[#E11D48]"
+                  }`}
+                >
+                  <step.Icon size={14} />
+                </span>
                 <button
-                  key={step.id}
                   type="button"
                   aria-label={step.label}
+                  aria-expanded={expanded}
                   onClick={() => setExpandedWorkflow(expanded ? null : step.id)}
-                  className={`snap-start shrink-0 ${
-                    step.isExpired ? "w-[170px]" : "w-[140px]"
-                  } min-h-[120px] rounded-2xl border p-3 text-center transition-all ${
+                  className={`w-full text-left rounded-2xl border px-3.5 py-3 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E11D48]/40 ${
                     step.isExpired
-                      ? "bg-[#FFF1F2] border-[#FECDD3]"
-                      : "bg-white border-[rgba(15,23,42,0.08)] shadow-sm"
-                  } ${expanded ? "ring-2 ring-[#E11D48]/30" : ""}`}
+                      ? `bg-[#FFF1F2] ${
+                          isPaired || expanded
+                            ? "border-[#E11D48] shadow-[0_8px_20px_-14px_rgba(225,29,72,0.5)]"
+                            : "border-[#FECDD3]"
+                        }`
+                      : `bg-white ${
+                          isPaired || expanded
+                            ? "border-[#E11D48] shadow-[0_8px_20px_-14px_rgba(225,29,72,0.45)]"
+                            : "border-[rgba(15,23,42,0.08)] shadow-[0_2px_8px_-4px_rgba(15,23,42,0.08)]"
+                        }`
+                  } ${step.isExpired ? "min-h-[76px]" : "min-h-[64px]"}`}
                 >
-                  <div className="flex justify-center">
-                    <span className="w-8 h-8 rounded-full flex items-center justify-center bg-[#FFF1F2] text-[#E11D48]">
-                      <step.Icon size={14} />
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-semibold text-[#0B123F] leading-tight">
+                      {step.label}
                     </span>
+                    {step.time && (
+                      <span className="shrink-0 text-[10.5px] font-semibold tracking-wide text-[#E11D48] bg-[#FFF1F2] rounded-full px-2 py-0.5">
+                        {step.time}
+                      </span>
+                    )}
                   </div>
-                  <div className="mt-1.5 text-[11px] leading-snug font-semibold text-[#0B123F]">{step.label}</div>
-                  {step.time && <div className="text-[10px] text-[#64748B] mt-0.5">{step.time}</div>}
-                  {step.subtext && <div className="text-[10px] text-[#64748B] mt-0.5">{step.subtext}</div>}
+                  {step.subtext && (
+                    <div className="mt-1 text-[11.5px] text-[#9F1239]">{step.subtext}</div>
+                  )}
                   {expanded && (
-                    <div className="mt-2 text-[10.5px] leading-snug text-[#64748B] border-t border-dashed border-[#FECDD3] pt-2">
+                    <div className="mt-2 text-[11.5px] leading-snug text-[#64748B] border-t border-dashed border-[#FECDD3] pt-2">
                       {step.tooltip}
                     </div>
                   )}
                 </button>
-              );
-            })}
-          </div>
-          <div className="h-[2px] mx-3 rounded-full bg-gradient-to-r from-[#FB7185] to-[#E11D48]" />
-        </div>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </div>
   );
@@ -668,7 +798,7 @@ export const ProblemSectionV2 = () => {
           </div>
 
           {/* Desktop layout */}
-          <div className="hidden lg:grid mt-8 grid-cols-[220px_1fr_60px] gap-6">
+          <div className="hidden lg:grid mt-8 grid-cols-[220px_1fr_110px] gap-6">
             {/* Campaign rail */}
             <div className="flex flex-col gap-12 pt-4">
               <div>
@@ -727,7 +857,7 @@ export const ProblemSectionV2 = () => {
 
           {/* Mobile / tablet layout */}
           <div className="lg:hidden mt-6">
-            <MobileTimeline
+            <MobileLayout
               tappedSignal={tappedSignal}
               setTappedSignal={setTappedSignal}
               expandedWorkflow={expandedWorkflow}
