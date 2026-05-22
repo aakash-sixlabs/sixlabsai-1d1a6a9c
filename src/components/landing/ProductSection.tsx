@@ -318,16 +318,11 @@ const SignalCard = ({
     style={{ animationDelay: `${delay}ms` }}
   >
     <span
-      className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-colors ${
-        hovered
-          ? "bg-gradient-to-br from-blue-500/15 to-violet-500/25"
-          : "bg-gradient-to-br from-blue-500/10 to-violet-500/15"
+      className={`w-7 h-7 shrink-0 rounded-lg flex items-center justify-center border transition-colors ${
+        hovered ? "border-lilac/60 bg-lilac/15" : "border-lilac/40 bg-lilac/10"
       }`}
     >
-      <Icon
-        className={`w-4 h-4 ${hovered ? "text-violet-600" : "text-indigo-500"}`}
-        strokeWidth={2}
-      />
+      <Icon className="w-3.5 h-3.5 text-lilac" strokeWidth={2} />
     </span>
     <span className="text-[12.5px] font-display font-semibold text-slate-800 leading-tight">
       {label}
