@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisual";
 //import { ProblemSection } from "@/components/landing/ProblemSection";
 import { ProofStrip } from "@/components/landing/ProofStrip";
+import { useInView } from "@/components/landing/useInView";
 
 const ProblemSectionV2 = lazy(() =>
   import("@/components/landing/ProblemSectionV2").then((module) => ({ default: module.ProblemSectionV2 })),
@@ -18,6 +19,7 @@ const Footer = lazy(() =>
 
 export default function SixLabsLanding() {
   const [scrollY, setScrollY] = useState(0);
+  const { ref: deferredRef, visible: showDeferredSections } = useInView(0.01);
 
   useEffect(() => {
     const onScroll = () => setScrollY(window.scrollY);
@@ -32,12 +34,16 @@ export default function SixLabsLanding() {
       <SixLabsWorkflowVisual />
       <ProofStrip />
       {/* <ProblemSection /> */}
-      <Suspense fallback={null}>
-        <ProblemSectionV2 />
-        <ProductSection />
-        <ContactSection />
-        <Footer />
-      </Suspense>
+      <div ref={deferredRef} className="min-h-px">
+        {showDeferredSections && (
+          <Suspense fallback={null}>
+            <ProblemSectionV2 />
+            <ProductSection />
+            <ContactSection />
+            <Footer />
+          </Suspense>
+        )}
+      </div>
     </div>
   );
 }
