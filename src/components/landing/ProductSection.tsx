@@ -1111,11 +1111,11 @@ export const ProductSection = () => {
           {/* Right canvas - desktop */}
           <div className="hidden lg:block">
             <div
-              className="relative rounded-[28px] border bg-white/90 backdrop-blur-sm shadow-[0_30px_80px_-30px_rgba(15,23,42,0.18)] p-8 xl:p-12 min-h-[560px]"
+              className="relative overflow-visible rounded-[28px] border bg-white/90 backdrop-blur-sm shadow-[0_30px_80px_-30px_rgba(15,23,42,0.18)] p-8 xl:p-10 min-h-[620px]"
               style={{ borderColor: "rgba(148,163,184,0.22)" }}
             >
               <SystemPath activeIdx={activeIdx} hoverIdx={hoverIdx} />
-              <div className="mt-8 h-[420px]">
+              <div className="mt-6 h-[500px] overflow-visible">
                 <div key={activeId} className="h-full animate-[fadeIn_0.3s_ease-out]">
                   <VisualFor id={activeId} />
                 </div>
