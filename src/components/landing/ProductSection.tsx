@@ -726,8 +726,8 @@ const TestingVisual = () => {
 };
 
 const OptimizationVisual = () => (
-  <div className="grid grid-cols-[1.1fr_1fr] gap-5 h-full">
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col">
+  <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-5 h-full">
+    <div className="hidden lg:flex rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex-col">
       <div className="text-[12px] font-display font-semibold text-slate-500 uppercase tracking-wider mb-3">Performance trend</div>
       <svg viewBox="0 0 300 140" className="w-full flex-1">
         <defs>
