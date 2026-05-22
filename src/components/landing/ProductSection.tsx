@@ -796,18 +796,18 @@ const CapRow = ({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       aria-expanded={active}
-      className={`group relative w-full text-left rounded-2xl transition-all duration-300 px-4 md:px-5 py-4 md:py-5 border ${
+      className={`group relative w-full text-left rounded-xl transition-all duration-300 px-3.5 md:px-4 py-2 md:py-2.5 border ${
         active
           ? "bg-gradient-to-br from-blue-50/80 to-violet-50/40 border-blue-200 shadow-[0_4px_24px_-12px_rgba(99,102,241,0.4)]"
           : "border-transparent hover:bg-slate-50/70 border-b border-b-slate-100"
       }`}
     >
       {active && (
-        <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-gradient-to-b from-blue-500 to-violet-500" />
+        <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-blue-500 to-violet-500" />
       )}
-      <div className="flex items-start gap-3 md:gap-4">
+      <div className="flex items-start gap-2.5 md:gap-3">
         <div
-          className={`shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[12.5px] font-display font-semibold transition-colors ${
+          className={`shrink-0 w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[11.5px] font-display font-semibold transition-colors ${
             active
               ? "bg-gradient-to-br from-blue-500 to-violet-500 text-white border border-blue-500"
               : "bg-white text-slate-500 border border-slate-300 group-hover:border-blue-300"
@@ -818,26 +818,26 @@ const CapRow = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <h3
-              className={`font-display font-semibold text-[15px] md:text-[16.5px] leading-snug ${
+              className={`font-display font-semibold text-[13.5px] md:text-[14.5px] leading-snug ${
                 active ? "text-slate-900" : "text-slate-700"
               }`}
             >
               {cap.title}
             </h3>
             {active ? (
-              <ChevronDown className="w-4 h-4 text-blue-600 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-blue-600 shrink-0" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
             )}
           </div>
           <div
             className={`grid transition-all duration-300 ${
-              active ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"
+              active ? "grid-rows-[1fr] opacity-100 mt-1.5" : "grid-rows-[0fr] opacity-0"
             }`}
           >
             <div className="overflow-hidden">
-              <p className="text-[13px] md:text-[13.5px] text-slate-600 leading-relaxed">{cap.short}</p>
-              <p className="text-[12.5px] md:text-[13px] text-slate-500 leading-relaxed mt-1.5">{cap.long}</p>
+              <p className="text-[12.5px] text-slate-600 leading-relaxed">{cap.short}</p>
+              <p className="text-[12px] text-slate-500 leading-relaxed mt-1">{cap.long}</p>
             </div>
           </div>
         </div>
