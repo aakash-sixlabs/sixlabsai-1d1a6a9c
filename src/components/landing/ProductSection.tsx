@@ -922,7 +922,7 @@ export const ProductSection = () => {
             </p>
 
             {/* Capability list */}
-            <div className="mt-8 space-y-1.5">
+            <div className="mt-6 space-y-0.5">
               {CAPS.map((c, i) => (
                 <CapRow
                   key={c.id}
