@@ -971,8 +971,7 @@ export const ProductSection = () => {
             className="relative rounded-[24px] border bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.2)] p-5"
             style={{ borderColor: "rgba(148,163,184,0.22)" }}
           >
-            <SystemPath activeIdx={activeIdx} hoverIdx={hoverIdx} compact />
-            <div key={activeId} className="mt-6 min-h-[420px] animate-[fadeIn_0.3s_ease-out]">
+            <div key={activeId} className="min-h-[420px] animate-[fadeIn_0.3s_ease-out]">
               {/* Mobile uses same visuals; they're flexible enough */}
               <VisualFor id={activeId} />
             </div>
