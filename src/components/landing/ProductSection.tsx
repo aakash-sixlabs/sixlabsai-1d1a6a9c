@@ -251,15 +251,7 @@ const InsightCard = ({
 );
 
 /* ---------- Market Intelligence Desktop Visual ---------- */
-import {
-  Infinity as InfinityIcon,
-  Triangle,
-  Music2,
-  Globe,
-  MessageSquare,
-  Newspaper,
-  MoreHorizontal,
-} from "lucide-react";
+/* (icons imported at top) */
 
 const SIGNAL_SOURCES: { label: string; Icon: any }[] = [
   { label: "Ad platforms", Icon: InfinityIcon },
