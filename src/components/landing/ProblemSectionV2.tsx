@@ -58,23 +58,26 @@ const ACTIONS = [
 
 /* ---------- Fiber-optic signal stream visual ---------- */
 
-function SignalStream({ chipPositions }: { chipPositions: { x: number; y: number }[] }) {
-  // Many fine glowing fibers fanning out from a left origin into the funnel mouth on the right
+function SignalStream() {
+  // Deterministic, lightweight fibers. The previous version animated 200+ SVG nodes,
+  // which could make the Lovable preview iframe appear blank or stall on some reloads.
   const fibers = useMemo(() => {
     const arr: { d: string; w: number; o: number; delay: number; dur: number }[] = [];
-    const COUNT = 140;
+    const COUNT = 52;
     for (let i = 0; i < COUNT; i++) {
-      const startY = 50 + Math.random() * 500;
-      const ctrlY1 = 100 + Math.random() * 400;
-      const ctrlY2 = 220 + Math.random() * 160;
-      const endY = 270 + Math.random() * 60; // converge to funnel mouth band
+      const band = i / (COUNT - 1);
+      const wave = Math.sin(i * 1.73) * 34;
+      const startY = 64 + band * 472;
+      const ctrlY1 = 86 + ((i * 53) % 420);
+      const ctrlY2 = 222 + wave;
+      const endY = 272 + Math.sin(i * 0.9) * 28; // converge to funnel mouth band
       const d = `M -40 ${startY} C 260 ${ctrlY1} 520 ${ctrlY2} 880 ${endY}`;
       arr.push({
         d,
-        w: 0.4 + Math.random() * 0.8,
-        o: 0.18 + Math.random() * 0.55,
-        delay: Math.random() * 4,
-        dur: 3 + Math.random() * 4,
+        w: 0.45 + (i % 5) * 0.12,
+        o: 0.2 + (i % 7) * 0.07,
+        delay: (i % 8) * 0.18,
+        dur: 4 + (i % 5) * 0.45,
       });
     }
     return arr;
@@ -82,14 +85,14 @@ function SignalStream({ chipPositions }: { chipPositions: { x: number; y: number
 
   const dots = useMemo(() => {
     const arr: { x: number; y: number; s: number; delay: number; dur: number; hue: string }[] = [];
-    for (let i = 0; i < 90; i++) {
+    for (let i = 0; i < 32; i++) {
       arr.push({
-        x: Math.random() * 780,
-        y: 60 + Math.random() * 480,
-        s: 1 + Math.random() * 1.8,
-        delay: Math.random() * 5,
-        dur: 2 + Math.random() * 3,
-        hue: Math.random() > 0.5 ? "#A78BFA" : "#6366F1",
+        x: 28 + ((i * 83) % 760),
+        y: 70 + ((i * 47) % 460),
+        s: 1 + (i % 4) * 0.35,
+        delay: (i % 9) * 0.22,
+        dur: 2.4 + (i % 4) * 0.35,
+        hue: i % 2 ? "#A78BFA" : "#6366F1",
       });
     }
     return arr;
@@ -241,7 +244,7 @@ function BottleneckVisual() {
 
       <div className="relative h-[460px] sm:h-[520px] md:h-[560px] w-full bg-[#F7F7FA]">
         {/* Fiber stream */}
-        <SignalStream chipPositions={chipPositions} />
+        <SignalStream />
 
         {/* Floating signal chips */}
         <div className="absolute inset-0 pointer-events-none">
@@ -398,7 +401,7 @@ function MobileBottleneck() {
   return (
     <div className="relative w-full overflow-hidden rounded-2xl bg-[#F7F7FA]">
       <div className="relative h-[420px]">
-        <SignalStream chipPositions={[]} />
+        <SignalStream />
 
         {/* Chips list-style on the left to match mobile ref */}
         <div className="absolute inset-y-0 left-2 right-[42%] pointer-events-none flex flex-col justify-center gap-1.5">
