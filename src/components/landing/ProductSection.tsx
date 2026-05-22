@@ -726,8 +726,8 @@ const TestingVisual = () => {
 };
 
 const OptimizationVisual = () => (
-  <div className="grid grid-cols-[1.1fr_1fr] gap-5 h-full">
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-col">
+  <div className="grid grid-cols-1 lg:grid-cols-[1.1fr_1fr] gap-5 h-full">
+    <div className="hidden lg:flex rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex-col">
       <div className="text-[12px] font-display font-semibold text-slate-500 uppercase tracking-wider mb-3">Performance trend</div>
       <svg viewBox="0 0 300 140" className="w-full flex-1">
         <defs>
@@ -971,8 +971,7 @@ export const ProductSection = () => {
             className="relative rounded-[24px] border bg-white shadow-[0_20px_60px_-30px_rgba(15,23,42,0.2)] p-5"
             style={{ borderColor: "rgba(148,163,184,0.22)" }}
           >
-            <SystemPath activeIdx={activeIdx} hoverIdx={hoverIdx} compact />
-            <div key={activeId} className="mt-6 min-h-[420px] animate-[fadeIn_0.3s_ease-out]">
+            <div key={activeId} className="min-h-[420px] animate-[fadeIn_0.3s_ease-out]">
               {/* Mobile uses same visuals; they're flexible enough */}
               <VisualFor id={activeId} />
             </div>
