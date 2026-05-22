@@ -244,7 +244,7 @@ function BottleneckVisual() {
 
       <div className="relative h-[460px] sm:h-[520px] md:h-[560px] w-full bg-[#F7F7FA]">
         {/* Fiber stream */}
-        <SignalStream chipPositions={chipPositions} />
+        <SignalStream />
 
         {/* Floating signal chips */}
         <div className="absolute inset-0 pointer-events-none">
@@ -401,7 +401,7 @@ function MobileBottleneck() {
   return (
     <div className="relative w-full overflow-hidden rounded-2xl bg-[#F7F7FA]">
       <div className="relative h-[420px]">
-        <SignalStream chipPositions={[]} />
+        <SignalStream />
 
         {/* Chips list-style on the left to match mobile ref */}
         <div className="absolute inset-y-0 left-2 right-[42%] pointer-events-none flex flex-col justify-center gap-1.5">
