@@ -9,7 +9,7 @@ import { useInView } from "@/components/landing/useInView";
 const ProblemSectionV2 = lazy(() =>
   import("@/components/landing/ProblemSectionV2").then((module) => ({ default: module.ProblemSectionV2 })),
 );
-const ProductSection = lazy(() => import("@/components/landing/ProductSection"));
+const ProductSection = lazy(() => import("@/components/landing/ProductSectionV2"));
 const ContactSection = lazy(() =>
   import("@/components/landing/ContactSection").then((module) => ({ default: module.ContactSection })),
 );
