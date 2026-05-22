@@ -312,8 +312,8 @@ const SignalCard = ({
     onMouseLeave={onLeave}
     className={`group flex items-center gap-2.5 pl-2.5 pr-3.5 h-[54px] w-[156px] rounded-2xl bg-white border shadow-[0_2px_8px_-3px_rgba(15,23,42,0.10)] cursor-default transition-all duration-300 animate-[mktFadeUp_0.55s_ease-out_both] ${
       hovered
-        ? "-translate-y-0.5 border-violet-300 shadow-[0_10px_24px_-8px_rgba(99,102,241,0.45)]"
-        : "border-slate-200/90 hover:border-violet-200"
+        ? "-translate-y-0.5 border-lilac/40 shadow-[0_10px_24px_-8px_hsl(var(--lilac)/0.45)]"
+        : "border-slate-200/90 hover:border-lilac/30"
     }`}
     style={{ animationDelay: `${delay}ms` }}
   >
