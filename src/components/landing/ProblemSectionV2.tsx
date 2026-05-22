@@ -137,26 +137,27 @@ function CampaignTimeline({
   inView: boolean;
   reduced: boolean;
 }) {
-  // 7 columns
   const cols = CAMPAIGN_SIGNALS.length;
+  // Single gentle sine wave across full width; dots align under each card center
   const points = useMemo(() => {
     const arr: { x: number; y: number }[] = [];
     for (let i = 0; i < cols; i++) {
       const x = (i + 0.5) * (100 / cols);
-      const y = 50 + Math.sin(i * 1.1) * 18;
+      const y = 30 + Math.sin((i / (cols - 1)) * Math.PI * 2) * 9;
       arr.push({ x, y });
     }
     return arr;
   }, [cols]);
 
+  // Smooth wave path built from cubic beziers with horizontal control handles
   const pathD = useMemo(() => {
     if (points.length === 0) return "";
     let d = `M ${points[0].x} ${points[0].y}`;
     for (let i = 1; i < points.length; i++) {
       const prev = points[i - 1];
       const curr = points[i];
-      const cx = (prev.x + curr.x) / 2;
-      d += ` Q ${cx} ${prev.y}, ${cx} ${(prev.y + curr.y) / 2} T ${curr.x} ${curr.y}`;
+      const dx = (curr.x - prev.x) * 0.5;
+      d += ` C ${prev.x + dx} ${prev.y}, ${curr.x - dx} ${curr.y}, ${curr.x} ${curr.y}`;
     }
     return d;
   }, [points]);
@@ -172,9 +173,7 @@ function CampaignTimeline({
           <div key={s.id} className="text-center">
             <span
               className={`inline-block text-[10.5px] font-bold tracking-[0.16em] px-2 py-0.5 rounded-full transition-colors ${
-                i === 0
-                  ? "bg-[#4F46E5] text-white"
-                  : "text-[#64748B]"
+                i === 0 ? "bg-[#4F46E5] text-white" : "text-[#64748B]"
               }`}
             >
               {s.day}
@@ -227,9 +226,14 @@ function CampaignTimeline({
         })}
       </div>
 
-      {/* Timeline line + dots */}
-      <div className="relative mt-4 h-10">
-        <svg viewBox="0 0 100 60" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" aria-hidden>
+      {/* Single smooth wave line with dots aligned under each card */}
+      <div className="relative mt-5 h-12">
+        <svg
+          viewBox="0 0 100 60"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full overflow-visible"
+          aria-hidden
+        >
           <defs>
             <linearGradient id="camp-line" x1="0" x2="1">
               <stop offset="0%" stopColor="#6366F1" />
@@ -239,9 +243,10 @@ function CampaignTimeline({
           <path
             d={pathD}
             stroke="url(#camp-line)"
-            strokeWidth="1"
+            strokeWidth="1.4"
             fill="none"
             strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
             style={
               reduced
                 ? undefined
@@ -252,26 +257,17 @@ function CampaignTimeline({
                   }
             }
           />
-        </svg>
-        <div
-          className="absolute inset-0 grid"
-          style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-        >
           {points.map((p, i) => {
             const sId = CAMPAIGN_SIGNALS[i].id;
             const active = hoveredSignal === sId || hoveredPair === sId;
             return (
-              <div key={i} className="relative">
-                <span
-                  className={`absolute left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-[#4F46E5] transition-all ${
-                    active ? "scale-125 shadow-[0_0_0_5px_rgba(99,102,241,0.25)]" : ""
-                  }`}
-                  style={{ top: `${p.y - 5}%` }}
-                />
-              </div>
+              <g key={i}>
+                {active && <circle cx={p.x} cy={p.y} r={3} fill="#6366F1" opacity={0.25} />}
+                <circle cx={p.x} cy={p.y} r={active ? 1.8 : 1.3} fill="#4F46E5" />
+              </g>
             );
           })}
-        </div>
+        </svg>
       </div>
     </div>
   );
