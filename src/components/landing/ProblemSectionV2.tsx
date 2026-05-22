@@ -857,7 +857,7 @@ export const ProblemSectionV2 = () => {
 
           {/* Mobile / tablet layout */}
           <div className="lg:hidden mt-6">
-            <MobileTimeline
+            <MobileLayout
               tappedSignal={tappedSignal}
               setTappedSignal={setTappedSignal}
               expandedWorkflow={expandedWorkflow}
