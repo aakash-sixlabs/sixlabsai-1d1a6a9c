@@ -356,25 +356,21 @@ const SignalConnectorSvg = ({
       aria-hidden
     >
       <defs>
-        <linearGradient id="mktConnIn" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#2563EB" />
-          <stop offset="100%" stopColor="#7C3AED" />
+        {/* Flowing gradient — mirrors WorkflowVisual "flow": blue → lilac → blue */}
+        <linearGradient id="mktFlow" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0%" stopColor="#2563EB" stopOpacity="0.15" />
+          <stop offset="50%" stopColor="#A78BFA" stopOpacity="0.95" />
+          <stop offset="100%" stopColor="#2563EB" stopOpacity="0.15" />
         </linearGradient>
-        <linearGradient id="mktConnOut" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="#6366F1" />
-          <stop offset="100%" stopColor="#8B5CF6" />
+        <linearGradient id="mktFlowOut" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#2563EB" stopOpacity="0.3" />
         </linearGradient>
-        <marker
-          id="mktArrowIn"
-          viewBox="0 0 10 10"
-          refX="8"
-          refY="5"
-          markerWidth="6"
-          markerHeight="6"
-          orient="auto"
-        >
-          <path d="M0,0 L10,5 L0,10 z" fill="#7C3AED" />
-        </marker>
+        {/* Hub convergence glow — mirrors WorkflowVisual "hexglow" */}
+        <radialGradient id="mktHubGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#A78BFA" stopOpacity="0.7" />
+          <stop offset="100%" stopColor="#A78BFA" stopOpacity="0" />
+        </radialGradient>
         <marker
           id="mktArrowOut"
           viewBox="0 0 10 10"
@@ -384,46 +380,47 @@ const SignalConnectorSvg = ({
           markerHeight="7"
           orient="auto"
         >
-          <path d="M0,0 L10,5 L0,10 z" fill="#8B5CF6" />
+          <path d="M0,0 L10,5 L0,10 z" fill="#A78BFA" />
         </marker>
-        <filter id="mktSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="1.5" />
-        </filter>
       </defs>
 
+      {/* Convergence glow behind the hub */}
+      <circle cx="410" cy="230" r="48" fill="url(#mktHubGlow)" />
+
+      {/* Inputs — dashed flowing lines like WorkflowVisual signals→hex */}
       {inputs.map((p, i) => {
         const active = hubHover || hoveredSrc === p.from;
         return (
-          <g key={i}>
-            <path
-              d={p.d}
-              fill="none"
-              stroke="url(#mktConnIn)"
-              strokeWidth={active ? 3.2 : 2}
-              opacity={active ? 0.95 : 0.7}
-              strokeLinecap="round"
-              markerEnd="url(#mktArrowIn)"
-              className="[stroke-dasharray:600] [stroke-dashoffset:600] animate-[mktDraw_1.2s_ease-out_forwards] motion-reduce:[stroke-dashoffset:0] motion-reduce:animate-none"
-              style={{
-                animationDelay: `${250 + i * 120}ms`,
-                transition: "opacity 250ms ease, stroke-width 250ms ease",
-              }}
-            />
-          </g>
+          <path
+            key={i}
+            d={p.d}
+            fill="none"
+            stroke="url(#mktFlow)"
+            strokeWidth={active ? 1.8 : 1.4}
+            opacity={active ? 1 : 0.85}
+            strokeLinecap="round"
+            style={{
+              strokeDasharray: "4 6",
+              animation: `mktDashFlow 3s linear infinite`,
+              animationDelay: `${i * 0.15}s`,
+              transition: "opacity 250ms ease, stroke-width 250ms ease",
+            }}
+          />
         );
       })}
 
+      {/* Output — single line down to opportunity */}
       <path
         d={output}
         fill="none"
-        stroke="url(#mktConnOut)"
-        strokeWidth={hubHover ? 2.8 : 2.2}
-        opacity={hubHover ? 1 : 0.85}
+        stroke="url(#mktFlowOut)"
+        strokeWidth={hubHover ? 2 : 1.6}
+        opacity={hubHover ? 1 : 0.9}
         strokeLinecap="round"
         markerEnd="url(#mktArrowOut)"
-        className="[stroke-dasharray:300] [stroke-dashoffset:300] animate-[mktDraw_0.9s_ease-out_forwards] motion-reduce:[stroke-dashoffset:0] motion-reduce:animate-none"
         style={{
-          animationDelay: "900ms",
+          strokeDasharray: "5 7",
+          animation: "mktDashFlow 3s linear infinite",
           transition: "opacity 250ms ease, stroke-width 250ms ease",
         }}
       />
