@@ -20,7 +20,7 @@ import {
 
 const EYEBROW = "THE PROBLEM";
 const SUBHEAD =
-  "Every campaign is already telling you what to change — fatigue, CAC drift, winning hooks, audience shifts, and offer performance. But those signals still move through reports, briefs, reviews, and updates before anything changes.";
+  "Campaigns generate signals every day. Fatigue, CAC drift, Winning hooks, Competitor moves. But most agency workflows still take weeks to turn those signals into new creative and media decisions.";
 
 type LucideIcon = typeof Activity;
 
@@ -53,11 +53,31 @@ const CAMPAIGN_SIGNALS: Signal[] = [
 ];
 
 const WORKFLOW_STEPS: WorkflowStep[] = [
-  { id: "w1", label: "Report pulled", time: "0 days", Icon: FileText, tooltip: "Signal enters the workflow after performance has already shifted." },
+  {
+    id: "w1",
+    label: "Report pulled",
+    time: "0 days",
+    Icon: FileText,
+    tooltip: "Signal enters the workflow after performance has already shifted.",
+  },
   { id: "w2", label: "Brief written", time: "4 days", Icon: Pencil, tooltip: "Learning becomes a request." },
   { id: "w3", label: "Creative reviewed", time: "6 days", Icon: UsersRound, tooltip: "Execution waits on approvals." },
-  { id: "w4", label: "Campaign updated", time: "10+ days", Icon: Send, tooltip: "Action arrives after the market has moved." },
-  { id: "w5", label: "Signal expired", time: "", Icon: Hourglass, tooltip: "The original opportunity has already changed.", isExpired: true, subtext: "The opportunity has moved on." },
+  {
+    id: "w4",
+    label: "Campaign updated",
+    time: "10+ days",
+    Icon: Send,
+    tooltip: "Action arrives after the market has moved.",
+  },
+  {
+    id: "w5",
+    label: "Signal expired",
+    time: "",
+    Icon: Hourglass,
+    tooltip: "The original opportunity has already changed.",
+    isExpired: true,
+    subtext: "The opportunity has moved on.",
+  },
 ];
 
 function usePrefersReducedMotion() {
@@ -85,7 +105,7 @@ function useInView<T extends HTMLElement>() {
           obs.disconnect();
         }
       },
-      { threshold: 0.12 }
+      { threshold: 0.12 },
     );
     obs.observe(el);
     return () => obs.disconnect();
@@ -165,10 +185,7 @@ function CampaignTimeline({
   return (
     <div className="relative">
       {/* Day headers */}
-      <div
-        className="grid gap-3"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      >
+      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {CAMPAIGN_SIGNALS.map((s, i) => (
           <div key={s.id} className="text-center">
             <span
@@ -183,10 +200,7 @@ function CampaignTimeline({
       </div>
 
       {/* Cards */}
-      <div
-        className="mt-3 grid gap-3"
-        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
-      >
+      <div className="mt-3 grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
         {CAMPAIGN_SIGNALS.map((s, i) => {
           const isActive = hoveredSignal === s.id || hoveredPair === s.id;
           return (
@@ -218,9 +232,7 @@ function CampaignTimeline({
                   <s.Icon size={15} />
                 </span>
               </div>
-              <div className="mt-2 text-[11.5px] leading-snug font-semibold text-[#0B123F]">
-                {s.label}
-              </div>
+              <div className="mt-2 text-[11.5px] leading-snug font-semibold text-[#0B123F]">{s.label}</div>
             </button>
           );
         })}
@@ -328,12 +340,8 @@ function WorkflowTimeline({
                   <step.Icon size={15} />
                 </span>
               </div>
-              <div className="mt-2 text-[11.5px] leading-snug font-semibold text-[#0B123F]">
-                {step.label}
-              </div>
-              {step.subtext && (
-                <div className="mt-1 text-[10.5px] leading-snug text-[#64748B]">{step.subtext}</div>
-              )}
+              <div className="mt-2 text-[11.5px] leading-snug font-semibold text-[#0B123F]">{step.label}</div>
+              {step.subtext && <div className="mt-1 text-[10.5px] leading-snug text-[#64748B]">{step.subtext}</div>}
 
               {/* Tooltip */}
               {hoveredWorkflow === step.id && (
@@ -350,7 +358,14 @@ function WorkflowTimeline({
             {i < WORKFLOW_STEPS.length - 1 && (
               <svg width="28" height="10" viewBox="0 0 28 10" className="mx-1 text-[#FB7185] shrink-0" aria-hidden>
                 <line x1="0" y1="5" x2="20" y2="5" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 3" />
-                <path d="M 20 1 L 26 5 L 20 9" stroke="currentColor" strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M 20 1 L 26 5 L 20 9"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             )}
           </div>
@@ -403,8 +418,7 @@ function GapAnnotation() {
         <div
           className="flex-1 w-px"
           style={{
-            backgroundImage:
-              "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
+            backgroundImage: "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
             backgroundSize: "1px 8px",
             backgroundRepeat: "repeat-y",
           }}
@@ -426,8 +440,7 @@ function GapAnnotation() {
         <div
           className="flex-1 w-px"
           style={{
-            backgroundImage:
-              "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
+            backgroundImage: "linear-gradient(to bottom, #8B5CF6 0, #8B5CF6 4px, transparent 4px, transparent 8px)",
             backgroundSize: "1px 8px",
             backgroundRepeat: "repeat-y",
           }}
@@ -504,9 +517,7 @@ function MobileLayout({
   // First 6 signals in 2-col grid; 7th as full-width subtle card
   const gridSignals = CAMPAIGN_SIGNALS.slice(0, 6);
   const extraSignal = CAMPAIGN_SIGNALS[6];
-  const activePairId = tappedSignal
-    ? CAMPAIGN_SIGNALS.find((s) => s.id === tappedSignal)?.pairId ?? null
-    : null;
+  const activePairId = tappedSignal ? (CAMPAIGN_SIGNALS.find((s) => s.id === tappedSignal)?.pairId ?? null) : null;
 
   return (
     <div className="space-y-7">
@@ -517,12 +528,8 @@ function MobileLayout({
             <Activity size={18} />
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">
-              Campaign reality
-            </h3>
-            <p className="text-[12.5px] text-[#64748B] mt-0.5">
-              The market is changing every day.
-            </p>
+            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">Campaign reality</h3>
+            <p className="text-[12.5px] text-[#64748B] mt-0.5">The market is changing every day.</p>
           </div>
           <span className="text-[10px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5] shrink-0">
             FAST MOVING
@@ -547,16 +554,12 @@ function MobileLayout({
                 }`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[9.5px] font-bold tracking-[0.16em] text-[#4F46E5]">
-                    {s.day}
-                  </span>
+                  <span className="text-[9.5px] font-bold tracking-[0.16em] text-[#4F46E5]">{s.day}</span>
                   <span className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EEF2FF] text-[#4F46E5]">
                     <s.Icon size={13} />
                   </span>
                 </div>
-                <div className="mt-1.5 text-[12.5px] leading-snug font-semibold text-[#0B123F]">
-                  {s.label}
-                </div>
+                <div className="mt-1.5 text-[12.5px] leading-snug font-semibold text-[#0B123F]">{s.label}</div>
                 {isActive && (
                   <div className="mt-2 text-[11px] leading-snug text-[#64748B] border-t border-dashed border-[#E0E7FF] pt-2">
                     {PAIR_EXPLAIN[s.id]}
@@ -572,9 +575,7 @@ function MobileLayout({
           type="button"
           aria-label={extraSignal.label}
           aria-pressed={tappedSignal === extraSignal.id}
-          onClick={() =>
-            setTappedSignal(tappedSignal === extraSignal.id ? null : extraSignal.id)
-          }
+          onClick={() => setTappedSignal(tappedSignal === extraSignal.id ? null : extraSignal.id)}
           className={`mt-2.5 w-full flex items-center gap-2.5 rounded-2xl border px-3.5 py-3 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]/40 ${
             tappedSignal === extraSignal.id
               ? "bg-white border-[#4F46E5] shadow-[0_8px_20px_-14px_rgba(79,70,229,0.45)]"
@@ -584,9 +585,7 @@ function MobileLayout({
           <span className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EEF2FF] text-[#4F46E5] shrink-0">
             <MoreHorizontal size={13} />
           </span>
-          <span className="text-[12.5px] font-semibold text-[#0B123F]">
-            More signals emerge daily
-          </span>
+          <span className="text-[12.5px] font-semibold text-[#0B123F]">More signals emerge daily</span>
         </button>
 
         {/* Pulse indicator */}
@@ -596,9 +595,7 @@ function MobileLayout({
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4F46E5]" />
           </span>
           <span className="flex-1 h-[2px] rounded-full bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-transparent" />
-          <span className="text-[10.5px] font-semibold tracking-wide text-[#4F46E5]">
-            Signals keep moving
-          </span>
+          <span className="text-[10.5px] font-semibold tracking-wide text-[#4F46E5]">Signals keep moving</span>
         </div>
       </div>
 
@@ -611,13 +608,25 @@ function MobileLayout({
               <stop offset="100%" stopColor="#FB7185" />
             </linearGradient>
           </defs>
-          <path d="M 3 5 L 7 1 L 11 5" stroke="#8B5CF6" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M 3 5 L 7 1 L 11 5"
+            stroke="#8B5CF6"
+            strokeWidth="1.3"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
           <line x1="7" y1="4" x2="7" y2="44" stroke="url(#mobile-gap-grad)" strokeWidth="1.3" strokeDasharray="3 3" />
-          <path d="M 3 43 L 7 47 L 11 43" stroke="#FB7185" strokeWidth="1.3" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M 3 43 L 7 47 L 11 43"
+            stroke="#FB7185"
+            strokeWidth="1.3"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
-        <div className="text-[11.5px] font-semibold text-[#0B123F]">
-          The gap gets wider every day
-        </div>
+        <div className="text-[11.5px] font-semibold text-[#0B123F]">The gap gets wider every day</div>
       </div>
 
       {/* SECTION 2: Workflow reality */}
@@ -627,12 +636,8 @@ function MobileLayout({
             <Clock size={18} />
           </span>
           <div className="min-w-0 flex-1">
-            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">
-              Workflow reality
-            </h3>
-            <p className="text-[12.5px] text-[#64748B] mt-0.5">
-              Traditional workflows move in sequence.
-            </p>
+            <h3 className="font-display font-bold text-[#0B123F] text-[15px] leading-tight">Workflow reality</h3>
+            <p className="text-[12.5px] text-[#64748B] mt-0.5">Traditional workflows move in sequence.</p>
           </div>
           <span className="text-[10px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#FFF1F2] text-[#E11D48] shrink-0">
             SLOW MOVING
@@ -645,8 +650,7 @@ function MobileLayout({
           <span
             className="absolute left-[18px] top-2 bottom-2 w-px"
             style={{
-              backgroundImage:
-                "linear-gradient(to bottom, #FB7185 0, #FB7185 4px, transparent 4px, transparent 8px)",
+              backgroundImage: "linear-gradient(to bottom, #FB7185 0, #FB7185 4px, transparent 4px, transparent 8px)",
               backgroundSize: "1px 8px",
               backgroundRepeat: "repeat-y",
             }}
@@ -687,18 +691,14 @@ function MobileLayout({
                   } ${step.isExpired ? "min-h-[76px]" : "min-h-[64px]"}`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-semibold text-[#0B123F] leading-tight">
-                      {step.label}
-                    </span>
+                    <span className="text-[13px] font-semibold text-[#0B123F] leading-tight">{step.label}</span>
                     {step.time && (
                       <span className="shrink-0 text-[10.5px] font-semibold tracking-wide text-[#E11D48] bg-[#FFF1F2] rounded-full px-2 py-0.5">
                         {step.time}
                       </span>
                     )}
                   </div>
-                  {step.subtext && (
-                    <div className="mt-1 text-[11.5px] text-[#9F1239]">{step.subtext}</div>
-                  )}
+                  {step.subtext && <div className="mt-1 text-[11.5px] text-[#9F1239]">{step.subtext}</div>}
                   {expanded && (
                     <div className="mt-2 text-[11.5px] leading-snug text-[#64748B] border-t border-dashed border-[#FECDD3] pt-2">
                       {step.tooltip}
@@ -723,9 +723,7 @@ export const ProblemSectionV2 = () => {
   const [hoveredWorkflow, setHoveredWorkflow] = useState<string | null>(null);
 
   // Cross-highlight pairing
-  const signalPairId = hoveredSignal
-    ? CAMPAIGN_SIGNALS.find((s) => s.id === hoveredSignal)?.pairId ?? null
-    : null;
+  const signalPairId = hoveredSignal ? (CAMPAIGN_SIGNALS.find((s) => s.id === hoveredSignal)?.pairId ?? null) : null;
   const workflowReverseSignalIds = hoveredWorkflow
     ? CAMPAIGN_SIGNALS.filter((s) => s.pairId === hoveredWorkflow).map((s) => s.id)
     : [];
@@ -734,11 +732,7 @@ export const ProblemSectionV2 = () => {
   const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
 
   return (
-    <section
-      ref={ref}
-      aria-labelledby="problem-v2-title"
-      className="relative w-full bg-[#F7F7FA] py-20 md:py-28"
-    >
+    <section ref={ref} aria-labelledby="problem-v2-title" className="relative w-full bg-[#F7F7FA] py-20 md:py-28">
       <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8">
         {/* Header */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 md:items-start">
@@ -757,9 +751,7 @@ export const ProblemSectionV2 = () => {
               Performance marketing moves daily.
               <br />
               Most workflows{" "}
-              <span className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
-                don't.
-              </span>
+              <span className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">don't.</span>
             </h2>
           </div>
           <div className="md:pl-8 md:border-l md:border-[rgba(15,23,42,0.08)]">
@@ -805,12 +797,8 @@ export const ProblemSectionV2 = () => {
                 <span className="w-10 h-10 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center">
                   <Activity size={18} />
                 </span>
-                <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">
-                  Campaign reality
-                </h3>
-                <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">
-                  The market is changing every day.
-                </p>
+                <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Campaign reality</h3>
+                <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">The market is changing every day.</p>
                 <span className="inline-block mt-2 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5]">
                   FAST MOVING
                 </span>
@@ -819,9 +807,7 @@ export const ProblemSectionV2 = () => {
                 <span className="w-10 h-10 rounded-full bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center">
                   <Clock size={18} />
                 </span>
-                <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">
-                  Workflow reality
-                </h3>
+                <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Workflow reality</h3>
                 <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">
                   Traditional workflows move in sequence.
                 </p>
@@ -835,7 +821,9 @@ export const ProblemSectionV2 = () => {
             <div className="flex flex-col gap-10 min-w-0">
               <CampaignTimeline
                 hoveredSignal={hoveredSignal}
-                hoveredPair={workflowReverseSignalIds.includes("__never__") ? null : (workflowReverseSignalIds[0] ?? null)}
+                hoveredPair={
+                  workflowReverseSignalIds.includes("__never__") ? null : (workflowReverseSignalIds[0] ?? null)
+                }
                 onHover={setHoveredSignal}
                 inView={inView}
                 reduced={reduced}
