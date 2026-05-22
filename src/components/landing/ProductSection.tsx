@@ -24,6 +24,13 @@ import {
   Activity,
   Star,
   Citrus,
+  Infinity as InfinityIcon,
+  Triangle,
+  Music2,
+  Globe,
+  MessageSquare,
+  Newspaper,
+  MoreHorizontal,
 } from "lucide-react";
 
 /* ---------- Editable copy ---------- */
@@ -250,227 +257,320 @@ const InsightCard = ({
   </div>
 );
 
-const MARKET_CHIPS: {
-  label: string;
-  Icon: any;
-  // position relative to orbit container (percent)
-  top: string;
-  left: string;
-}[] = [
-  { label: "Competitor move", Icon: Users, top: "8%", left: "22%" },
-  { label: "CAC drift", Icon: DollarSign, top: "8%", left: "78%" },
-  { label: "Creative fatigue", Icon: BarChart3, top: "50%", left: "96%" },
-  { label: "Audience shift", Icon: Users, top: "88%", left: "76%" },
-  { label: "Winning hook", Icon: Star, top: "88%", left: "24%" },
-  { label: "Category trend", Icon: TrendingUp, top: "50%", left: "4%" },
+/* ---------- Market Intelligence Desktop Visual ---------- */
+/* (icons imported at top) */
+
+const SIGNAL_SOURCES: { label: string; Icon: any }[] = [
+  { label: "Ad platforms", Icon: InfinityIcon },
+  { label: "Google Ads", Icon: Triangle },
+  { label: "TikTok Ads", Icon: Music2 },
+  { label: "CRM / CDP", Icon: Users },
+  { label: "Website", Icon: Globe },
+  { label: "Social listening", Icon: MessageSquare },
+  { label: "News & trends", Icon: Newspaper },
+  { label: "Competitors", Icon: Target },
+  { label: "and more", Icon: MoreHorizontal },
 ];
 
-const SignalChip = ({
+const OPPORTUNITIES = [
+  {
+    title: "Rising demand for short-form video hooks",
+    body: "Engagement is up 36% across paid social in the last 7 days.",
+    tags: ["Audience shift", "Offer gap", "Winning hook"],
+  },
+  {
+    title: "Bundle offer performing with lime SKUs",
+    body: "Bundle attach rate climbed 22% in the last 5 days.",
+    tags: ["Offer test", "SKU lift", "High intent"],
+  },
+  {
+    title: "High-intent hydration segment accelerating",
+    body: "New cluster of buyers showing 3x conversion vs baseline.",
+    tags: ["New segment", "Conversion lift", "Scale-ready"],
+  },
+];
+
+const SignalSourcePill = ({
   label,
   Icon,
-  style,
+  hovered,
+  onHover,
+  onLeave,
+  delay,
 }: {
   label: string;
   Icon: any;
-  style?: React.CSSProperties;
+  hovered: boolean;
+  onHover: () => void;
+  onLeave: () => void;
+  delay: number;
 }) => (
   <div
-    className="absolute -translate-x-1/2 -translate-y-1/2 group"
-    style={style}
+    onMouseEnter={onHover}
+    onMouseLeave={onLeave}
+    className={`group flex items-center gap-2.5 pl-3 pr-4 h-[44px] rounded-2xl bg-white border shadow-[0_2px_8px_-3px_rgba(15,23,42,0.08)] cursor-default transition-all duration-300 animate-[mktFadeUp_0.5s_ease-out_both] ${
+      hovered
+        ? "-translate-y-0.5 border-violet-300 shadow-[0_6px_18px_-6px_rgba(99,102,241,0.35)]"
+        : "border-slate-200"
+    }`}
+    style={{ animationDelay: `${delay}ms` }}
   >
-    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 shadow-[0_2px_8px_-2px_rgba(15,23,42,0.08)] text-[11.5px] font-display text-slate-700 whitespace-nowrap transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-300 hover:shadow-[0_4px_14px_-4px_rgba(99,102,241,0.35)] animate-[floatY_6s_ease-in-out_infinite]">
-      <Icon className="w-3 h-3 text-blue-500" strokeWidth={2.2} />
+    <span
+      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+        hovered ? "bg-gradient-to-br from-blue-500/15 to-violet-500/20" : "bg-slate-50"
+      }`}
+    >
+      <Icon
+        className={`w-3.5 h-3.5 ${hovered ? "text-violet-600" : "text-slate-500"}`}
+        strokeWidth={2}
+      />
+    </span>
+    <span className="text-[12.5px] font-display font-medium text-slate-700 whitespace-nowrap">
       {label}
+    </span>
+  </div>
+);
+
+const SignalNetwork = ({
+  hoveredSrc,
+  hubHover,
+}: {
+  hoveredSrc: number | null;
+  hubHover: boolean;
+}) => {
+  // 9 source y positions distributed across height 0..1
+  const paths = SIGNAL_SOURCES.map((_, i) => {
+    const sy = 8 + (i * (100 - 16)) / (SIGNAL_SOURCES.length - 1); // 8..92
+    const cx1 = 30 + (i % 3) * 4;
+    const cy1 = sy + (i % 2 === 0 ? -6 : 6);
+    const cx2 = 70 + ((i + 1) % 3) * 3;
+    const cy2 = 50 + (i - 4) * 3;
+    return { sy, cx1, cy1, cx2, cy2, i };
+  });
+
+  return (
+    <svg
+      className="absolute inset-0 w-full h-full pointer-events-none"
+      viewBox="0 0 100 100"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      <defs>
+        <linearGradient id="mktLine" x1="0" x2="1">
+          <stop offset="0%" stopColor="#6366F1" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.5" />
+        </linearGradient>
+      </defs>
+      {paths.map((p) => {
+        const highlight = hoveredSrc === p.i || hubHover;
+        return (
+          <path
+            key={p.i}
+            d={`M 0 ${p.sy} C ${p.cx1} ${p.cy1}, ${p.cx2} ${p.cy2}, 100 50`}
+            fill="none"
+            stroke="url(#mktLine)"
+            strokeWidth={highlight ? 0.55 : 0.3}
+            opacity={highlight ? 0.95 : 0.45}
+            vectorEffect="non-scaling-stroke"
+            style={{ transition: "all 300ms ease" }}
+          />
+        );
+      })}
+      {/* sprinkled nodes */}
+      {Array.from({ length: 36 }).map((_, i) => {
+        const x = 8 + (i * 83) / 36 + ((i * 7) % 5);
+        const y = 6 + ((i * 53) % 88);
+        return (
+          <circle
+            key={i}
+            cx={x}
+            cy={y}
+            r="0.45"
+            fill="#6366F1"
+            opacity="0.55"
+            className="animate-[mktPulse_3.2s_ease-in-out_infinite]"
+            style={{ animationDelay: `${(i % 8) * 0.25}s` }}
+          />
+        );
+      })}
+    </svg>
+  );
+};
+
+const SixLabsHub = ({ hover }: { hover: boolean }) => (
+  <div className="relative w-[112px] h-[112px] flex items-center justify-center">
+    {/* concentric rings */}
+    <span className="absolute inset-0 rounded-full border border-violet-200/70 animate-[mktRing_4s_ease-out_infinite]" />
+    <span className="absolute inset-2 rounded-full border border-blue-200/70 animate-[mktRing_4s_ease-out_infinite] [animation-delay:1s]" />
+    <span className="absolute inset-4 rounded-full border border-violet-200/50 animate-[mktRing_4s_ease-out_infinite] [animation-delay:2s]" />
+    {/* orb */}
+    <div
+      className={`relative w-[78px] h-[78px] rounded-full bg-white border border-violet-200 flex items-center justify-center shadow-[0_0_40px_-6px_rgba(167,139,250,0.55)] transition-all duration-500 animate-[mktBreathe_4s_ease-in-out_infinite] ${
+        hover ? "scale-105 shadow-[0_0_56px_-4px_rgba(167,139,250,0.8)]" : ""
+      }`}
+    >
+      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-violet-500 flex items-center justify-center">
+        <span className="text-white font-display font-bold text-[20px] leading-none">6</span>
+      </div>
     </div>
   </div>
 );
 
-const MarketVisual = () => {
+const CleanOutputArrows = ({ hubHover }: { hubHover: boolean }) => (
+  <svg
+    className="absolute inset-0 w-full h-full pointer-events-none"
+    viewBox="0 0 100 100"
+    preserveAspectRatio="none"
+    aria-hidden
+  >
+    <defs>
+      <linearGradient id="mktOut" x1="0" x2="1">
+        <stop offset="0%" stopColor="#6366F1" />
+        <stop offset="100%" stopColor="#A78BFA" />
+      </linearGradient>
+      <marker
+        id="mktArrow"
+        viewBox="0 0 10 10"
+        refX="6"
+        refY="5"
+        markerWidth="5"
+        markerHeight="5"
+        orient="auto-start-reverse"
+      >
+        <path d="M0,0 L10,5 L0,10 z" fill="#A78BFA" />
+      </marker>
+    </defs>
+    {[
+      { y1: 50, y2: 26 },
+      { y1: 50, y2: 50 },
+      { y1: 50, y2: 74 },
+    ].map((p, i) => (
+      <path
+        key={i}
+        d={`M 0 ${p.y1} C 30 ${p.y1}, 60 ${p.y2}, 100 ${p.y2}`}
+        fill="none"
+        stroke="url(#mktOut)"
+        strokeWidth={hubHover ? 0.7 : 0.55}
+        opacity={hubHover ? 1 : 0.85}
+        markerEnd="url(#mktArrow)"
+        vectorEffect="non-scaling-stroke"
+        style={{ transition: "all 300ms ease" }}
+      />
+    ))}
+  </svg>
+);
+
+const OpportunityCardStack = () => {
+  const [idx, setIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setIdx((i) => (i + 1) % OPPORTUNITIES.length), 5000);
+    return () => clearInterval(t);
+  }, []);
+  const op = OPPORTUNITIES[idx];
   return (
-    <div className="relative flex flex-col h-full gap-4">
-      {/* Orbit area */}
-      <div className="relative flex-1 min-h-[280px]">
-        {/* SVG orbit */}
-        <svg
-          className="absolute inset-0 w-full h-full"
-          viewBox="0 0 600 320"
-          preserveAspectRatio="none"
-          aria-hidden
-        >
-          <defs>
-            <linearGradient id="orbitStroke" x1="0" x2="1">
-              <stop offset="0%" stopColor="#6366F1" stopOpacity="0.55" />
-              <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.55" />
-            </linearGradient>
-            <marker
-              id="orbitArrow"
-              viewBox="0 0 10 10"
-              refX="6"
-              refY="5"
-              markerWidth="6"
-              markerHeight="6"
-              orient="auto-start-reverse"
-            >
-              <path d="M0,0 L10,5 L0,10 z" fill="#A78BFA" />
-            </marker>
-          </defs>
-          {/* outer dashed ellipse */}
-          <ellipse
-            cx="300"
-            cy="160"
-            rx="250"
-            ry="130"
-            fill="none"
-            stroke="url(#orbitStroke)"
-            strokeWidth="1"
-            strokeDasharray="2 6"
-          />
-          {/* inner dashed ellipse */}
-          <ellipse
-            cx="300"
-            cy="160"
-            rx="210"
-            ry="105"
-            fill="none"
-            stroke="#C4B5FD"
-            strokeOpacity="0.5"
-            strokeWidth="1"
-            strokeDasharray="1 5"
-          />
-          {/* arrowheads suggesting motion */}
-          <path
-            d="M 295 30 L 305 30"
-            stroke="#A78BFA"
-            strokeWidth="1.4"
-            markerEnd="url(#orbitArrow)"
-          />
-          <path
-            d="M 295 290 L 285 290"
-            stroke="#A78BFA"
-            strokeWidth="1.4"
-            markerEnd="url(#orbitArrow)"
-          />
-          {/* tiny pulsing dots */}
-          {[
-            { cx: 50, cy: 160 },
-            { cx: 550, cy: 160 },
-            { cx: 300, cy: 30 },
-            { cx: 300, cy: 290 },
-            { cx: 120, cy: 60 },
-            { cx: 480, cy: 260 },
-          ].map((d, i) => (
-            <circle
-              key={i}
-              cx={d.cx}
-              cy={d.cy}
-              r="2.5"
-              fill="#6366F1"
-              className="animate-[pulseDot_2.4s_ease-in-out_infinite]"
-              style={{ animationDelay: `${i * 0.35}s` }}
-            />
-          ))}
-        </svg>
-
-        {/* Signal chips */}
-        {MARKET_CHIPS.map((c, i) => (
-          <SignalChip
-            key={c.label}
-            label={c.label}
-            Icon={c.Icon}
-            style={{ top: c.top, left: c.left, animationDelay: `${i * 0.4}s` }}
-          />
-        ))}
-
-        {/* Center insight card */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[260px] md:w-[280px]">
-          <div className="rounded-2xl bg-white border border-violet-200 p-4 shadow-[0_0_40px_-8px_rgba(167,139,250,0.45)] animate-[softGlow_4s_ease-in-out_infinite]">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500/15 to-violet-500/20 border border-violet-200 flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-violet-600" />
-              </div>
-              <div className="text-[12px] font-display font-semibold text-slate-900">
-                New segment detected
-              </div>
-            </div>
-            <p className="text-[12.5px] text-slate-700 leading-snug">
-              Hydration-focused buyers responding to citrus + bundle offers
-            </p>
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
-              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-display bg-blue-50 text-blue-700 border border-blue-200">
-                Intent shift
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-display bg-violet-50 text-violet-700 border border-violet-200">
-                Offer sensitivity
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10.5px] font-display bg-fuchsia-50 text-fuchsia-700 border border-fuchsia-200">
-                High-propensity segment
-              </span>
-            </div>
+    <div className="relative w-full">
+      {/* secondary cards */}
+      <div className="absolute right-[-14px] top-[18px] w-[260px] h-[220px] rounded-[22px] bg-white border border-slate-200 shadow-[0_12px_30px_-18px_rgba(15,23,42,0.25)] rotate-[3deg] opacity-70" />
+      <div className="absolute right-[-6px] top-[10px] w-[260px] h-[230px] rounded-[22px] bg-white border border-slate-200 shadow-[0_14px_34px_-18px_rgba(15,23,42,0.3)] rotate-[1.5deg] opacity-85" />
+      {/* foreground */}
+      <div className="relative w-[280px] rounded-[24px] bg-white border border-violet-100 shadow-[0_20px_50px_-20px_rgba(99,102,241,0.35)] p-5 animate-[mktFloat_5s_ease-in-out_infinite]">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500/15 to-violet-500/25 border border-violet-200 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-violet-600" />
           </div>
+          <div className="text-[10.5px] font-display font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Opportunity found
+          </div>
+        </div>
+        <div key={idx} className="animate-[mktFadeUp_0.5s_ease-out]">
+          <div className="text-[14px] font-display font-semibold text-slate-900 leading-snug">
+            {op.title}
+          </div>
+          <p className="mt-2 text-[12.5px] text-slate-600 leading-relaxed">{op.body}</p>
+          <div className="flex flex-wrap gap-1.5 mt-3">
+            {op.tags.map((t) => (
+              <span
+                key={t}
+                className="px-2 py-0.5 rounded-full text-[10.5px] font-display bg-violet-50 text-violet-700 border border-violet-200"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+        <button className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-display font-semibold text-blue-600 hover:text-violet-600 transition-colors">
+          View opportunity <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const MarketVisual = () => {
+  const [hoveredSrc, setHoveredSrc] = useState<number | null>(null);
+  const [hubHover, setHubHover] = useState(false);
+
+  return (
+    <div className="relative h-full w-full">
+      <style>{`
+        @keyframes mktBreathe { 0%,100% { box-shadow: 0 0 40px -6px rgba(167,139,250,0.55); } 50% { box-shadow: 0 0 56px -4px rgba(167,139,250,0.8); } }
+        @keyframes mktRing { 0% { transform: scale(0.9); opacity: 0.7; } 100% { transform: scale(1.25); opacity: 0; } }
+        @keyframes mktPulse { 0%,100% { opacity: 0.25; } 50% { opacity: 0.9; } }
+        @keyframes mktFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+        @keyframes mktFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+
+      {/* Zone labels */}
+      <div className="grid grid-cols-[230px_1fr_300px] gap-6 mb-4">
+        <div className="text-[13px] font-display font-semibold text-slate-700 leading-snug">
+          Millions of signals<br />from every source
+        </div>
+        <div className="text-[13px] font-display font-semibold text-slate-700 leading-snug text-center self-end">
+          SixLabs intelligence<br />analyzes and connects
+        </div>
+        <div className="text-[13px] font-display font-semibold text-slate-700 leading-snug text-right self-end">
+          Opportunity found<br /><span className="font-normal text-slate-500 text-[12px]">(clearing the noise)</span>
         </div>
       </div>
 
-      {/* Bottom row */}
-      <div className="grid grid-cols-[1.5fr_1fr] gap-3">
-        {/* Market context */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm flex items-center gap-3">
-          <div className="shrink-0 relative w-10 h-12 rounded-md bg-gradient-to-b from-cyan-50 to-blue-100 border border-slate-200 flex items-center justify-center">
-            <Citrus className="w-5 h-5 text-amber-500" />
-            <div className="absolute inset-x-1 top-1 h-[2px] rounded bg-white/70" />
+      {/* Main 3-zone grid */}
+      <div className="relative grid grid-cols-[230px_1fr_300px] gap-6 items-center h-[460px]">
+        {/* Zone 1: sources */}
+        <div className="flex flex-col gap-2 relative z-10">
+          {SIGNAL_SOURCES.map((s, i) => (
+            <SignalSourcePill
+              key={s.label}
+              label={s.label}
+              Icon={s.Icon}
+              hovered={hoveredSrc === i}
+              onHover={() => setHoveredSrc(i)}
+              onLeave={() => setHoveredSrc(null)}
+              delay={i * 80}
+            />
+          ))}
+        </div>
+
+        {/* Zone 2: messy network + hub + clean output */}
+        <div className="relative h-full">
+          <SignalNetwork hoveredSrc={hoveredSrc} hubHover={hubHover} />
+          <div
+            className="absolute inset-0 flex items-center justify-center z-10"
+            onMouseEnter={() => setHubHover(true)}
+            onMouseLeave={() => setHubHover(false)}
+          >
+            <SixLabsHub hover={hubHover} />
           </div>
-          <div className="min-w-0">
-            <div className="text-[12.5px] font-display font-semibold text-slate-900">
-              Flavored water market
-            </div>
-            <div className="text-[11.5px] text-slate-600 leading-snug mt-0.5">
-              Monitoring 12M+ signals across news, social, search, reviews, and
-              first-party customer data.
+          {/* output arrows layered above */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-y-0 left-1/2 right-0">
+              <CleanOutputArrows hubHover={hubHover} />
             </div>
           </div>
         </div>
 
-        {/* Signal velocity */}
-        <div className="rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="text-[11px] font-display font-semibold text-slate-500 uppercase tracking-wider">
-              Real-time signal velocity
-            </div>
-            <span className="inline-flex items-center gap-1 text-[10px] font-display font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Live
-            </span>
-          </div>
-          <svg viewBox="0 0 160 36" className="w-full h-8 mt-1.5">
-            <defs>
-              <linearGradient id="velGrad" x1="0" x2="1">
-                <stop offset="0%" stopColor="#6366F1" />
-                <stop offset="100%" stopColor="#A78BFA" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M0,24 L20,20 L36,26 L54,16 L72,22 L92,12 L112,18 L132,10 L150,14 L160,8"
-              fill="none"
-              stroke="url(#velGrad)"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <circle cx="160" cy="8" r="2.5" fill="#6366F1" />
-          </svg>
-          <div className="mt-1.5 space-y-1 text-[10.5px] font-display">
-            <div className="flex items-center justify-between text-slate-600">
-              <span>Category shifts</span>
-              <span className="text-emerald-600 font-semibold">↑ 23%</span>
-            </div>
-            <div className="flex items-center justify-between text-slate-600">
-              <span>Audience clusters</span>
-              <span className="text-emerald-600 font-semibold">↑ 17%</span>
-            </div>
-            <div className="flex items-center justify-between text-slate-600">
-              <span>Signal velocity</span>
-              <span className="text-blue-600 font-semibold">High</span>
-            </div>
-          </div>
+        {/* Zone 3: opportunity cards */}
+        <div className="flex items-center justify-end relative z-10">
+          <OpportunityCardStack />
         </div>
       </div>
     </div>
@@ -796,18 +896,18 @@ const CapRow = ({
       onMouseEnter={onHover}
       onMouseLeave={onLeave}
       aria-expanded={active}
-      className={`group relative w-full text-left rounded-2xl transition-all duration-300 px-4 md:px-5 py-4 md:py-5 border ${
+      className={`group relative w-full text-left rounded-xl transition-all duration-300 px-3.5 md:px-4 py-2 md:py-2.5 border ${
         active
           ? "bg-gradient-to-br from-blue-50/80 to-violet-50/40 border-blue-200 shadow-[0_4px_24px_-12px_rgba(99,102,241,0.4)]"
           : "border-transparent hover:bg-slate-50/70 border-b border-b-slate-100"
       }`}
     >
       {active && (
-        <span className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full bg-gradient-to-b from-blue-500 to-violet-500" />
+        <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-gradient-to-b from-blue-500 to-violet-500" />
       )}
-      <div className="flex items-start gap-3 md:gap-4">
+      <div className="flex items-start gap-2.5 md:gap-3">
         <div
-          className={`shrink-0 w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center text-[12.5px] font-display font-semibold transition-colors ${
+          className={`shrink-0 w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center text-[11.5px] font-display font-semibold transition-colors ${
             active
               ? "bg-gradient-to-br from-blue-500 to-violet-500 text-white border border-blue-500"
               : "bg-white text-slate-500 border border-slate-300 group-hover:border-blue-300"
@@ -818,26 +918,26 @@ const CapRow = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-3">
             <h3
-              className={`font-display font-semibold text-[15px] md:text-[16.5px] leading-snug ${
+              className={`font-display font-semibold text-[13.5px] md:text-[14.5px] leading-snug ${
                 active ? "text-slate-900" : "text-slate-700"
               }`}
             >
               {cap.title}
             </h3>
             {active ? (
-              <ChevronDown className="w-4 h-4 text-blue-600 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-blue-600 shrink-0" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-slate-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform group-hover:translate-x-0.5" />
             )}
           </div>
           <div
             className={`grid transition-all duration-300 ${
-              active ? "grid-rows-[1fr] opacity-100 mt-2" : "grid-rows-[0fr] opacity-0"
+              active ? "grid-rows-[1fr] opacity-100 mt-1.5" : "grid-rows-[0fr] opacity-0"
             }`}
           >
             <div className="overflow-hidden">
-              <p className="text-[13px] md:text-[13.5px] text-slate-600 leading-relaxed">{cap.short}</p>
-              <p className="text-[12.5px] md:text-[13px] text-slate-500 leading-relaxed mt-1.5">{cap.long}</p>
+              <p className="text-[12.5px] text-slate-600 leading-relaxed">{cap.short}</p>
+              <p className="text-[12px] text-slate-500 leading-relaxed mt-1">{cap.long}</p>
             </div>
           </div>
         </div>
@@ -922,7 +1022,7 @@ export const ProductSection = () => {
             </p>
 
             {/* Capability list */}
-            <div className="mt-8 space-y-1.5">
+            <div className="mt-6 space-y-0.5">
               {CAPS.map((c, i) => (
                 <CapRow
                   key={c.id}
