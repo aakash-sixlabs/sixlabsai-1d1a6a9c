@@ -521,58 +521,68 @@ const MarketIntelligenceCompactIllustration = () => {
         }
       `}</style>
 
-      <div
-        className="relative w-full max-w-[820px] mx-auto"
-      >
-        <div className="relative w-full h-[480px]">
-          {/* Connector layer */}
-          <SignalConnectorSvg hoveredSrc={hoveredSrc} hubHover={hubHover} />
-
-          {/* Top label */}
-          <SectionLabel className="absolute left-0 right-0 top-0 text-center">
-            Millions of signals from different sources
-          </SectionLabel>
-
-          {/* Signal cards row */}
-          <div className="absolute left-0 right-0 top-[28px] flex justify-between items-start px-[26px]">
-            {SIGNAL_CARDS.map((s, i) => (
-              <SignalCard
-                key={s.label}
-                label={s.label}
-                Icon={s.Icon}
-                hovered={hoveredSrc === i}
-                onHover={() => setHoveredSrc(i)}
-                onLeave={() => setHoveredSrc(null)}
-                delay={i * 90}
-              />
-            ))}
-          </div>
-
-          {/* Middle label */}
-          <div className="absolute left-0 right-0 top-[148px] text-center">
-            <SectionLabel>SixLabs intelligence analyzes and connects the dots</SectionLabel>
-          </div>
-
-          {/* Hub */}
+      <div className="relative w-full max-w-[410px] mx-auto">
+        {/* Scale wrapper: original canvas is 820x480; we render at 50% */}
+        <div className="relative w-full" style={{ height: 240 }}>
           <div
-            className="absolute left-1/2 top-[175px] z-10 -translate-x-1/2"
-            onMouseEnter={() => setHubHover(true)}
-            onMouseLeave={() => setHubHover(false)}
+            className="absolute left-1/2 top-0 origin-top"
+            style={{
+              width: 820,
+              height: 480,
+              transform: "translateX(-50%) scale(0.5)",
+              transformOrigin: "top center",
+            }}
           >
-            <SixLabsHub hover={hubHover} />
-          </div>
+            {/* Connector layer */}
+            <SignalConnectorSvg hoveredSrc={hoveredSrc} hubHover={hubHover} />
 
-          {/* Bottom label */}
-          <div className="absolute left-0 right-0 top-[306px] text-center">
-            <SectionLabel>Finds opportunities</SectionLabel>
-          </div>
+            {/* Top label */}
+            <SectionLabel className="absolute left-0 right-0 top-0 text-center">
+              Millions of signals from different sources
+            </SectionLabel>
 
-          {/* Opportunity stack */}
-          <div className="absolute left-1/2 top-[332px] -translate-x-1/2">
-            <OpportunityCardStack />
+            {/* Signal cards row */}
+            <div className="absolute left-0 right-0 top-[28px] flex justify-between items-start px-[26px]">
+              {SIGNAL_CARDS.map((s, i) => (
+                <SignalCard
+                  key={s.label}
+                  label={s.label}
+                  Icon={s.Icon}
+                  hovered={hoveredSrc === i}
+                  onHover={() => setHoveredSrc(i)}
+                  onLeave={() => setHoveredSrc(null)}
+                  delay={i * 90}
+                />
+              ))}
+            </div>
+
+            {/* Middle label */}
+            <div className="absolute left-0 right-0 top-[148px] text-center">
+              <SectionLabel>SixLabs intelligence analyzes and connects the dots</SectionLabel>
+            </div>
+
+            {/* Hub */}
+            <div
+              className="absolute left-1/2 top-[175px] z-10 -translate-x-1/2"
+              onMouseEnter={() => setHubHover(true)}
+              onMouseLeave={() => setHubHover(false)}
+            >
+              <SixLabsHub hover={hubHover} />
+            </div>
+
+            {/* Bottom label */}
+            <div className="absolute left-0 right-0 top-[306px] text-center">
+              <SectionLabel>Finds opportunities</SectionLabel>
+            </div>
+
+            {/* Opportunity stack */}
+            <div className="absolute left-1/2 top-[332px] -translate-x-1/2">
+              <OpportunityCardStack />
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   );
 };
