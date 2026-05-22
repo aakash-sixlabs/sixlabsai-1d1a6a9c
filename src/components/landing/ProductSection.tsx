@@ -512,6 +512,9 @@ const MarketIntelligenceCompactIllustration = () => {
         @keyframes mktDraw {
           to { stroke-dashoffset: 0; }
         }
+        @keyframes mktDashFlow {
+          to { stroke-dashoffset: -32; }
+        }
         @keyframes mktFadeUp {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
