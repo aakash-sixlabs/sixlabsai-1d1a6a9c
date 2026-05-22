@@ -257,25 +257,19 @@ const InsightCard = ({
   </div>
 );
 
-/* ---------- Market Intelligence Desktop Visual ---------- */
-/* (icons imported at top) */
+/* ---------- Market Intelligence Compact Illustration ---------- */
 
-const SIGNAL_SOURCES: { label: string; Icon: any }[] = [
-  { label: "Ad platforms", Icon: InfinityIcon },
-  { label: "Google Ads", Icon: Triangle },
-  { label: "TikTok Ads", Icon: Music2 },
-  { label: "CRM / CDP", Icon: Users },
-  { label: "Website", Icon: Globe },
-  { label: "Social listening", Icon: MessageSquare },
-  { label: "News & trends", Icon: Newspaper },
-  { label: "Competitors", Icon: Target },
-  { label: "and more", Icon: MoreHorizontal },
+const SIGNAL_CARDS: { label: string; Icon: any; cx: number }[] = [
+  { label: "Ad platforms", Icon: Megaphone, cx: 110 },
+  { label: "Social listening", Icon: MessageSquare, cx: 305 },
+  { label: "News & trends", Icon: Newspaper, cx: 515 },
+  { label: "Competitors", Icon: Target, cx: 710 },
 ];
 
 const OPPORTUNITIES = [
   {
     title: "High-intent hydration segment accelerating",
-    body: "New cluster of buyers showing conversion lift vs baseline.",
+    body: "New cluster of buyers showing stronger conversion lift vs baseline.",
     tags: ["New segment", "Conversion lift", "Scale-ready"],
   },
   {
@@ -285,12 +279,20 @@ const OPPORTUNITIES = [
   },
   {
     title: "Fruit punch response increasing",
-    body: "Creative using fruit-forward refreshment cues is gaining traction across paid social.",
+    body: "Fruit-forward creative cues are gaining traction across paid social.",
     tags: ["Winning hook", "Creative angle", "Audience shift"],
   },
 ];
 
-const SignalSourcePill = ({
+const SectionLabel = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+  <div
+    className={`text-[13px] md:text-[14px] font-display font-semibold text-slate-800 leading-[1.25] ${className}`}
+  >
+    {children}
+  </div>
+);
+
+const SignalCard = ({
   label,
   Icon,
   hovered,
@@ -308,195 +310,147 @@ const SignalSourcePill = ({
   <div
     onMouseEnter={onHover}
     onMouseLeave={onLeave}
-    className={`group flex items-center gap-2.5 pl-3 pr-4 h-[42px] rounded-2xl bg-white border shadow-[0_2px_8px_-3px_rgba(15,23,42,0.08)] cursor-default transition-all duration-300 animate-[mktFadeUp_0.5s_ease-out_both] ${
+    className={`group flex items-center gap-2.5 pl-2.5 pr-3.5 h-[54px] w-[156px] rounded-2xl bg-white border shadow-[0_2px_8px_-3px_rgba(15,23,42,0.10)] cursor-default transition-all duration-300 animate-[mktFadeUp_0.55s_ease-out_both] ${
       hovered
-        ? "-translate-y-0.5 border-violet-300 shadow-[0_8px_22px_-6px_rgba(99,102,241,0.4)]"
-        : "border-slate-200 hover:border-violet-200"
+        ? "-translate-y-0.5 border-violet-300 shadow-[0_10px_24px_-8px_rgba(99,102,241,0.45)]"
+        : "border-slate-200/90 hover:border-violet-200"
     }`}
     style={{ animationDelay: `${delay}ms` }}
   >
     <span
-      className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+      className={`w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-colors ${
         hovered
           ? "bg-gradient-to-br from-blue-500/15 to-violet-500/25"
-          : "bg-gradient-to-br from-blue-500/8 to-violet-500/12"
+          : "bg-gradient-to-br from-blue-500/10 to-violet-500/15"
       }`}
     >
       <Icon
-        className={`w-3.5 h-3.5 ${hovered ? "text-violet-600" : "text-indigo-500"}`}
+        className={`w-4 h-4 ${hovered ? "text-violet-600" : "text-indigo-500"}`}
         strokeWidth={2}
       />
     </span>
-    <span className="text-[12.5px] font-display font-medium text-slate-700 whitespace-nowrap">
+    <span className="text-[12.5px] font-display font-semibold text-slate-800 leading-tight">
       {label}
     </span>
   </div>
 );
 
-const SignalNetwork = ({
+const SignalConnectorSvg = ({
   hoveredSrc,
   hubHover,
 }: {
   hoveredSrc: number | null;
   hubHover: boolean;
 }) => {
-  const rows = SIGNAL_SOURCES.length;
-
-  const paths = useMemo(
-    () =>
-      Array.from({ length: 36 }).map((_, i) => {
-        const sourceIndex = i % rows;
-        const sy = 8 + (sourceIndex * 84) / (rows - 1);
-        const offset = ((i * 17) % 18) - 9;
-        const endY = 50 + (((i * 23) % 44) - 22);
-        const c1x = 18 + ((i * 7) % 18);
-        const c1y = sy + offset;
-        const c2x = 62 + ((i * 5) % 18);
-        const c2y = endY + (((i * 11) % 16) - 8);
-        return {
-          sourceIndex,
-          d: `M 0 ${sy} C ${c1x} ${c1y}, ${c2x} ${c2y}, 100 50`,
-          opacity: 0.16 + ((i % 5) * 0.045),
-          width: i % 7 === 0 ? 0.55 : 0.35,
-          delay: (i % 12) * 0.18,
-          dashed: i % 4 === 0,
-        };
-      }),
-    [rows],
-  );
-
-  const nodes = useMemo(
-    () =>
-      Array.from({ length: 92 }).map((_, i) => ({
-        x: 8 + ((i * 37) % 84),
-        y: 8 + ((i * 53) % 84),
-        r: i % 9 === 0 ? 0.8 : 0.45,
-        delay: (i % 16) * 0.14,
-        opacity: i % 7 === 0 ? 0.65 : 0.38,
-      })),
-    [],
-  );
+  // Container viewBox: 820 wide x 500 tall.
+  // Signal card centers: x = 110, 305, 515, 710  (card bottom y ≈ 92)
+  // Hub center: (410, 230), hub radius ≈ 55 → hub top ≈ 175
+  const inputs = [
+    { d: "M 110 92 C 110 150, 320 150, 370 195", from: 0 },
+    { d: "M 305 92 C 305 140, 380 150, 395 192", from: 1 },
+    { d: "M 515 92 C 515 140, 440 150, 425 192", from: 2 },
+    { d: "M 710 92 C 710 150, 500 150, 450 195", from: 3 },
+  ];
+  const output = "M 410 285 C 410 305, 410 318, 410 332";
 
   return (
     <svg
       className="absolute inset-0 w-full h-full pointer-events-none overflow-visible"
-      viewBox="0 0 100 100"
-      preserveAspectRatio="none"
+      viewBox="0 0 820 500"
+      preserveAspectRatio="xMidYMid meet"
       aria-hidden
     >
       <defs>
-        <linearGradient id="mktInputGradient" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor="#2563EB" stopOpacity="0.15" />
-          <stop offset="50%" stopColor="#6366F1" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="#A78BFA" stopOpacity="0.22" />
+        <linearGradient id="mktConnIn" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#2563EB" />
+          <stop offset="100%" stopColor="#7C3AED" />
         </linearGradient>
-        <filter id="mktInputGlow" x="-20%" y="-30%" width="140%" height="160%">
-          <feGaussianBlur stdDeviation="1.2" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        <linearGradient id="mktConnOut" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor="#6366F1" />
+          <stop offset="100%" stopColor="#8B5CF6" />
+        </linearGradient>
+        <marker
+          id="mktArrowIn"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="6"
+          markerHeight="6"
+          orient="auto"
+        >
+          <path d="M0,0 L10,5 L0,10 z" fill="#7C3AED" />
+        </marker>
+        <marker
+          id="mktArrowOut"
+          viewBox="0 0 10 10"
+          refX="8"
+          refY="5"
+          markerWidth="7"
+          markerHeight="7"
+          orient="auto"
+        >
+          <path d="M0,0 L10,5 L0,10 z" fill="#8B5CF6" />
+        </marker>
+        <filter id="mktSoftGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.5" />
         </filter>
       </defs>
-      {paths.map((p, i) => {
-        const active = hubHover || hoveredSrc === p.sourceIndex;
+
+      {inputs.map((p, i) => {
+        const active = hubHover || hoveredSrc === p.from;
         return (
-          <path
-            key={i}
-            d={p.d}
-            fill="none"
-            stroke="url(#mktInputGradient)"
-            strokeWidth={active ? p.width * 2.2 : p.width}
-            opacity={active ? 0.85 : p.opacity}
-            vectorEffect="non-scaling-stroke"
-            strokeLinecap="round"
-            strokeDasharray={p.dashed ? "2 8" : undefined}
-            className={p.dashed ? "animate-[mktFlow_3.8s_linear_infinite]" : undefined}
-            style={{
-              animationDelay: `${p.delay}s`,
-              transition: "opacity 300ms ease, stroke-width 300ms ease",
-            }}
-          />
+          <g key={i}>
+            <path
+              d={p.d}
+              fill="none"
+              stroke="url(#mktConnIn)"
+              strokeWidth={active ? 3.2 : 2}
+              opacity={active ? 0.95 : 0.7}
+              strokeLinecap="round"
+              markerEnd="url(#mktArrowIn)"
+              className="[stroke-dasharray:600] [stroke-dashoffset:600] animate-[mktDraw_1.2s_ease-out_forwards] motion-reduce:[stroke-dashoffset:0] motion-reduce:animate-none"
+              style={{
+                animationDelay: `${250 + i * 120}ms`,
+                transition: "opacity 250ms ease, stroke-width 250ms ease",
+              }}
+            />
+          </g>
         );
       })}
-      {nodes.map((n, i) => (
-        <circle
-          key={i}
-          cx={n.x}
-          cy={n.y}
-          r={n.r}
-          fill={i % 3 === 0 ? "#2563EB" : "#7C3AED"}
-          opacity={n.opacity}
-          filter={i % 8 === 0 ? "url(#mktInputGlow)" : undefined}
-          className="animate-[mktPulse_3.4s_ease-in-out_infinite]"
-          style={{ animationDelay: `${n.delay}s` }}
-        />
-      ))}
+
+      <path
+        d={output}
+        fill="none"
+        stroke="url(#mktConnOut)"
+        strokeWidth={hubHover ? 2.8 : 2.2}
+        opacity={hubHover ? 1 : 0.85}
+        strokeLinecap="round"
+        markerEnd="url(#mktArrowOut)"
+        className="[stroke-dasharray:300] [stroke-dashoffset:300] animate-[mktDraw_0.9s_ease-out_forwards] motion-reduce:[stroke-dashoffset:0] motion-reduce:animate-none"
+        style={{
+          animationDelay: "900ms",
+          transition: "opacity 250ms ease, stroke-width 250ms ease",
+        }}
+      />
     </svg>
   );
 };
 
 const SixLabsHub = ({ hover }: { hover: boolean }) => (
-  <div className="relative w-[150px] h-[150px] flex items-center justify-center">
-    <span className="absolute inset-0 rounded-full border border-violet-200/70 animate-[mktRing_4.8s_ease-out_infinite]" />
-    <span className="absolute inset-4 rounded-full border border-blue-200/60 animate-[mktRing_4.8s_ease-out_infinite] [animation-delay:1.2s]" />
-    <span className="absolute inset-8 rounded-full border border-violet-200/50 animate-[mktRing_4.8s_ease-out_infinite] [animation-delay:2.4s]" />
+  <div className="relative w-[110px] h-[110px] flex items-center justify-center">
+    <span className="absolute inset-0 rounded-full border border-violet-200/70 animate-[mktRing_4.8s_ease-out_infinite] motion-reduce:animate-none" />
+    <span className="absolute inset-3 rounded-full border border-blue-200/60 animate-[mktRing_4.8s_ease-out_infinite] [animation-delay:1.2s] motion-reduce:animate-none" />
+    <span className="absolute inset-6 rounded-full border border-violet-200/50 animate-[mktRing_4.8s_ease-out_infinite] [animation-delay:2.4s] motion-reduce:animate-none" />
     <div
-      className={`relative w-[106px] h-[106px] rounded-full bg-white border border-violet-100 flex items-center justify-center shadow-[0_0_60px_-14px_rgba(124,58,237,0.45)] transition-all duration-500 animate-[mktBreathe_4s_ease-in-out_infinite] ${
-        hover ? "scale-[1.04]" : ""
+      className={`relative w-[88px] h-[88px] rounded-full bg-white border border-violet-100 flex items-center justify-center shadow-[0_0_50px_-14px_rgba(124,58,237,0.45)] transition-all duration-500 animate-[mktBreathe_4s_ease-in-out_infinite] motion-reduce:animate-none ${
+        hover ? "scale-[1.05] shadow-[0_0_70px_-14px_rgba(99,102,241,0.65)]" : ""
       }`}
     >
-      <div className="w-[64px] h-[64px] rounded-full bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-[0_18px_45px_-18px_rgba(99,102,241,0.8)]">
-        <span className="text-white font-display font-bold text-[34px] leading-none">6</span>
+      <div className="w-[58px] h-[58px] rounded-full bg-gradient-to-br from-blue-600 via-indigo-600 to-violet-500 flex items-center justify-center shadow-[0_14px_36px_-14px_rgba(99,102,241,0.8)]">
+        <span className="text-white font-display font-bold text-[28px] leading-none">6</span>
       </div>
     </div>
   </div>
-);
-
-const CleanOutputArrows = ({ hubHover }: { hubHover: boolean }) => (
-  <svg
-    className="absolute inset-y-0 left-[50%] z-10 h-full w-[58%] pointer-events-none overflow-visible"
-    viewBox="0 0 100 100"
-    preserveAspectRatio="none"
-    aria-hidden
-  >
-    <defs>
-      <linearGradient id="mktCleanOut" x1="0" x2="1" y1="0" y2="0">
-        <stop offset="0%" stopColor="#2563EB" />
-        <stop offset="55%" stopColor="#6366F1" />
-        <stop offset="100%" stopColor="#8B5CF6" />
-      </linearGradient>
-      <marker
-        id="mktCleanArrow"
-        viewBox="0 0 10 10"
-        refX="8"
-        refY="5"
-        markerWidth="7"
-        markerHeight="7"
-        orient="auto"
-      >
-        <path d="M0,0 L10,5 L0,10 z" fill="#8B5CF6" />
-      </marker>
-    </defs>
-    {[
-      { y1: 50, y2: 30 },
-      { y1: 50, y2: 50 },
-      { y1: 50, y2: 70 },
-    ].map((p, i) => (
-      <path
-        key={i}
-        d={`M 4 ${p.y1} C 30 ${p.y1}, 48 ${p.y2}, 74 ${p.y2}`}
-        fill="none"
-        stroke="url(#mktCleanOut)"
-        strokeWidth={hubHover ? 2.6 : 2.2}
-        opacity={hubHover ? 1 : 0.8}
-        markerEnd="url(#mktCleanArrow)"
-        strokeLinecap="round"
-        vectorEffect="non-scaling-stroke"
-        style={{ transition: "opacity 250ms ease, stroke-width 250ms ease" }}
-      />
-    ))}
-  </svg>
 );
 
 const OpportunityCardStack = () => {
@@ -507,70 +461,64 @@ const OpportunityCardStack = () => {
   }, []);
   const op = OPPORTUNITIES[idx];
   return (
-    <div className="relative h-[310px] w-[300px]">
+    <div className="group relative w-[460px] h-[180px]">
       {/* background cards */}
-      <div className="absolute right-0 top-8 h-[240px] w-[258px] rotate-[4deg] rounded-[24px] border border-slate-200 bg-white opacity-55 shadow-[0_16px_40px_-24px_rgba(15,23,42,0.35)]" />
-      <div className="absolute right-4 top-4 h-[260px] w-[270px] rotate-[2deg] rounded-[24px] border border-slate-200 bg-white opacity-80 shadow-[0_16px_40px_-24px_rgba(15,23,42,0.35)]" />
+      <div className="absolute left-1/2 top-3 h-[160px] w-[420px] -translate-x-1/2 rotate-[-2deg] rounded-[22px] border border-slate-200 bg-white opacity-55 shadow-[0_14px_36px_-22px_rgba(15,23,42,0.30)] transition-transform duration-500 group-hover:rotate-[-3deg]" />
+      <div className="absolute left-1/2 top-1.5 h-[170px] w-[440px] -translate-x-1/2 rotate-[1.5deg] rounded-[22px] border border-slate-200 bg-white opacity-80 shadow-[0_14px_36px_-22px_rgba(15,23,42,0.30)] transition-transform duration-500 group-hover:rotate-[2.5deg]" />
       {/* foreground card */}
-      <div className="relative w-[286px] rounded-[26px] border border-violet-100 bg-white p-6 shadow-[0_24px_60px_-26px_rgba(99,102,241,0.42)] animate-[mktFloat_5s_ease-in-out_infinite]">
-        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl border border-violet-100 bg-gradient-to-br from-blue-500/10 to-violet-500/20">
-          <Sparkles className="h-4 w-4 text-violet-600" />
-        </div>
-        <div className="mb-3 text-[10px] font-display font-bold uppercase tracking-[0.18em] text-violet-600">
-          Opportunity found
-        </div>
-        <div key={idx} className="animate-[mktFadeUp_0.5s_ease-out]">
-          <h4 className="font-display text-[18px] font-semibold leading-[1.15] tracking-tight text-slate-950">
-            {op.title}
-          </h4>
-          <p className="mt-3 text-[12.5px] leading-relaxed text-slate-600">{op.body}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {op.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-violet-100 bg-violet-50 px-2.5 py-1 text-[11px] font-medium text-violet-700"
-              >
-                {tag}
-              </span>
-            ))}
+      <div className="relative w-[460px] rounded-[24px] border border-violet-100 bg-white p-5 shadow-[0_22px_50px_-26px_rgba(99,102,241,0.4)] transition-transform duration-300 group-hover:-translate-y-[3px]">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-100 bg-gradient-to-br from-blue-500/10 to-violet-500/20">
+            <Sparkles className="h-4 w-4 text-violet-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-display font-bold uppercase tracking-[0.18em] text-violet-600">
+              Opportunity found
+            </div>
+            <div key={idx} className="animate-[mktFadeUp_0.5s_ease-out]">
+              <h4 className="mt-1 font-display text-[15px] font-semibold leading-[1.2] tracking-tight text-slate-950">
+                {op.title}
+              </h4>
+              <p className="mt-1.5 text-[12px] leading-snug text-slate-600">{op.body}</p>
+              <div className="mt-2.5 flex flex-wrap gap-1.5">
+                {op.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 text-[10.5px] font-medium text-violet-700"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
-        <button className="mt-5 inline-flex items-center gap-2 text-[13px] font-semibold text-blue-600 transition-colors hover:text-violet-600">
+        <button className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-blue-600 transition-colors hover:text-violet-600">
           View opportunity
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
     </div>
   );
 };
 
-const MarketVisual = () => {
+const MarketIntelligenceCompactIllustration = () => {
   const [hoveredSrc, setHoveredSrc] = useState<number | null>(null);
   const [hubHover, setHubHover] = useState(false);
 
   return (
-    <div className="relative h-full w-full overflow-visible">
+    <div className="flex h-full w-full items-center justify-center">
       <style>{`
         @keyframes mktBreathe {
-          0%,100% { box-shadow: 0 0 44px -10px rgba(124,58,237,0.35); transform: scale(1); }
-          50% { box-shadow: 0 0 72px -12px rgba(99,102,241,0.55); transform: scale(1.015); }
+          0%,100% { box-shadow: 0 0 40px -12px rgba(124,58,237,0.35); }
+          50% { box-shadow: 0 0 64px -12px rgba(99,102,241,0.55); }
         }
         @keyframes mktRing {
-          0% { transform: scale(0.82); opacity: 0.55; }
+          0% { transform: scale(0.85); opacity: 0.55; }
           100% { transform: scale(1.35); opacity: 0; }
         }
-        @keyframes mktPulse {
-          0%,100% { opacity: 0.28; transform: scale(1); }
-          50% { opacity: 0.9; transform: scale(1.35); }
-        }
-        @keyframes mktFlow {
-          0% { stroke-dashoffset: 32; opacity: 0.25; }
-          50% { opacity: 0.8; }
-          100% { stroke-dashoffset: 0; opacity: 0.25; }
-        }
-        @keyframes mktFloat {
-          0%,100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
+        @keyframes mktDraw {
+          to { stroke-dashoffset: 0; }
         }
         @keyframes mktFadeUp {
           from { opacity: 0; transform: translateY(8px); }
@@ -578,63 +526,63 @@ const MarketVisual = () => {
         }
       `}</style>
 
-      {/* Zone labels */}
-      <div className="grid grid-cols-[240px_minmax(360px,1fr)_320px] gap-8 mb-6">
-        <div className="text-[13px] font-display font-semibold text-slate-800 leading-snug">
-          Millions of signals
-          <br />
-          from every source
-        </div>
-        <div className="text-[13px] font-display font-semibold text-slate-800 leading-snug text-center">
-          SixLabs intelligence
-          <br />
-          analyzes and connects
-        </div>
-        <div className="text-[13px] font-display font-semibold text-slate-800 leading-snug text-right">
-          Opportunity found
-          <br />
-          <span className="font-normal text-slate-500 text-[12px]">clearing the noise</span>
-        </div>
-      </div>
+      <div
+        className="relative w-full max-w-[820px] mx-auto rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white shadow-[0_18px_50px_-24px_rgba(15,23,42,0.18)] px-7 md:px-9 py-7 md:py-8"
+      >
+        <div className="relative w-full h-[480px]">
+          {/* Connector layer */}
+          <SignalConnectorSvg hoveredSrc={hoveredSrc} hubHover={hubHover} />
 
-      {/* Main 3-zone grid */}
-      <div className="relative grid grid-cols-[240px_minmax(360px,1fr)_320px] gap-8 items-center h-[390px] overflow-visible">
-        {/* Zone 1 */}
-        <div className="relative z-20 flex flex-col gap-2.5">
-          {SIGNAL_SOURCES.map((s, i) => (
-            <SignalSourcePill
-              key={s.label}
-              label={s.label}
-              Icon={s.Icon}
-              hovered={hoveredSrc === i}
-              onHover={() => setHoveredSrc(i)}
-              onLeave={() => setHoveredSrc(null)}
-              delay={i * 55}
-            />
-          ))}
-        </div>
+          {/* Top label */}
+          <SectionLabel className="absolute left-0 right-0 top-0 text-center">
+            Millions of signals from different sources
+          </SectionLabel>
 
-        {/* Zone 2 */}
-        <div className="relative h-full overflow-visible">
-          <SignalNetwork hoveredSrc={hoveredSrc} hubHover={hubHover} />
+          {/* Signal cards row */}
+          <div className="absolute left-0 right-0 top-[28px] flex justify-between items-start px-[26px]">
+            {SIGNAL_CARDS.map((s, i) => (
+              <SignalCard
+                key={s.label}
+                label={s.label}
+                Icon={s.Icon}
+                hovered={hoveredSrc === i}
+                onHover={() => setHoveredSrc(i)}
+                onLeave={() => setHoveredSrc(null)}
+                delay={i * 90}
+              />
+            ))}
+          </div>
+
+          {/* Middle label */}
+          <div className="absolute left-0 right-0 top-[148px] text-center">
+            <SectionLabel>SixLabs intelligence analyzes and connects the dots</SectionLabel>
+          </div>
+
+          {/* Hub */}
           <div
-            className="absolute inset-0 z-20 flex items-center justify-center"
+            className="absolute left-1/2 top-[175px] z-10 -translate-x-1/2"
             onMouseEnter={() => setHubHover(true)}
             onMouseLeave={() => setHubHover(false)}
           >
             <SixLabsHub hover={hubHover} />
           </div>
-          <CleanOutputArrows hubHover={hubHover} />
-        </div>
 
-        {/* Zone 3 */}
-        <div className="relative z-20 flex justify-end">
-          <OpportunityCardStack />
+          {/* Bottom label */}
+          <div className="absolute left-0 right-0 top-[306px] text-center">
+            <SectionLabel>Finds opportunities</SectionLabel>
+          </div>
+
+          {/* Opportunity stack */}
+          <div className="absolute left-1/2 top-[332px] -translate-x-1/2">
+            <OpportunityCardStack />
+          </div>
         </div>
       </div>
     </div>
   );
 };
+
+const MarketVisual = () => <MarketIntelligenceCompactIllustration />;
 
 const CreativeVisual = () => (
   <div className="flex flex-col h-full">
