@@ -24,6 +24,13 @@ import {
   Activity,
   Star,
   Citrus,
+  Infinity as InfinityIcon,
+  Triangle,
+  Music2,
+  Globe,
+  MessageSquare,
+  Newspaper,
+  MoreHorizontal,
 } from "lucide-react";
 
 /* ---------- Editable copy ---------- */
