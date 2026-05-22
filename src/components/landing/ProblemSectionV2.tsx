@@ -688,7 +688,7 @@ export const ProblemSectionV2 = () => {
           </div>
 
           {/* Desktop layout */}
-          <div className="hidden lg:grid mt-8 grid-cols-[220px_1fr_60px] gap-6">
+          <div className="hidden lg:grid mt-8 grid-cols-[220px_1fr_110px] gap-6">
             {/* Campaign rail */}
             <div className="flex flex-col gap-12 pt-4">
               <div>
