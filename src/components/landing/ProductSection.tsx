@@ -527,7 +527,7 @@ const MarketIntelligenceCompactIllustration = () => {
       `}</style>
 
       <div
-        className="relative w-full max-w-[820px] mx-auto rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white shadow-[0_18px_50px_-24px_rgba(15,23,42,0.18)] px-7 md:px-9 py-7 md:py-8"
+        className="relative w-full max-w-[820px] mx-auto"
       >
         <div className="relative w-full h-[480px]">
           {/* Connector layer */}
