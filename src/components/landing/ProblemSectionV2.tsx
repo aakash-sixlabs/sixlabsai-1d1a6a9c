@@ -714,6 +714,323 @@ function MobileLayout({
   );
 }
 
+/* ---------- Mobile section (standalone, per spec) ---------- */
+const MOBILE_PAIR_EXPLAIN: Record<string, string> = {
+  s1: "Pairs with: Brief written — learning becomes a request.",
+  s2: "Pairs with: Report pulled — signal enters after the shift.",
+  s3: "Pairs with: Creative reviewed — execution waits on approvals.",
+  s4: "Pairs with: Campaign updated — action arrives after the market moves.",
+  s5: "Pairs with: Campaign updated — action arrives after the market moves.",
+  s6: "Pairs with: Signal expired — the opportunity has moved on.",
+};
+
+const MOBILE_WORKFLOW_EXPLAIN: Record<string, string> = {
+  w1: "Signals enter the workflow after performance has already shifted.",
+  w2: "Learning becomes a request.",
+  w3: "Execution waits on approvals.",
+  w4: "Action arrives after the market has moved.",
+  w5: "The original opportunity has already changed.",
+};
+
+function ProblemSectionMobile() {
+  const { ref, inView } = useInView<HTMLDivElement>();
+  const reduced = usePrefersReducedMotion();
+  const [tappedSignal, setTappedSignal] = useState<string | null>(null);
+  const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
+
+  const gridSignals = CAMPAIGN_SIGNALS.slice(0, 6);
+  const activePairId = tappedSignal
+    ? (CAMPAIGN_SIGNALS.find((s) => s.id === tappedSignal)?.pairId ?? null)
+    : null;
+
+  const fade = (delay = 0) => ({
+    opacity: inView || reduced ? 1 : 0,
+    transform: inView || reduced ? "translateY(0)" : "translateY(10px)",
+    transition: `opacity 500ms ease ${delay}ms, transform 500ms ease ${delay}ms`,
+  });
+
+  return (
+    <section
+      ref={ref}
+      aria-labelledby="problem-mobile-title"
+      className="lg:hidden relative w-full bg-[#F8FAFC] overflow-hidden"
+      style={{ paddingTop: 72, paddingBottom: 72 }}
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full opacity-[0.35]"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(167,139,250,0.18) 0%, rgba(99,102,241,0.08) 35%, rgba(248,250,252,0) 70%)",
+        }}
+      />
+
+      <div className="relative px-6">
+        {/* Header */}
+        <div style={fade(0)}>
+          <div className="text-[12px] font-bold tracking-[0.18em] text-[#4F46E5]">THE PROBLEM</div>
+          <h2
+            id="problem-mobile-title"
+            className="mt-4 font-display font-bold text-[#0B123F]"
+            style={{ fontSize: "clamp(40px, 10vw, 52px)", lineHeight: 1.05, letterSpacing: "-0.01em" }}
+          >
+            Performance marketing moves daily. Most workflows{" "}
+            <span className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+              don't.
+            </span>
+          </h2>
+          <p className="mt-[22px] text-[17px] leading-[1.55] text-[#334155]">
+            Every campaign is already telling you what to change — fatigue, CAC drift, winning hooks, audience
+            shifts, and offer performance. But between campaign reality and workflow reality,{" "}
+            <span className="font-semibold bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+              the gap widens each day
+            </span>{" "}
+            as signals move faster than reports, briefs, reviews, and updates.
+          </p>
+        </div>
+
+        {/* Main comparison card */}
+        <div
+          className="mt-10 rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-5 shadow-[0_20px_50px_-28px_rgba(15,23,42,0.18)]"
+          style={fade(120)}
+        >
+          {/* Top label */}
+          <div className="pb-3.5 border-b border-[rgba(15,23,42,0.06)]">
+            <div className="inline-flex items-center gap-2">
+              <Bookmark size={15} className="text-[#4F46E5]" />
+              <span className="relative text-[14px] font-semibold text-[#4F46E5] pb-1">
+                See the gap
+                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] rounded-full bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6]" />
+              </span>
+            </div>
+          </div>
+
+          {/* B. Campaign reality */}
+          <div className="mt-6">
+            <div className="flex items-start gap-3">
+              <span className="w-12 h-12 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
+                <Activity size={20} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display font-bold text-[#0B123F] text-[20px] leading-tight">
+                  Campaign reality
+                </h3>
+                <p className="text-[15px] text-[#64748B] mt-0.5 leading-snug">
+                  The market is changing every day.
+                </p>
+              </div>
+              <span className="text-[10px] font-bold tracking-[0.14em] px-2 py-1 rounded-full bg-[#EEF2FF] text-[#4F46E5] shrink-0">
+                FAST MOVING
+              </span>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2.5">
+              {gridSignals.map((s, idx) => {
+                const isActive = tappedSignal === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    aria-label={`${s.day}: ${s.label}`}
+                    aria-pressed={isActive}
+                    onClick={() => setTappedSignal(isActive ? null : s.id)}
+                    className={`text-left rounded-2xl border bg-white p-3.5 min-h-[104px] flex flex-col transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4F46E5]/40 ${
+                      isActive
+                        ? "border-[#4F46E5] shadow-[0_10px_24px_-14px_rgba(79,70,229,0.5)]"
+                        : "border-[rgba(15,23,42,0.08)] shadow-[0_2px_8px_-4px_rgba(15,23,42,0.08)]"
+                    }`}
+                    style={{
+                      opacity: inView || reduced ? 1 : 0,
+                      transform: inView || reduced ? "translateY(0)" : "translateY(8px)",
+                      transition: `opacity 400ms ease ${250 + idx * 60}ms, transform 400ms ease ${250 + idx * 60}ms, box-shadow 200ms, border-color 200ms`,
+                    }}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-bold tracking-[0.16em] text-[#4F46E5]">{s.day}</span>
+                      <span className="w-6 h-6 rounded-full flex items-center justify-center bg-[#EEF2FF] text-[#4F46E5]">
+                        <s.Icon size={12} />
+                      </span>
+                    </div>
+                    <div className="mt-1.5 text-[14px] leading-[1.25] font-semibold text-[#0B123F]">
+                      {s.label}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {tappedSignal && MOBILE_PAIR_EXPLAIN[tappedSignal] && (
+              <div className="mt-2.5 rounded-xl border border-[#E0E7FF] bg-[#F5F3FF]/60 px-3.5 py-2.5 text-[12.5px] leading-snug text-[#4338CA]">
+                {MOBILE_PAIR_EXPLAIN[tappedSignal]}
+              </div>
+            )}
+
+            <div className="mt-2.5 w-full flex items-center gap-2.5 rounded-2xl border border-[rgba(79,70,229,0.18)] bg-[#F5F3FF]/60 px-3.5 py-3">
+              <span className="w-7 h-7 rounded-full flex items-center justify-center bg-[#EEF2FF] text-[#4F46E5] shrink-0">
+                <MoreHorizontal size={13} />
+              </span>
+              <span className="text-[13px] font-semibold text-[#0B123F]">More signals emerge daily</span>
+            </div>
+
+            <div className="mt-3.5 flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-[#8B5CF6] opacity-60 animate-ping" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#4F46E5]" />
+              </span>
+              <span className="flex-1 h-[2px] rounded-full bg-gradient-to-r from-[#6366F1] via-[#8B5CF6] to-transparent" />
+              <span className="text-[10.5px] font-semibold tracking-wide text-[#4F46E5]">Signals keep moving</span>
+            </div>
+          </div>
+
+          {/* C. Latency gap bridge */}
+          <div
+            className="mt-6 mb-6 rounded-[22px] border flex items-center gap-3.5 p-[18px]"
+            style={{
+              background: "linear-gradient(135deg, rgba(245,243,255,0.9), rgba(238,242,255,0.7))",
+              borderColor: "rgba(139,92,246,0.18)",
+            }}
+          >
+            <svg width="14" height="62" viewBox="0 0 14 62" aria-hidden className="shrink-0">
+              <circle cx="7" cy="6" r="4" fill="#6366F1" />
+              <line
+                x1="7"
+                y1="12"
+                x2="7"
+                y2="50"
+                stroke="#A78BFA"
+                strokeWidth="1.5"
+                strokeDasharray="2.5 3"
+                strokeLinecap="round"
+              />
+              <circle cx="7" cy="56" r="4" fill="#FB7185" />
+            </svg>
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold tracking-[0.16em] text-[#6366F1]">LATENCY GAP</div>
+              <div className="mt-1 text-[15px] font-bold text-[#0B123F] leading-snug">
+                The gap widens each day.
+              </div>
+              <div className="mt-1 text-[13px] leading-snug text-[#64748B]">
+                Campaign signals update in real time. Workflow action lands days later.
+              </div>
+            </div>
+          </div>
+
+          {/* D. Workflow reality */}
+          <div>
+            <div className="flex items-start gap-3">
+              <span className="w-12 h-12 rounded-full bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center shrink-0">
+                <Clock size={20} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display font-bold text-[#0B123F] text-[20px] leading-tight">
+                  Workflow reality
+                </h3>
+                <p className="text-[15px] text-[#64748B] mt-0.5 leading-snug">
+                  Traditional workflows move in sequence.
+                </p>
+              </div>
+              <span className="text-[10px] font-bold tracking-[0.14em] px-2 py-1 rounded-full bg-[#FFF1F2] text-[#E11D48] shrink-0">
+                SLOW MOVING
+              </span>
+            </div>
+
+            <ol className="mt-4 relative">
+              <span
+                className="absolute left-[18px] top-3 bottom-3 w-px"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(to bottom, #FB7185 0, #FB7185 4px, transparent 4px, transparent 8px)",
+                  backgroundSize: "1px 8px",
+                  backgroundRepeat: "repeat-y",
+                }}
+                aria-hidden
+              />
+              {WORKFLOW_STEPS.map((step) => {
+                const expanded = expandedWorkflow === step.id;
+                const isPaired = activePairId === step.id;
+                const explain = MOBILE_WORKFLOW_EXPLAIN[step.id];
+                return (
+                  <li key={step.id} className="relative pl-12 mb-3 last:mb-0">
+                    <span
+                      className={`absolute left-0 top-3 w-9 h-9 rounded-full flex items-center justify-center border-2 ${
+                        step.isExpired
+                          ? "bg-[#FFF1F2] border-[#FB7185] text-[#E11D48]"
+                          : "bg-white border-[#FB7185] text-[#E11D48]"
+                      }`}
+                    >
+                      <step.Icon size={15} />
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={step.label}
+                      aria-expanded={expanded}
+                      onClick={() => setExpandedWorkflow(expanded ? null : step.id)}
+                      className={`w-full text-left rounded-2xl border px-4 py-3.5 transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-[#E11D48]/40 ${
+                        step.isExpired
+                          ? `bg-[#FFF1F2] ${
+                              isPaired || expanded
+                                ? "border-[#E11D48] shadow-[0_8px_20px_-14px_rgba(225,29,72,0.5)]"
+                                : "border-[#FECDD3]"
+                            }`
+                          : `bg-white ${
+                              isPaired || expanded
+                                ? "border-[#E11D48] shadow-[0_8px_20px_-14px_rgba(225,29,72,0.45)]"
+                                : "border-[rgba(15,23,42,0.08)] shadow-[0_2px_8px_-4px_rgba(15,23,42,0.08)]"
+                            }`
+                      }`}
+                      style={{ minHeight: step.isExpired ? 76 : 64 }}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[14px] font-semibold text-[#0B123F] leading-tight">
+                          {step.label}
+                        </span>
+                        {step.time && (
+                          <span className="shrink-0 text-[11px] font-semibold tracking-wide text-[#E11D48] bg-white border border-[#FECDD3] rounded-full px-2 py-0.5">
+                            {step.time}
+                          </span>
+                        )}
+                      </div>
+                      {step.subtext && (
+                        <div className="mt-1 text-[12.5px] text-[#9F1239]">{step.subtext}</div>
+                      )}
+                      {expanded && explain && (
+                        <div className="mt-2 text-[12.5px] leading-snug text-[#64748B] border-t border-dashed border-[#FECDD3] pt-2">
+                          {explain}
+                        </div>
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        </div>
+
+        {/* Bottom result callout */}
+        <div
+          className="mt-6 rounded-[24px] border border-[rgba(139,92,246,0.18)] bg-white p-[22px] shadow-[0_14px_40px_-22px_rgba(139,92,246,0.4)] flex items-start gap-4"
+          style={fade(400)}
+        >
+          <div className="shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-[#4F46E5] to-[#8B5CF6] flex items-center justify-center text-white shadow-[0_8px_22px_-8px_rgba(139,92,246,0.55)]">
+            <AlertCircle size={20} />
+          </div>
+          <p className="text-[20px] leading-[1.35] font-semibold text-[#0B123F]">
+            The result: teams act on{" "}
+            <span className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+              yesterday's learnings
+            </span>{" "}
+            while today's opportunities{" "}
+            <span className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+              move on
+            </span>
+            .
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------- Main ---------- */
 export const ProblemSectionV2 = () => {
   const { ref, inView } = useInView<HTMLDivElement>();
@@ -722,142 +1039,128 @@ export const ProblemSectionV2 = () => {
   const [hoveredSignal, setHoveredSignal] = useState<string | null>(null);
   const [hoveredWorkflow, setHoveredWorkflow] = useState<string | null>(null);
 
-  // Cross-highlight pairing
   const signalPairId = hoveredSignal ? (CAMPAIGN_SIGNALS.find((s) => s.id === hoveredSignal)?.pairId ?? null) : null;
   const workflowReverseSignalIds = hoveredWorkflow
     ? CAMPAIGN_SIGNALS.filter((s) => s.pairId === hoveredWorkflow).map((s) => s.id)
     : [];
 
-  const [tappedSignal, setTappedSignal] = useState<string | null>(null);
-  const [expandedWorkflow, setExpandedWorkflow] = useState<string | null>(null);
-
   return (
-    <section ref={ref} aria-labelledby="problem-v2-title" className="relative w-full bg-[#F7F7FA] py-20 md:py-28">
-      <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8">
-        {/* Header */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 md:items-start">
-          <div
-            style={{
-              opacity: inView || reduced ? 1 : 0,
-              transform: inView || reduced ? "translateY(0)" : "translateY(8px)",
-              transition: "opacity 600ms ease, transform 600ms ease",
-            }}
-          >
-            <div className="text-[11px] tracking-[0.22em] font-bold text-[#4F46E5]">{EYEBROW}</div>
-            <h2
-              id="problem-v2-title"
-              className="mt-4 font-display text-[36px] sm:text-[46px] md:text-[56px] leading-[1.04] tracking-tight font-bold text-[#0B123F]"
-            >
-              Performance marketing moves daily.
-              <br />
-              Most workflows{" "}
-              <span className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">don't.</span>
-            </h2>
-          </div>
-          <div className="md:pl-8 md:border-l md:border-[rgba(15,23,42,0.08)]">
-            <p
-              className="text-[15px] md:text-base leading-relaxed text-[#334155] md:pt-4 max-w-[520px]"
+    <>
+      <ProblemSectionMobile />
+
+      <section
+        ref={ref}
+        aria-labelledby="problem-v2-title"
+        className="hidden lg:block relative w-full bg-[#F7F7FA] py-20 md:py-28"
+      >
+        <div className="relative mx-auto max-w-[1360px] px-5 sm:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-12 md:items-start">
+            <div
               style={{
                 opacity: inView || reduced ? 1 : 0,
                 transform: inView || reduced ? "translateY(0)" : "translateY(8px)",
-                transition: "opacity 600ms ease 150ms, transform 600ms ease 150ms",
+                transition: "opacity 600ms ease, transform 600ms ease",
               }}
             >
-              {SUBHEAD}
-            </p>
-          </div>
-        </div>
-
-        {/* Timeline card */}
-        <div
-          className="mt-10 md:mt-14 rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6 md:p-10 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.18)]"
-          style={{
-            opacity: inView || reduced ? 1 : 0,
-            transform: inView || reduced ? "translateY(0)" : "translateY(12px)",
-            transition: "opacity 700ms ease 250ms, transform 700ms ease 250ms",
-          }}
-        >
-          {/* Top bar: See the gap + legend */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-[rgba(15,23,42,0.06)]">
-            <div className="inline-flex items-center gap-2">
-              <Bookmark size={15} className="text-[#4F46E5]" />
-              <span className="relative text-[14px] font-semibold text-[#4F46E5] pb-1">
-                See the gap
-                <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] rounded-full" />
-              </span>
+              <div className="text-[11px] tracking-[0.22em] font-bold text-[#4F46E5]">{EYEBROW}</div>
+              <h2
+                id="problem-v2-title"
+                className="mt-4 font-display text-[36px] sm:text-[46px] md:text-[56px] leading-[1.04] tracking-tight font-bold text-[#0B123F]"
+              >
+                Performance marketing moves daily.
+                <br />
+                Most workflows{" "}
+                <span className="bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">don't.</span>
+              </h2>
             </div>
-            <Legend />
+            <div className="md:pl-8 md:border-l md:border-[rgba(15,23,42,0.08)]">
+              <p
+                className="text-[15px] md:text-base leading-relaxed text-[#334155] md:pt-4 max-w-[520px]"
+                style={{
+                  opacity: inView || reduced ? 1 : 0,
+                  transform: inView || reduced ? "translateY(0)" : "translateY(8px)",
+                  transition: "opacity 600ms ease 150ms, transform 600ms ease 150ms",
+                }}
+              >
+                {SUBHEAD}
+              </p>
+            </div>
           </div>
 
-          {/* Desktop layout */}
-          <div className="hidden lg:grid mt-8 grid-cols-[220px_1fr_110px] gap-6">
-            {/* Campaign rail */}
-            <div className="flex flex-col gap-12 pt-4">
-              <div>
-                <span className="w-10 h-10 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center">
-                  <Activity size={18} />
-                </span>
-                <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Campaign reality</h3>
-                <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">The market is changing every day.</p>
-                <span className="inline-block mt-2 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5]">
-                  FAST MOVING
+          <div
+            className="mt-10 md:mt-14 rounded-[28px] border border-[rgba(15,23,42,0.08)] bg-white p-6 md:p-10 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.18)]"
+            style={{
+              opacity: inView || reduced ? 1 : 0,
+              transform: inView || reduced ? "translateY(0)" : "translateY(12px)",
+              transition: "opacity 700ms ease 250ms, transform 700ms ease 250ms",
+            }}
+          >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-[rgba(15,23,42,0.06)]">
+              <div className="inline-flex items-center gap-2">
+                <Bookmark size={15} className="text-[#4F46E5]" />
+                <span className="relative text-[14px] font-semibold text-[#4F46E5] pb-1">
+                  See the gap
+                  <span className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] rounded-full" />
                 </span>
               </div>
-              <div className="pt-6 border-t border-dashed border-[rgba(15,23,42,0.08)]">
-                <span className="w-10 h-10 rounded-full bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center">
-                  <Clock size={18} />
-                </span>
-                <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Workflow reality</h3>
-                <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">
-                  Traditional workflows move in sequence.
-                </p>
-                <span className="inline-block mt-2 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#FFF1F2] text-[#E11D48]">
-                  SLOW MOVING
-                </span>
-              </div>
+              <Legend />
             </div>
 
-            {/* Timelines */}
-            <div className="flex flex-col gap-10 min-w-0">
-              <CampaignTimeline
-                hoveredSignal={hoveredSignal}
-                hoveredPair={
-                  workflowReverseSignalIds.includes("__never__") ? null : (workflowReverseSignalIds[0] ?? null)
-                }
-                onHover={setHoveredSignal}
-                inView={inView}
-                reduced={reduced}
-              />
-              <div className="pt-6 border-t border-dashed border-[rgba(15,23,42,0.08)]">
-                <WorkflowTimeline
-                  hoveredWorkflow={hoveredWorkflow}
-                  hoveredPair={signalPairId}
-                  onHover={setHoveredWorkflow}
+            <div className="grid mt-8 grid-cols-[220px_1fr_110px] gap-6">
+              <div className="flex flex-col gap-12 pt-4">
+                <div>
+                  <span className="w-10 h-10 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center">
+                    <Activity size={18} />
+                  </span>
+                  <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Campaign reality</h3>
+                  <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">The market is changing every day.</p>
+                  <span className="inline-block mt-2 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5]">
+                    FAST MOVING
+                  </span>
+                </div>
+                <div className="pt-6 border-t border-dashed border-[rgba(15,23,42,0.08)]">
+                  <span className="w-10 h-10 rounded-full bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center">
+                    <Clock size={18} />
+                  </span>
+                  <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Workflow reality</h3>
+                  <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">
+                    Traditional workflows move in sequence.
+                  </p>
+                  <span className="inline-block mt-2 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#FFF1F2] text-[#E11D48]">
+                    SLOW MOVING
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-10 min-w-0">
+                <CampaignTimeline
+                  hoveredSignal={hoveredSignal}
+                  hoveredPair={
+                    workflowReverseSignalIds.includes("__never__") ? null : (workflowReverseSignalIds[0] ?? null)
+                  }
+                  onHover={setHoveredSignal}
                   inView={inView}
                   reduced={reduced}
                 />
+                <div className="pt-6 border-t border-dashed border-[rgba(15,23,42,0.08)]">
+                  <WorkflowTimeline
+                    hoveredWorkflow={hoveredWorkflow}
+                    hoveredPair={signalPairId}
+                    onHover={setHoveredWorkflow}
+                    inView={inView}
+                    reduced={reduced}
+                  />
+                </div>
               </div>
+
+              <GapAnnotation />
             </div>
-
-            {/* Gap annotation */}
-            <GapAnnotation />
           </div>
 
-          {/* Mobile / tablet layout */}
-          <div className="lg:hidden mt-6">
-            <MobileLayout
-              tappedSignal={tappedSignal}
-              setTappedSignal={setTappedSignal}
-              expandedWorkflow={expandedWorkflow}
-              setExpandedWorkflow={setExpandedWorkflow}
-            />
-          </div>
+          <ResultCallout inView={inView} reduced={reduced} />
         </div>
-
-        {/* Result callout */}
-        <ResultCallout inView={inView} reduced={reduced} />
-      </div>
-    </section>
+      </section>
+    </>
   );
 };
 
