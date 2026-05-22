@@ -1,18 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Search,
-  LayoutGrid,
-  ShieldCheck,
   Send,
-  BarChart3,
-  TrendingUp,
   ArrowLeft,
   ArrowRight,
   Sparkles,
-  CheckCircle2,
   Radio,
 } from "lucide-react";
 import { useInView } from "./useInView";
+
+/* ----------------- Brand palette (matches ProblemSectionV2) ----------------- */
+const BRAND = {
+  indigo: "#4F46E5",
+  violet: "#8B5CF6",
+  ink: "#0B123F",
+  body: "#334155",
+  muted: "#64748B",
+  border: "rgba(15,23,42,0.08)",
+  surface: "#F7F7FA",
+  tintIndigo: "#EEF2FF",
+  tintViolet: "#F5F3FF",
+  tintIndigoBorder: "#E0E7FF",
+};
+const GRADIENT = `linear-gradient(90deg, ${BRAND.indigo}, ${BRAND.violet})`;
+const GRADIENT_DIAG = `linear-gradient(135deg, ${BRAND.indigo}, ${BRAND.violet})`;
 
 /* ----------------- Copy ----------------- */
 const COPY = {
@@ -43,8 +53,8 @@ const VisualIntelligence: React.FC = () => (
     <svg viewBox="0 0 200 140" className="w-full h-full">
       <defs>
         <linearGradient id="v1g" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--signal))" />
-          <stop offset="100%" stopColor="hsl(var(--lilac))" />
+          <stop offset="0%" stopColor={BRAND.indigo} />
+          <stop offset="100%" stopColor={BRAND.violet} />
         </linearGradient>
       </defs>
       {Array.from({ length: 38 }).map((_, i) => {
@@ -75,7 +85,7 @@ const VisualIntelligence: React.FC = () => (
       <polyline
         points="110,90 122,78 132,84 146,68"
         fill="none"
-        stroke="hsl(var(--signal))"
+        stroke={BRAND.indigo}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -86,22 +96,23 @@ const VisualIntelligence: React.FC = () => (
 
 const VisualCreative: React.FC = () => {
   const tiles = [
-    "from-[hsl(var(--signal))]/25 to-[hsl(var(--signal))]/5",
-    "from-[hsl(var(--lilac))]/30 to-[hsl(var(--lilac))]/5",
-    "from-emerald-200 to-emerald-50",
-    "from-rose-200 to-rose-50",
-    "from-amber-200 to-amber-50",
-    "from-[hsl(var(--signal))]/20 to-[hsl(var(--lilac))]/20",
+    `linear-gradient(135deg, ${BRAND.indigo}33, ${BRAND.indigo}0D)`,
+    `linear-gradient(135deg, ${BRAND.violet}33, ${BRAND.violet}0D)`,
+    `linear-gradient(135deg, ${BRAND.indigo}26, ${BRAND.violet}26)`,
+    `linear-gradient(135deg, ${BRAND.violet}26, ${BRAND.indigo}0D)`,
+    `linear-gradient(135deg, ${BRAND.indigo}1F, ${BRAND.violet}1F)`,
+    `linear-gradient(135deg, ${BRAND.violet}33, ${BRAND.indigo}1F)`,
   ];
   return (
     <div className="grid grid-cols-3 gap-2 w-full h-full p-2">
-      {tiles.map((t, i) => (
+      {tiles.map((bg, i) => (
         <div
           key={i}
-          className={`rounded-xl bg-gradient-to-br ${t} border border-slate-200/60 flex items-center justify-center`}
+          className="rounded-xl flex items-center justify-center"
+          style={{ background: bg, border: `1px solid ${BRAND.tintIndigoBorder}` }}
         >
-          <div className="w-5 h-5 rounded-full bg-white/70 backdrop-blur-sm flex items-center justify-center">
-            <Sparkles className="w-3 h-3 text-slate-500" />
+          <div className="w-5 h-5 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center">
+            <Sparkles className="w-3 h-3" style={{ color: BRAND.indigo }} />
           </div>
         </div>
       ))}
@@ -111,12 +122,15 @@ const VisualCreative: React.FC = () => {
 
 const VisualQA: React.FC = () => (
   <div className="relative h-full w-full flex items-center justify-center">
-    <div className="absolute w-32 h-32 rounded-full bg-gradient-to-br from-[hsl(var(--signal))]/20 to-[hsl(var(--lilac))]/20 blur-2xl" />
+    <div
+      className="absolute w-32 h-32 rounded-full blur-2xl"
+      style={{ background: `linear-gradient(135deg, ${BRAND.indigo}33, ${BRAND.violet}33)` }}
+    />
     <svg viewBox="0 0 120 120" className="w-28 h-28 relative">
       <defs>
         <linearGradient id="v3g" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--signal))" />
-          <stop offset="100%" stopColor="hsl(var(--lilac))" />
+          <stop offset="0%" stopColor={BRAND.indigo} />
+          <stop offset="100%" stopColor={BRAND.violet} />
         </linearGradient>
       </defs>
       <path
@@ -133,21 +147,27 @@ const VisualQA: React.FC = () => (
         strokeLinejoin="round"
       />
     </svg>
-    <Sparkles className="absolute top-2 right-6 w-4 h-4 text-[hsl(var(--lilac))]" />
-    <Sparkles className="absolute bottom-4 left-8 w-3 h-3 text-[hsl(var(--signal))]" />
+    <Sparkles className="absolute top-2 right-6 w-4 h-4" style={{ color: BRAND.violet }} />
+    <Sparkles className="absolute bottom-4 left-8 w-3 h-3" style={{ color: BRAND.indigo }} />
   </div>
 );
 
 const VisualCampaign: React.FC = () => (
   <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-2">
-    <div className="w-full rounded-2xl border border-slate-200 bg-white shadow-sm p-3 flex items-center justify-between">
+    <div
+      className="w-full rounded-2xl bg-white shadow-sm p-3 flex items-center justify-between"
+      style={{ border: `1px solid ${BRAND.border}` }}
+    >
       <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[hsl(var(--signal))] to-[hsl(var(--lilac))] flex items-center justify-center">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center"
+          style={{ background: GRADIENT_DIAG }}
+        >
           <Send className="w-3.5 h-3.5 text-white" />
         </div>
         <div className="flex flex-col">
-          <div className="h-1.5 w-20 rounded bg-slate-200" />
-          <div className="h-1.5 w-12 rounded bg-slate-100 mt-1" />
+          <div className="h-1.5 w-20 rounded" style={{ background: BRAND.tintIndigoBorder }} />
+          <div className="h-1.5 w-12 rounded mt-1" style={{ background: BRAND.tintIndigo }} />
         </div>
       </div>
       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 flex items-center gap-1">
@@ -159,7 +179,8 @@ const VisualCampaign: React.FC = () => (
       {["M", "G", "T"].map((c, i) => (
         <div
           key={i}
-          className="w-8 h-8 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center text-[11px] font-semibold text-slate-600"
+          className="w-8 h-8 rounded-xl bg-white shadow-sm flex items-center justify-center text-[11px] font-semibold"
+          style={{ border: `1px solid ${BRAND.border}`, color: BRAND.body }}
         >
           {c}
         </div>
@@ -173,11 +194,11 @@ const VisualTesting: React.FC = () => (
     <svg viewBox="0 0 80 80" className="w-20 h-20">
       <defs>
         <linearGradient id="v5g" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--signal))" />
-          <stop offset="100%" stopColor="hsl(var(--lilac))" />
+          <stop offset="0%" stopColor={BRAND.indigo} />
+          <stop offset="100%" stopColor={BRAND.violet} />
         </linearGradient>
       </defs>
-      <circle cx="40" cy="40" r="28" fill="none" stroke="hsl(var(--border))" strokeWidth="10" />
+      <circle cx="40" cy="40" r="28" fill="none" stroke={BRAND.tintIndigoBorder} strokeWidth="10" />
       <circle
         cx="40"
         cy="40"
@@ -194,8 +215,12 @@ const VisualTesting: React.FC = () => (
       {[30, 55, 40, 70, 50, 85].map((h, i) => (
         <div
           key={i}
-          className="w-2.5 rounded-t-md bg-gradient-to-t from-[hsl(var(--signal))] to-[hsl(var(--lilac))]"
-          style={{ height: `${h}%`, opacity: 0.4 + i * 0.1 }}
+          className="w-2.5 rounded-t-md"
+          style={{
+            height: `${h}%`,
+            opacity: 0.4 + i * 0.1,
+            background: `linear-gradient(to top, ${BRAND.indigo}, ${BRAND.violet})`,
+          }}
         />
       ))}
     </div>
@@ -207,12 +232,12 @@ const VisualOptimization: React.FC = () => (
     <svg viewBox="0 0 200 120" className="w-full h-full">
       <defs>
         <linearGradient id="v6g" x1="0" x2="1" y1="0" y2="0">
-          <stop offset="0%" stopColor="hsl(var(--signal))" />
-          <stop offset="100%" stopColor="hsl(var(--lilac))" />
+          <stop offset="0%" stopColor={BRAND.indigo} />
+          <stop offset="100%" stopColor={BRAND.violet} />
         </linearGradient>
         <linearGradient id="v6f" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="hsl(var(--lilac))" stopOpacity="0.25" />
-          <stop offset="100%" stopColor="hsl(var(--lilac))" stopOpacity="0" />
+          <stop offset="0%" stopColor={BRAND.violet} stopOpacity="0.25" />
+          <stop offset="100%" stopColor={BRAND.violet} stopOpacity="0" />
         </linearGradient>
       </defs>
       {[0, 1, 2, 3].map((i) => (
@@ -222,15 +247,12 @@ const VisualOptimization: React.FC = () => (
           y1={25 + i * 25}
           x2="200"
           y2={25 + i * 25}
-          stroke="hsl(var(--border))"
+          stroke={BRAND.tintIndigoBorder}
           strokeDasharray="2 4"
-          opacity="0.5"
+          opacity="0.7"
         />
       ))}
-      <path
-        d="M5 95 C 40 92, 60 80, 85 70 S 140 35, 195 15 L 195 115 L 5 115 Z"
-        fill="url(#v6f)"
-      />
+      <path d="M5 95 C 40 92, 60 80, 85 70 S 140 35, 195 15 L 195 115 L 5 115 Z" fill="url(#v6f)" />
       <path
         d="M5 95 C 40 92, 60 80, 85 70 S 140 35, 195 15"
         fill="none"
@@ -238,8 +260,8 @@ const VisualOptimization: React.FC = () => (
         strokeWidth="2.5"
         strokeLinecap="round"
       />
-      <circle cx="195" cy="15" r="5" fill="hsl(var(--lilac))" />
-      <circle cx="195" cy="15" r="9" fill="hsl(var(--lilac))" opacity="0.3">
+      <circle cx="195" cy="15" r="5" fill={BRAND.violet} />
+      <circle cx="195" cy="15" r="9" fill={BRAND.violet} opacity="0.3">
         <animate attributeName="r" values="6;12;6" dur="2.4s" repeatCount="indefinite" />
         <animate attributeName="opacity" values="0.4;0;0.4" dur="2.4s" repeatCount="indefinite" />
       </circle>
@@ -309,7 +331,7 @@ const FEATURES: Feature[] = [
 type CardProps = {
   feature: Feature;
   state: "active" | "near" | "far";
-  offset: number; // -2, -1, 0, 1, 2
+  offset: number;
   onClick: () => void;
 };
 
@@ -331,83 +353,81 @@ const FeatureCard: React.FC<CardProps> = ({ feature, state, offset, onClick }) =
       onClick={onClick}
       aria-current={isActive}
       aria-label={`${feature.number} ${feature.title}`}
-      className={`group absolute left-1/2 top-0 -translate-x-1/2 ${widthClass} ${heightClass} text-left rounded-[28px] border bg-white outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--signal))] focus-visible:ring-offset-2`}
+      className="group absolute left-1/2 top-0 text-left rounded-[28px] bg-white outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       style={{
+        width: undefined,
         transform: `translate(calc(-50% + ${translateX}px), 0) scale(${scale})`,
         opacity,
         zIndex: z,
         transition:
           "transform 550ms cubic-bezier(0.22,1,0.36,1), opacity 450ms ease, box-shadow 450ms ease, border-color 450ms ease",
-        borderColor: isActive ? "hsl(var(--lilac) / 0.45)" : "rgba(15,23,42,0.08)",
+        border: `1px solid ${isActive ? BRAND.tintIndigoBorder : BRAND.border}`,
         boxShadow: isActive
-          ? "0 30px 60px -25px hsl(var(--signal) / 0.35), 0 10px 30px -15px hsl(var(--lilac) / 0.35)"
+          ? `0 30px 60px -25px ${BRAND.indigo}59, 0 10px 30px -15px ${BRAND.violet}59`
           : "0 10px 25px -15px rgba(15,23,42,0.18)",
       }}
     >
-      {/* glow */}
-      {isActive && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -inset-px rounded-[28px]"
-          style={{
-            background:
-              "linear-gradient(135deg, hsl(var(--signal) / 0.10), hsl(var(--lilac) / 0.10))",
-          }}
-        />
-      )}
-
-      <div className="relative h-full w-full flex flex-col p-7">
-        {/* number badge */}
-        <div className="flex items-start justify-between">
+      <div className={`${widthClass} ${heightClass}`}>
+        {isActive && (
           <div
-            className={`w-11 h-11 rounded-full flex items-center justify-center text-sm font-display font-semibold ${
-              isActive
-                ? "text-white shadow-md"
-                : "bg-slate-100 text-slate-500"
-            }`}
-            style={
-              isActive
-                ? {
-                    background:
-                      "linear-gradient(135deg, hsl(var(--signal)), hsl(var(--lilac)))",
-                  }
-                : undefined
-            }
-          >
-            {feature.number}
+            aria-hidden
+            className="pointer-events-none absolute -inset-px rounded-[28px]"
+            style={{
+              background: `linear-gradient(135deg, ${BRAND.indigo}1A, ${BRAND.violet}1A)`,
+            }}
+          />
+        )}
+
+        <div className="relative h-full w-full flex flex-col p-7">
+          {/* number badge */}
+          <div className="flex items-start justify-between">
+            <div
+              className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-display font-semibold"
+              style={
+                isActive
+                  ? { background: GRADIENT_DIAG, color: "#fff", boxShadow: `0 6px 16px -6px ${BRAND.indigo}80` }
+                  : { background: BRAND.tintIndigo, color: BRAND.indigo }
+              }
+            >
+              {feature.number}
+            </div>
           </div>
-        </div>
 
-        {/* visual */}
-        <div
-          className={`mt-5 h-44 w-full rounded-2xl flex items-center justify-center transition-opacity ${
-            isActive ? "opacity-100" : "opacity-80"
-          }`}
-        >
-          <Visual />
-        </div>
+          <div
+            className={`mt-5 h-44 w-full rounded-2xl flex items-center justify-center transition-opacity ${
+              isActive ? "opacity-100" : "opacity-80"
+            }`}
+          >
+            <Visual />
+          </div>
 
-        {/* label */}
-        <span className="mt-6 inline-flex self-start text-[10px] tracking-[0.18em] font-semibold uppercase px-2.5 py-1 rounded-md bg-[hsl(var(--mist))] text-[hsl(var(--signal))]">
-          {feature.label}
-        </span>
+          <span
+            className="mt-6 inline-flex self-start text-[10px] tracking-[0.18em] font-semibold uppercase px-2.5 py-1 rounded-md"
+            style={{ background: BRAND.tintIndigo, color: BRAND.indigo }}
+          >
+            {feature.label}
+          </span>
 
-        {/* title */}
-        <h3 className="mt-3 font-display font-bold text-[22px] leading-[1.2] text-slate-900">
-          {feature.title}
-        </h3>
+          <h3
+            className="mt-3 font-display font-bold text-[22px] leading-[1.2]"
+            style={{ color: BRAND.ink }}
+          >
+            {feature.title}
+          </h3>
 
-        {/* description */}
-        <p className="mt-3 text-[13.5px] leading-relaxed text-slate-500 font-body">
-          {feature.description}
-        </p>
+          <p
+            className="mt-3 text-[13.5px] leading-relaxed font-body"
+            style={{ color: BRAND.muted }}
+          >
+            {feature.description}
+          </p>
 
-        {/* bottom accent */}
-        <div className="mt-auto pt-5">
-          <div className="h-px w-full bg-slate-100" />
-          <div className="mt-3 flex items-center gap-2 text-[11px] text-slate-400">
-            <Radio className="w-3 h-3" />
-            <span>SixLabs · {feature.label}</span>
+          <div className="mt-auto pt-5">
+            <div className="h-px w-full" style={{ background: BRAND.border }} />
+            <div className="mt-3 flex items-center gap-2 text-[11px]" style={{ color: BRAND.muted }}>
+              <Radio className="w-3 h-3" />
+              <span>SixLabs · {feature.label}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -430,26 +450,26 @@ const CarouselControls: React.FC<{
         type="button"
         onClick={onPrev}
         aria-label="Previous feature"
-        className="w-11 h-11 rounded-full border border-slate-200 bg-white shadow-sm flex items-center justify-center text-slate-600 hover:-translate-y-0.5 hover:shadow-md transition-all"
+        className="w-11 h-11 rounded-full bg-white shadow-sm flex items-center justify-center hover:-translate-y-0.5 hover:shadow-md transition-all"
+        style={{ border: `1px solid ${BRAND.border}`, color: BRAND.body }}
       >
         <ArrowLeft className="w-4 h-4" />
       </button>
 
       <div className="flex items-center gap-3 min-w-[280px] sm:min-w-[360px]">
-        <span className="text-xs font-mono text-slate-500 tabular-nums">
+        <span className="text-xs font-mono tabular-nums" style={{ color: BRAND.muted }}>
           {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
         </span>
-        <div className="flex-1 h-1 rounded-full bg-slate-200 overflow-hidden">
+        <div
+          className="flex-1 h-1 rounded-full overflow-hidden"
+          style={{ background: BRAND.tintIndigoBorder }}
+        >
           <div
             className="h-full rounded-full transition-[width] duration-500 ease-out"
-            style={{
-              width: `${progress}%`,
-              background:
-                "linear-gradient(90deg, hsl(var(--signal)), hsl(var(--lilac)))",
-            }}
+            style={{ width: `${progress}%`, background: GRADIENT }}
           />
         </div>
-        <span className="text-xs font-mono text-slate-400 tabular-nums">
+        <span className="text-xs font-mono tabular-nums" style={{ color: BRAND.muted }}>
           {String(total).padStart(2, "0")}
         </span>
       </div>
@@ -459,9 +479,7 @@ const CarouselControls: React.FC<{
         onClick={onNext}
         aria-label="Next feature"
         className="w-11 h-11 rounded-full text-white shadow-md hover:-translate-y-0.5 hover:shadow-lg transition-all flex items-center justify-center"
-        style={{
-          background: "linear-gradient(135deg, hsl(var(--signal)), hsl(var(--lilac)))",
-        }}
+        style={{ background: GRADIENT_DIAG }}
       >
         <ArrowRight className="w-4 h-4" />
       </button>
@@ -481,7 +499,6 @@ export const ProductSectionV2: React.FC = () => {
   const next = useCallback(() => setActive((i) => (i + 1) % total), [total]);
   const prev = useCallback(() => setActive((i) => (i - 1 + total) % total), [total]);
 
-  // keyboard
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (!sectionRef.current) return;
@@ -495,7 +512,6 @@ export const ProductSectionV2: React.FC = () => {
     return () => window.removeEventListener("keydown", handler);
   }, [next, prev]);
 
-  // mobile swipe
   const touchStartX = useRef<number | null>(null);
   const onTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -524,15 +540,14 @@ export const ProductSectionV2: React.FC = () => {
       id="product"
       ref={sectionRef}
       aria-label="SixLabs platform capabilities"
-      className="relative bg-[hsl(var(--mist))]/40 pt-24 pb-28 overflow-hidden"
+      className="relative pt-24 pb-28 overflow-hidden"
+      style={{ background: BRAND.surface }}
     >
-      {/* subtle background accents */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
-          background:
-            "radial-gradient(ellipse 70% 50% at 50% 0%, hsl(var(--lilac) / 0.10), transparent 60%)",
+          background: `radial-gradient(ellipse 70% 50% at 50% 0%, ${BRAND.violet}1A, transparent 60%)`,
         }}
       />
 
@@ -544,22 +559,28 @@ export const ProductSectionV2: React.FC = () => {
             headerVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <p className="text-xs font-mono tracking-[0.22em] text-slate-500">
+          <p
+            className="text-[11px] font-mono tracking-[0.22em] font-bold"
+            style={{ color: BRAND.indigo }}
+          >
             {COPY.eyebrow}
           </p>
-          <h2 className="mt-4 font-display font-bold text-4xl md:text-5xl lg:text-6xl tracking-tight text-slate-900">
+          <h2
+            className="mt-4 font-display font-bold text-4xl md:text-5xl lg:text-6xl tracking-tight"
+            style={{ color: BRAND.ink }}
+          >
             {COPY.headA}
             <span
               className="bg-clip-text text-transparent"
-              style={{
-                backgroundImage:
-                  "linear-gradient(90deg, hsl(var(--signal)), hsl(var(--lilac)))",
-              }}
+              style={{ backgroundImage: GRADIENT }}
             >
               {COPY.headB}
             </span>
           </h2>
-          <p className="mt-5 text-slate-500 text-base md:text-lg font-body leading-relaxed">
+          <p
+            className="mt-5 text-base md:text-lg font-body leading-relaxed"
+            style={{ color: BRAND.body }}
+          >
             {COPY.sub}
           </p>
         </div>
@@ -609,27 +630,33 @@ export const ProductSectionV2: React.FC = () => {
                 const Visual = f.Visual;
                 return (
                   <div key={f.id} className="w-full shrink-0 px-1">
-                    <article className="mx-auto rounded-[24px] border border-slate-200 bg-white shadow-sm p-6"
-                      style={{ width: "calc(100vw - 48px)", maxWidth: 380 }}>
+                    <article
+                      className="mx-auto rounded-[24px] bg-white shadow-sm p-6"
+                      style={{
+                        width: "calc(100vw - 48px)",
+                        maxWidth: 380,
+                        border: `1px solid ${BRAND.border}`,
+                      }}
+                    >
                       <div
                         className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-display font-semibold text-white"
-                        style={{
-                          background:
-                            "linear-gradient(135deg, hsl(var(--signal)), hsl(var(--lilac)))",
-                        }}
+                        style={{ background: GRADIENT_DIAG }}
                       >
                         {f.number}
                       </div>
                       <div className="mt-4 h-36 flex items-center justify-center">
                         <Visual />
                       </div>
-                      <span className="mt-5 inline-flex text-[10px] tracking-[0.18em] font-semibold uppercase px-2.5 py-1 rounded-md bg-[hsl(var(--mist))] text-[hsl(var(--signal))]">
+                      <span
+                        className="mt-5 inline-flex text-[10px] tracking-[0.18em] font-semibold uppercase px-2.5 py-1 rounded-md"
+                        style={{ background: BRAND.tintIndigo, color: BRAND.indigo }}
+                      >
                         {f.label}
                       </span>
-                      <h3 className="mt-3 font-display font-bold text-xl text-slate-900">
+                      <h3 className="mt-3 font-display font-bold text-xl" style={{ color: BRAND.ink }}>
                         {f.title}
                       </h3>
-                      <p className="mt-2 text-sm text-slate-500 leading-relaxed">
+                      <p className="mt-2 text-sm leading-relaxed" style={{ color: BRAND.muted }}>
                         {f.description}
                       </p>
                     </article>
@@ -650,10 +677,7 @@ export const ProductSectionV2: React.FC = () => {
                 className="h-1.5 rounded-full transition-all"
                 style={{
                   width: i === active ? 22 : 8,
-                  background:
-                    i === active
-                      ? "linear-gradient(90deg, hsl(var(--signal)), hsl(var(--lilac)))"
-                      : "hsl(var(--border))",
+                  background: i === active ? GRADIENT : BRAND.tintIndigoBorder,
                 }}
               />
             ))}
@@ -664,7 +688,8 @@ export const ProductSectionV2: React.FC = () => {
               type="button"
               onClick={prev}
               aria-label="Previous feature"
-              className="w-10 h-10 rounded-full border border-slate-200 bg-white shadow-sm flex items-center justify-center text-slate-600"
+              className="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center"
+              style={{ border: `1px solid ${BRAND.border}`, color: BRAND.body }}
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
@@ -673,10 +698,7 @@ export const ProductSectionV2: React.FC = () => {
               onClick={next}
               aria-label="Next feature"
               className="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center"
-              style={{
-                background:
-                  "linear-gradient(135deg, hsl(var(--signal)), hsl(var(--lilac)))",
-              }}
+              style={{ background: GRADIENT_DIAG }}
             >
               <ArrowRight className="w-4 h-4" />
             </button>
@@ -684,21 +706,17 @@ export const ProductSectionV2: React.FC = () => {
         </div>
 
         {/* Microcopy */}
-        <p className="mt-12 text-center text-sm text-slate-500 font-body">
+        <p className="mt-12 text-center text-sm font-body" style={{ color: BRAND.muted }}>
           {COPY.micro.a}
           <span
             className="font-semibold bg-clip-text text-transparent"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, hsl(var(--signal)), hsl(var(--lilac)))",
-            }}
+            style={{ backgroundImage: GRADIENT }}
           >
             {COPY.micro.b}
           </span>
         </p>
       </div>
 
-      {/* reduced motion */}
       <style>{`
         @media (prefers-reduced-motion: reduce) {
           #product * {
