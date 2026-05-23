@@ -33,14 +33,24 @@ export default function SixLabsLanding() {
       <Navbar scrollY={scrollY} />
       <HeroSection />
       <SixLabsWorkflowVisual />
+      <SectionTransition variant="dark-to-light" />
       <ProofStrip />
       {/* <ProblemSection /> */}
       <div ref={deferredRef} className="min-h-px">
         {showDeferredSections && (
           <Suspense fallback={null}>
-            <ProblemSectionV2 />
-            <ProductSection />
-            <ContactSection />
+            <SectionTransition variant="light-to-light" />
+            <SectionReveal>
+              <ProblemSectionV2 />
+            </SectionReveal>
+            <SectionTransition variant="light-to-light" />
+            <SectionReveal>
+              <ProductSection />
+            </SectionReveal>
+            <SectionTransition variant="light-to-dark" />
+            <SectionReveal>
+              <ContactSection />
+            </SectionReveal>
             <Footer />
           </Suspense>
         )}
