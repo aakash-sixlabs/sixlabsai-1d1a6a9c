@@ -5,6 +5,7 @@ import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisua
 //import { ProblemSection } from "@/components/landing/ProblemSection";
 import { ProofStrip } from "@/components/landing/ProofStrip";
 import { useInView } from "@/components/landing/useInView";
+import { SectionTransition, SectionReveal } from "@/components/landing/SectionTransition";
 
 const ProblemSectionV2 = lazy(() =>
   import("@/components/landing/ProblemSectionV2").then((module) => ({ default: module.ProblemSectionV2 })),
