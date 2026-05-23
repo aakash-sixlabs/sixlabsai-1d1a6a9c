@@ -5,6 +5,7 @@ import { SixLabsWorkflowVisual } from "@/components/landing/SixLabsWorkflowVisua
 //import { ProblemSection } from "@/components/landing/ProblemSection";
 import { ProofStrip } from "@/components/landing/ProofStrip";
 import { useInView } from "@/components/landing/useInView";
+import { SectionTransition, SectionReveal } from "@/components/landing/SectionTransition";
 
 const ProblemSectionV2 = lazy(() =>
   import("@/components/landing/ProblemSectionV2").then((module) => ({ default: module.ProblemSectionV2 })),
@@ -32,14 +33,24 @@ export default function SixLabsLanding() {
       <Navbar scrollY={scrollY} />
       <HeroSection />
       <SixLabsWorkflowVisual />
+      <SectionTransition variant="dark-to-light" />
       <ProofStrip />
       {/* <ProblemSection /> */}
       <div ref={deferredRef} className="min-h-px">
         {showDeferredSections && (
           <Suspense fallback={null}>
-            <ProblemSectionV2 />
-            <ProductSection />
-            <ContactSection />
+            <SectionTransition variant="light-to-light" />
+            <SectionReveal>
+              <ProblemSectionV2 />
+            </SectionReveal>
+            <SectionTransition variant="light-to-light" />
+            <SectionReveal>
+              <ProductSection />
+            </SectionReveal>
+            <SectionTransition variant="light-to-dark" />
+            <SectionReveal>
+              <ContactSection />
+            </SectionReveal>
             <Footer />
           </Suspense>
         )}
