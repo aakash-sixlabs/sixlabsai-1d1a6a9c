@@ -1134,37 +1134,29 @@ export const ProblemSectionV2 = () => {
               />
             </div>
 
-            {/* SEPARATOR: THE GAP */}
+            {/* SEPARATOR: The gap widens each day */}
             <div className="relative my-10 flex items-center justify-center" aria-hidden>
               <div
                 className="absolute inset-x-0 top-1/2 h-px"
                 style={{
                   background:
-                    "linear-gradient(to right, transparent 0%, rgba(139,92,246,0.35) 20%, rgba(139,92,246,0.55) 50%, rgba(139,92,246,0.35) 80%, transparent 100%)",
+                    "linear-gradient(to right, rgba(79,70,229,1) 0%, rgba(139,92,246,1) 100%)",
                 }}
               />
-              {/* Downward connector arrow above the pill */}
-              <svg
-                width="14"
-                height="22"
-                viewBox="0 0 14 22"
-                className="absolute left-1/2 -translate-x-1/2 -top-5 text-[#8B5CF6]"
-              >
-                <line x1="7" y1="0" x2="7" y2="16" stroke="currentColor" strokeWidth="1.3" strokeDasharray="3 3" />
-                <path
-                  d="M 2 14 L 7 20 L 12 14"
-                  stroke="currentColor"
-                  strokeWidth="1.3"
-                  fill="none"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <div className="relative inline-flex items-center gap-1.5 rounded-full border border-[rgba(139,92,246,0.25)] bg-white px-3 py-1 shadow-[0_4px_14px_-6px_rgba(139,92,246,0.35)]">
-                <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6]" />
-                <span className="text-[10.5px] font-bold tracking-[0.18em] bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
-                  THE GAP
+              <div className="relative inline-flex items-center gap-2 rounded-full border border-[rgba(139,92,246,0.35)] bg-white px-4 py-1.5 shadow-[0_4px_14px_-6px_rgba(139,92,246,0.35)]">
+                {/* Left arrow */}
+                <svg width="16" height="16" viewBox="0 0 16 16" className="text-[#4F46E5]">
+                  <path d="M11 4L6 8l5 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M14 4L9 8l5 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+                </svg>
+                <span className="text-[11px] font-bold tracking-[0.18em] bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+                  The gap widens each day
                 </span>
+                {/* Right arrow */}
+                <svg width="16" height="16" viewBox="0 0 16 16" className="text-[#8B5CF6]">
+                  <path d="M5 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M2 4l5 4-5 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity="0.4" />
+                </svg>
               </div>
             </div>
 
