@@ -1140,9 +1140,10 @@ export const ProblemSectionV2 = () => {
                 className="absolute inset-x-0 top-1/2 h-px"
                 style={{
                   background:
-                    "linear-gradient(to right, rgba(79,70,229,1) 0%, rgba(139,92,246,1) 100%)",
+                    "linear-gradient(to right, rgba(79,70,229,0) 0%, rgba(79,70,229,0.8) 30%, rgba(139,92,246,0.8) 70%, rgba(139,92,246,0) 100%)",
                 }}
               />
+
               <div className="relative inline-flex items-center gap-2 rounded-full border border-[rgba(139,92,246,0.35)] bg-white px-4 py-1.5 shadow-[0_4px_14px_-6px_rgba(139,92,246,0.35)]">
                 {/* Left arrow */}
                 <svg width="16" height="16" viewBox="0 0 16 16" className="text-[#4F46E5]">
