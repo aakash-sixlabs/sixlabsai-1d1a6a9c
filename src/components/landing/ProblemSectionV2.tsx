@@ -1095,6 +1095,7 @@ export const ProblemSectionV2 = () => {
               transition: "opacity 700ms ease 250ms, transform 700ms ease 250ms",
             }}
           >
+            {/* Container header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-6 border-b border-[rgba(15,23,42,0.06)]">
               <div className="inline-flex items-center gap-2">
                 <Bookmark size={15} className="text-[#4F46E5]" />
@@ -1106,58 +1107,119 @@ export const ProblemSectionV2 = () => {
               <Legend />
             </div>
 
-            <div className="grid mt-8 grid-cols-[220px_1fr_110px] gap-6">
-              <div className="flex flex-col gap-12 pt-4">
-                <div>
-                  <span className="w-10 h-10 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center">
-                    <Activity size={18} />
-                  </span>
-                  <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Campaign reality</h3>
-                  <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">The market is changing every day.</p>
-                  <span className="inline-block mt-2 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5]">
-                    FAST MOVING
-                  </span>
+            {/* TOP ZONE: Signals from the market */}
+            <div className="pt-8">
+              <div className="flex items-start gap-3 mb-5">
+                <span className="w-10 h-10 rounded-full bg-[#EEF2FF] text-[#4F46E5] flex items-center justify-center shrink-0">
+                  <Activity size={18} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-display font-bold text-[#0B123F] text-[18px] leading-tight">
+                    Signals from the market
+                  </h3>
+                  <p className="text-[12.5px] text-[#64748B] mt-0.5 leading-snug">What changes every day</p>
                 </div>
-                <div className="pt-6 border-t border-dashed border-[rgba(15,23,42,0.08)]">
-                  <span className="w-10 h-10 rounded-full bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center">
-                    <Clock size={18} />
-                  </span>
-                  <h3 className="mt-3 font-display font-bold text-[#0B123F] text-base leading-tight">Workflow reality</h3>
-                  <p className="text-[12.5px] text-[#64748B] mt-1 leading-snug">
-                    Traditional workflows move in sequence.
-                  </p>
-                  <span className="inline-block mt-2 text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#FFF1F2] text-[#E11D48]">
-                    SLOW MOVING
-                  </span>
-                </div>
+                <span className="text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#EEF2FF] text-[#4F46E5] shrink-0">
+                  FAST MOVING
+                </span>
               </div>
+              <CampaignTimeline
+                hoveredSignal={hoveredSignal}
+                hoveredPair={
+                  workflowReverseSignalIds.includes("__never__") ? null : (workflowReverseSignalIds[0] ?? null)
+                }
+                onHover={setHoveredSignal}
+                inView={inView}
+                reduced={reduced}
+              />
+            </div>
 
-              <div className="flex flex-col gap-10 min-w-0">
-                <CampaignTimeline
-                  hoveredSignal={hoveredSignal}
-                  hoveredPair={
-                    workflowReverseSignalIds.includes("__never__") ? null : (workflowReverseSignalIds[0] ?? null)
-                  }
-                  onHover={setHoveredSignal}
-                  inView={inView}
-                  reduced={reduced}
+            {/* SEPARATOR: THE GAP */}
+            <div className="relative my-10 flex items-center justify-center" aria-hidden>
+              <div
+                className="absolute inset-x-0 top-1/2 h-px"
+                style={{
+                  background:
+                    "linear-gradient(to right, transparent 0%, rgba(139,92,246,0.35) 20%, rgba(139,92,246,0.55) 50%, rgba(139,92,246,0.35) 80%, transparent 100%)",
+                }}
+              />
+              {/* Downward connector arrow above the pill */}
+              <svg
+                width="14"
+                height="22"
+                viewBox="0 0 14 22"
+                className="absolute left-1/2 -translate-x-1/2 -top-5 text-[#8B5CF6]"
+              >
+                <line x1="7" y1="0" x2="7" y2="16" stroke="currentColor" strokeWidth="1.3" strokeDasharray="3 3" />
+                <path
+                  d="M 2 14 L 7 20 L 12 14"
+                  stroke="currentColor"
+                  strokeWidth="1.3"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
-                <div className="pt-6 border-t border-dashed border-[rgba(15,23,42,0.08)]">
-                  <WorkflowTimeline
-                    hoveredWorkflow={hoveredWorkflow}
-                    hoveredPair={signalPairId}
-                    onHover={setHoveredWorkflow}
-                    inView={inView}
-                    reduced={reduced}
-                  />
-                </div>
+              </svg>
+              <div className="relative inline-flex items-center gap-1.5 rounded-full border border-[rgba(139,92,246,0.25)] bg-white px-3 py-1 shadow-[0_4px_14px_-6px_rgba(139,92,246,0.35)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6]" />
+                <span className="text-[10.5px] font-bold tracking-[0.18em] bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+                  THE GAP
+                </span>
               </div>
+            </div>
 
-              <GapAnnotation />
+            {/* BOTTOM ZONE: How teams respond */}
+            <div>
+              <div className="flex items-start gap-3 mb-5">
+                <span className="w-10 h-10 rounded-full bg-[#FFF1F2] text-[#E11D48] flex items-center justify-center shrink-0">
+                  <Clock size={18} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-display font-bold text-[#0B123F] text-[18px] leading-tight">
+                    How teams respond
+                  </h3>
+                  <p className="text-[12.5px] text-[#64748B] mt-0.5 leading-snug">
+                    What usually takes days or weeks
+                  </p>
+                </div>
+                <span className="text-[10.5px] font-semibold tracking-[0.12em] px-2 py-0.5 rounded-full bg-[#FFF1F2] text-[#E11D48] shrink-0">
+                  SLOW MOVING
+                </span>
+              </div>
+              <WorkflowTimeline
+                hoveredWorkflow={hoveredWorkflow}
+                hoveredPair={signalPairId}
+                onHover={setHoveredWorkflow}
+                inView={inView}
+                reduced={reduced}
+              />
+            </div>
+
+            {/* FOOTER: Result callout inside the same container */}
+            <div
+              className="mt-10 pt-6 border-t border-[rgba(15,23,42,0.06)] flex items-center gap-4"
+              style={{
+                opacity: inView || reduced ? 1 : 0,
+                transform: inView || reduced ? "translateY(0)" : "translateY(8px)",
+                transition: "opacity 600ms ease 1200ms, transform 600ms ease 1200ms",
+              }}
+            >
+              <div className="shrink-0 w-11 h-11 rounded-full bg-gradient-to-br from-[#4F46E5] to-[#8B5CF6] flex items-center justify-center text-white shadow-[0_8px_24px_-8px_rgba(139,92,246,0.55)]">
+                <AlertCircle size={20} />
+              </div>
+              <p className="text-[14px] md:text-[16px] leading-relaxed text-[#334155]">
+                <span className="text-[#0B123F]">The result: teams act on </span>
+                <span className="font-semibold bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+                  yesterday's learnings
+                </span>
+                <span className="text-[#0B123F]"> while today's opportunities </span>
+                <span className="font-semibold bg-gradient-to-r from-[#4F46E5] to-[#8B5CF6] bg-clip-text text-transparent">
+                  move on
+                </span>
+                <span className="text-[#0B123F]">.</span>
+              </p>
             </div>
           </div>
-
-          <ResultCallout inView={inView} reduced={reduced} />
         </div>
       </section>
     </>
